@@ -1,0 +1,10 @@
+{
+  "name": "nha-tro-44-website",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Quản lý Nhà trọ 44 Lê Văn Phấn",
+  "engines": { "node": ">=20" },
+  "scripts": { "test": "node tests/run-tests.js" },
+  "dependencies": { "@vercel/blob": "^2.3.0" }
+}
