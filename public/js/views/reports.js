@@ -1,5 +1,6 @@
 import { html, vnd, dmy, field, toast, download, $, monthLabel, openModal } from '../util.js';
 import { api, D, S, save, today } from '../api.js';
+
 import { acts, forms, rerender } from '../ui.js';
 
 let range = null; let last = null;
@@ -38,6 +39,7 @@ export function backupView() {
       <a class="btn primary" href="/api/backup/export" download>⬇ Tải database.json</a></section>
     <section class="card" style="margin-top:12px"><h3>Khôi phục từ file JSON</h3><p class="warn-box">⚠ Khôi phục sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Hệ thống tự lưu một bản an toàn của dữ liệu hiện tại trước khi ghi đè.</p>
       <form data-form="restore"><input type="file" name="file" accept="application/json,.json" required style="margin-bottom:12px"><div id="rsum" class="calc" hidden></div>${field('Gõ chính xác: GHI DE để xác nhận', html`<input name="confirm" autocomplete="off" placeholder="GHI DE">`)}<div class="err-inline"></div><button class="btn danger" type="submit">KIỂM TRA & KHÔI PHỤC</button></form></section>
+    ${cleanupCard()}
     <section class="card" style="margin-top:12px"><h3>Ảnh CCCD</h3><p class="muted">Ảnh nằm trong kho Vercel Blob riêng tư, không nằm trong file JSON. Tải từng ảnh ở trang hồ sơ khách (nút "Tải về") khi cần bản dự phòng.</p></section>
     <h2 class="sec">Nhật ký thao tác gần đây</h2><div class="list">${logs.map((l) => html`<div class="li"><span><b>${l.action}</b> <span class="muted">${l.detail}</span></span><span class="muted small">${l.at.slice(0, 16).replace('T', ' ')}</span></div>`)}</div>`;
 }
@@ -49,4 +51,23 @@ forms.restore = async (f, fd) => {
   if (fd.get('confirm') !== 'GHI DE') throw new Error('Kiểm tra file xong. Gõ đúng "GHI DE" vào ô xác nhận rồi bấm lại để khôi phục.');
   if (!confirm('Chắc chắn GHI ĐÈ toàn bộ dữ liệu hiện tại bằng file này?')) return;
   await save('POST', 'backup/restore', { db, confirm: 'GHI DE' }, 'Đã khôi phục dữ liệu'); rerender();
+};
+
+const mb = (b) => `${(b / 1048576).toFixed(1)} MB`;
+function cleanupCard() {
+  const st = S.snap.system.storage; const ok = st.eligible.filter((e) => !e.blocked); const hold = st.eligible.filter((e) => e.blocked);
+  return html`<section class="card" style="margin-top:12px"><h3>Dung lượng & dọn dữ liệu cũ</h3>
+    <p style="margin:6px 0">Ảnh CCCD: <b>${mb(st.usedBytes)}</b> / ${mb(st.limitBytes)} (<b class="${st.pct >= 90 ? 'owe' : ''}">${st.pct}%</b>) · ${st.imageCount} ảnh · dữ liệu JSON ~${(st.dbBytes / 1024).toFixed(0)} KB</p>
+    <p class="muted small">Chỉ dọn khách <b>đã trả phòng từ ${dmy(st.cutoff)} trở về trước</b>. Khách đang thuê không bao giờ bị xóa. Sẽ xóa: ảnh CCCD, họ tên, ngày sinh, SĐT, CCCD, địa chỉ, người ở cùng. Giữ lại số tiền hóa đơn/thanh toán để báo cáo doanh thu không sai (tên hiện là "(Đã xóa hồ sơ)"). Không thể hoàn tác.</p>
+    ${ok.length ? html`<div class="list">${ok.map((e) => html`<div class="li"><span><b>${e.name}</b> · ${e.room} · trả phòng ${dmy(e.lastEnd)}</span><span class="muted small">${mb(e.bytes)}</span></div>`)}</div>
+      <button class="btn danger" style="margin-top:10px" data-act="cleanup-run">🗑 XÓA DỮ LIỆU ${ok.length} KHÁCH CŨ (giải phóng ${mb(ok.reduce((s, e) => s + e.bytes, 0))})</button>` : html`<div class="empty-state">Chưa có hồ sơ nào đủ điều kiện xóa.</div>`}
+    ${hold.length ? html`<p class="muted small" style="margin-top:10px">Đang giữ lại vì chưa đủ điều kiện: ${hold.map((e) => `${e.name} (${e.blocked})`).join('; ')}.</p>` : ''}</section>`;
+}
+acts['cleanup-run'] = async (el) => {
+  const st = S.snap.system.storage; const n = st.eligible.filter((e) => !e.blocked).length;
+  if (!confirm(`Xóa vĩnh viễn dữ liệu cá nhân và ảnh CCCD của ${n} khách đã trả phòng quá 2 năm?\n\nHệ thống sẽ tải về một bản sao lưu trước khi xóa. Không thể hoàn tác.`)) return;
+  const res = await api('GET', 'backup/export', undefined, { raw: true }); if (!res.ok) throw new Error('Không tải được bản sao lưu nên chưa xóa gì.');
+  download(`truoc-khi-don-${today()}.json`, await res.text());
+  el.disabled = true;
+  try { const j = await save('POST', 'cleanup', { confirm: 'XOA' }, null); toast(`Đã xóa ${j.purged} hồ sơ, ${j.imagesDeleted} ảnh${j.imagesFailed ? ` (${j.imagesFailed} ảnh chưa xóa được, thử lại sau)` : ''}`); rerender(); } finally { el.disabled = false; }
 };

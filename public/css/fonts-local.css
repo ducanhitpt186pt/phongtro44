@@ -1,0 +1,5 @@
+/* Bỏ dấu comment bên dưới khi đã thả file font SVN-Avo vào public/fonts/ (xem fonts/HUONG-DAN-FONT.txt)
+@font-face { font-family: "SVN-Avo"; font-weight: 400; font-display: swap; src: url("/fonts/SVN-Avo-Regular.woff2") format("woff2"); }
+@font-face { font-family: "SVN-Avo"; font-weight: 600; font-display: swap; src: url("/fonts/SVN-Avo-Medium.woff2") format("woff2"); }
+@font-face { font-family: "SVN-Avo"; font-weight: 700; font-display: swap; src: url("/fonts/SVN-Avo-Bold.woff2") format("woff2"); }
+*/

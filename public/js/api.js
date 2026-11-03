@@ -1,5 +1,5 @@
 import { toast } from './util.js';
-export const S = { loggedIn: false, csrf: null, snap: null, pub: null };
+export const S = { loggedIn: false, csrf: null, snap: null, pub: null, sysError: null };
 let onUnauth = () => {};
 export const setUnauthHandler = (f) => (onUnauth = f);
 export async function api(method, path, body, { raw = false, headers = {}, signal } = {}) {
@@ -12,6 +12,8 @@ export async function api(method, path, body, { raw = false, headers = {}, signa
   if (raw) return res;
   let j = null; try { j = await res.json(); } catch { /* không phải JSON */ }
   if (res.status === 401 && path !== 'auth/login') { S.loggedIn = false; onUnauth(); throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'); }
+  if (!res.ok && j && /^(GITHUB|CONFIG|BLOB|REDIS|CONFLICT)/.test(j.code || '')) { S.sysError = j.error; window.dispatchEvent(new Event('sysstatus')); }
+  else if (res.ok && method !== 'GET' && S.sysError) { S.sysError = null; window.dispatchEvent(new Event('sysstatus')); }
   if (!res.ok || !j || j.ok === false) throw new Error(j?.error || `Lỗi máy chủ (${res.status}). Dữ liệu có thể chưa được lưu.`);
   if (j.db && j.derived) S.snap = j;
   return j;

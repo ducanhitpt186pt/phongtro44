@@ -6,5 +6,5 @@
   "description": "Quản lý Nhà trọ 44 Lê Văn Phấn",
   "engines": { "node": ">=20" },
   "scripts": { "test": "node tests/run-tests.js" },
-  "dependencies": { "@vercel/blob": "^2.3.0" }
+  "dependencies": { "@vercel/blob": "^2.6.1" }
 }

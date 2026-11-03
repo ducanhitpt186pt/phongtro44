@@ -1,0 +1,7 @@
+FONT SVN-AVO (tùy chọn)
+Website mặc định dùng font Inter (giống font hệ thống của iPhone, đủ dấu tiếng Việt).
+SVN-Avo là font có bản quyền riêng nên KHÔNG đi kèm sẵn. Nếu bạn có file font hợp lệ:
+1. Đổi tên thành SVN-Avo-Regular.woff2, SVN-Avo-Medium.woff2 (tùy chọn), SVN-Avo-Bold.woff2 và thả vào thư mục public/fonts/ trên GitHub.
+2. Mở file public/css/fonts-local.css, xóa dấu /* và */ bao quanh khối @font-face.
+3. Commit -> Vercel tự cập nhật. Web sẽ tự ưu tiên SVN-Avo, thiếu ký tự thì dùng Inter.
+(Cần chuyển file .ttf/.otf sang .woff2 bằng công cụ như cloudconvert.com hoặc transfonter.org.)

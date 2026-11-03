@@ -3,6 +3,8 @@ import { addMonthsClamp, periodIndexOf, periodStart, todayVN } from '../lib/date
 import { emptyDb, validateDb } from '../lib/schema.js';
 import * as B from '../lib/billing.js';
 import { buildReminders, publicReminders } from '../lib/reminders.js';
+import { purgeOld, storageInfo } from '../lib/cleanup.js';
+import { buildSystem } from '../lib/health.js';
 
 let pass = 0, fail = 0;
 const t = (name, fn) => { try { fn(); pass++; console.log('  ✓', name); } catch (e) { fail++; console.log('  ✗', name, '\n   ', e.message); } };
@@ -171,5 +173,40 @@ t('API công khai KHÔNG chứa thông tin khách', () => {
   for (const secret of ['Nguyễn Văn A', '0901234567', '001090000001', 'Hà Nội', '1990-05-20', 'Cục CS', 'tenantId', 'tenantName', 'rentalId']) assert.ok(!s.includes(secret), 'Lộ: ' + secret);
 });
 t('kiểm tra toàn vẹn dữ liệu bắt lỗi', () => { const db = emptyDb(); db.rooms[0].status = 'xxx'; throwsCode(() => validateDb(db), 'INVALID_DB'); });
+console.log('DỌN DỮ LIỆU CŨ');
+t('chỉ dọn khách trả phòng ≥ 2 năm; khách đang thuê (dù vào >2 năm) và khách mới trả KHÔNG bị đụng; giữ số liệu tiền', () => {
+  const db = emptyDb('2023-01-01'); const mk = (room, start) => B.moveIn(db, { roomId: room, startDate: start, rent: 1000000, elecPrice: 1, waterPrice: 1, initElec: 0, initWater: 0, tenant: { ...person, fullName: 'Khách ' + room }, occupants: [{ fullName: 'Con ' + room, dob: '2015-01-01', gender: 'male' }] }, start);
+  const old = mk('room-1', '2023-01-10'); B.addPayment(db, { invoiceId: old.invoice.id, amount: 1000000 }, '2023-01-10'); const co = B.confirmCheckout(db, { rentalId: old.rental.id, date: '2023-01-20', elecFinal: 0, waterFinal: 0 }, '2023-01-20');
+  const longStay = mk('room-2', '2023-01-10'); B.addPayment(db, { invoiceId: longStay.invoice.id, amount: 1000000 }, '2023-01-10');
+  db.tenants.find((x) => x.id === old.tenant.id).idImages.front = { id: 'i1', pathname: 'cccd/a/front.jpg', size: 1500000 };
+  const today = '2026-11-02';
+  let info = storageInfo(db, today); const e = info.eligible.find((x) => x.tenantId === old.tenant.id);
+  assert.equal(info.eligible.length, 1); assert.equal(e.blocked, 'Chưa xác nhận hoàn tiền cho khách'); assert.equal(purgeOld(db, today).count, 0); // còn nợ hoàn tiền => giữ
+  B.markRefunded(db, co.record.id, '2023-01-21', '2023-01-21');
+  const r = purgeOld(db, today); assert.equal(r.count, 1); assert.deepEqual(r.paths, ['cccd/a/front.jpg']);
+  const t = db.tenants.find((x) => x.id === old.tenant.id); assert.equal(t.cccd, ''); assert.equal(t.phone, ''); assert.equal(t.fullName, '(Đã xóa hồ sơ)');
+  assert.equal(db.occupants.filter((o) => o.tenantId === old.tenant.id).length, 0); assert.equal(db.occupants.length, 1);
+  assert.ok(!JSON.stringify(db.activityLogs).includes('Khách room-1')); assert.ok(db.invoices.some((i) => i.total !== undefined && i.tenantName === '(Đã xóa hồ sơ)'));
+  assert.equal(db.tenants.find((x) => x.id === longStay.tenant.id).cccd, person.cccd); assert.equal(db.rentals.find((x) => x.id === longStay.rental.id).status, 'active');
+  validateDb(db); assert.equal(purgeOld(db, today).count, 0); // chạy lại không làm gì
+});
+t('khách trả phòng mới 1 năm trước chưa bị dọn; cảnh báo dung lượng tính đúng %', () => {
+  const db = emptyDb('2025-01-01'); const m = B.moveIn(db, { roomId: 'room-1', startDate: '2025-11-01', rent: 1000000, elecPrice: 1, waterPrice: 1, initElec: 0, initWater: 0, tenant: person }, '2025-11-01');
+  B.addPayment(db, { invoiceId: m.invoice.id, amount: 1000000 }, '2025-11-01'); B.confirmCheckout(db, { rentalId: m.rental.id, date: '2025-11-01', elecFinal: 0, waterFinal: 0 }, '2025-11-01');
+  db.tenants[0].idImages.front = { id: 'a', pathname: 'p', size: 950 * 1048576 / 1.9 };
+  const i = storageInfo(db, '2026-11-02', 1024); assert.equal(i.eligible.length, 0); assert.ok(i.pct > 48 && i.pct < 49);
+  assert.ok(storageInfo(db, '2026-11-02', 500).pct >= 90);
+});
+
+console.log('DÒNG TRẠNG THÁI');
+t('bình thường: chỉ có % lưu trữ, không cảnh báo; token sắp hết/hết hạn thì có cảnh báo', () => {
+  process.env.BLOB_READ_WRITE_TOKEN = 'x'; const st = { pct: 12.3, usedBytes: 126 * 1048576, limitBytes: 1024 * 1048576 };
+  assert.equal(buildSystem({ today: '2026-11-02', tokenExpires: null, storage: st }).alerts.length, 0);
+  assert.equal(buildSystem({ today: '2026-11-02', tokenExpires: '2027-11-01', storage: st }).alerts.length, 0);
+  const a = buildSystem({ today: '2026-11-02', tokenExpires: '2026-11-20', storage: st }).alerts; assert.equal(a.length, 1); assert.equal(a[0].level, 'orange'); assert.match(a[0].text, /còn 18 ngày/);
+  const b = buildSystem({ today: '2026-11-02', tokenExpires: '2026-11-01', storage: st }).alerts; assert.equal(b[0].level, 'red'); assert.match(b[0].text, /đã hết hạn/);
+  delete process.env.BLOB_READ_WRITE_TOKEN; assert.match(buildSystem({ today: '2026-11-02', tokenExpires: null, storage: st }).alerts[0].text, /Vercel Blob/);
+});
+
 console.log(`\nKết quả: ${pass} đạt, ${fail} lỗi`);
 process.exit(fail ? 1 : 0);

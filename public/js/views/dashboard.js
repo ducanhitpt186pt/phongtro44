@@ -1,5 +1,5 @@
 import { html, vnd, dmy, ROOM_STATUS, INV_STATUS, INV_COLOR } from '../util.js';
-import { D, DV, activeRental, latestInvOf, tenant, invD } from '../api.js';
+import { D, DV, S, today, activeRental, latestInvOf, tenant, invD } from '../api.js';
 import { noticeCard } from './public.js';
 
 export function roomMoney(roomId) {
