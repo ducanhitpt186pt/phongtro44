@@ -23,4 +23,9 @@ await t('API công khai không lộ thông tin khách; có dòng trạng thái l
   const pub = await call('GET', '/api/public/reminders', undefined, false); const s = JSON.stringify(pub.body); for (const x of ['Trần Thị B', '0912345678', '001195000002', 'Lê Văn Phấn']) assert.ok(!s.includes(x)); assert.equal(typeof pub.body.system.storagePct, 'number'); assert.equal(pub.body.system.alerts.length, 0);
 });
 await t('sao lưu/khôi phục có xác nhận và tạo bản an toàn', async () => { const ex = await call('GET', '/api/backup/export'); assert.equal((await call('POST', '/api/backup/restore', { db: ex.body })).status, 400); const ok = await call('POST', '/api/backup/restore', { db: ex.body, confirm: 'GHI DE' }); assert.equal(ok.status, 200); assert.ok([...fakeStore.files.keys()].some((k) => k.startsWith('backups/truoc-khi-khoi-phuc'))); });
+await t('đi qua rewrite /api/index?path=… vẫn đúng; /api/health tự kiểm tra, không lộ bí mật', async () => {
+  const a = await call('GET', '/api/index?path=public/reminders', undefined, false); assert.equal(a.status, 200); assert.ok(a.body.items);
+  const h = await call('GET', '/api/health', undefined, false); assert.equal(h.status, 200); assert.equal(h.body.kiemTraDocDuLieu, 'ok'); assert.equal(h.body.daDatMatKhau, true); const s = JSON.stringify(h.body); assert.ok(!s.includes('mat-khau-test') && !s.includes('xxxxxxxx'));
+  const b = await call('POST', '/api/index?path=auth/login', { password: 'sai' }, false); assert.equal(b.status, 401);
+});
 server.close(); console.log(`\nTích hợp Blob: ${pass} đạt`); process.exit(process.exitCode || 0);

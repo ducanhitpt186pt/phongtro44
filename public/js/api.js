@@ -14,7 +14,7 @@ export async function api(method, path, body, { raw = false, headers = {}, signa
   if (res.status === 401 && path !== 'auth/login') { S.loggedIn = false; onUnauth(); throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'); }
   if (!res.ok && j && /^(GITHUB|CONFIG|BLOB|REDIS|CONFLICT)/.test(j.code || '')) { S.sysError = j.error; window.dispatchEvent(new Event('sysstatus')); }
   else if (res.ok && method !== 'GET' && S.sysError) { S.sysError = null; window.dispatchEvent(new Event('sysstatus')); }
-  if (!res.ok || !j || j.ok === false) throw new Error(j?.error || `Lỗi máy chủ (${res.status}). Dữ liệu có thể chưa được lưu.`);
+  if (!res.ok || !j || j.ok === false) throw new Error(j?.error || (res.status === 404 ? 'Không tìm thấy phần máy chủ (/api). Kiểm tra trên GitHub có thư mục api (file index.js) và vercel.json, rồi Redeploy. Mở /api/health để tự kiểm tra.' : `Lỗi máy chủ (${res.status}). Dữ liệu có thể chưa được lưu.`));
   if (j.db && j.derived) S.snap = j;
   return j;
 }

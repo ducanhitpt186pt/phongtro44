@@ -80,9 +80,16 @@ Xem `public/fonts/HUONG-DAN-FONT.txt`. Mặc định dùng font Inter (giống f
 ## Phụ lục (tùy chọn): lưu dữ liệu ở GitHub hoặc Blob thay vì Upstash
 Đặt biến `DB_DRIVER` = `github` (kèm `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_BRANCH`) hoặc `blob`. Không khuyến nghị: GitHub token có thể hết hạn.
 
+## Tự kiểm tra bằng trang /api/health
+Mở `https://<địa-chỉ-web-của-bạn>/api/health`. Trang này chỉ hiện đúng/sai, không lộ mật khẩu:
+- Thấy chữ JSON (`"api":"đang chạy"`) = phần máy chủ đã chạy. Nếu báo 404 = Vercel chưa nhận thư mục `api` (kiểm tra GitHub có `api/index.js` và `vercel.json`, rồi Redeploy).
+- `daKetNoiNoiLuuDuLieu: true` và `kiemTraDocDuLieu: "ok"` = Upstash đã nối và đọc được.
+- `daDatMatKhau`, `daDatSessionSecret`, `daKetNoiKhoAnh` đều phải là `true`.
+
 ## Khi gặp lỗi
 | Thấy gì | Cách xử lý |
 |---|---|
+| Dòng đỏ "Lỗi máy chủ (404)" / "Không tìm thấy phần máy chủ" | Thiếu thư mục `api` hoặc `vercel.json` trên GitHub: upload lại, Redeploy, rồi mở `/api/health` |
 | Web báo 404 | `index.html` không nằm trong `public/` – làm lại Bước 2 |
 | Dòng đỏ "Chưa kết nối nơi lưu dữ liệu" | Làm Bước 4 rồi **Redeploy** |
 | "Upstash từ chối truy cập" | Vercel → Storage → kiểm tra database còn nối với dự án; Redeploy |
