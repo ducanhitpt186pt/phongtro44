@@ -1,5 +1,6 @@
 import { html, raw, vnd, dmy, monthLabel, weekday, esc, $, toast } from '../util.js';
-import { S, api } from '../api.js';
+import { S, api, diagnose } from '../api.js';
+import { APP_VERSION } from '../version.js';
 import { lunarText } from '../lunar.js';
 import { acts, forms, go } from '../ui.js';
 import { stripHtml } from './strip.js';
@@ -22,7 +23,7 @@ export function dateBlock(today) { return html`<div class="pub-date">${weekday(t
 
 export async function publicView(app) {
   app.innerHTML = html`<main class="wrap narrow"><header class="pub-head"><h1>NHÀ TRỌ 44 LÊ VĂN PHẤN<span class="credit">ducanhitpt186</span></h1><div id="strip"></div><div id="pubdate"></div></header><div id="pubbody"><p class="boot">Đang tải thông báo…</p></div>
-    <div class="pub-foot"><a class="btn primary block" href="#/login">ĐĂNG NHẬP QUẢN LÝ</a><div class="upd" id="upd"></div></div></main>`.s;
+    <div class="pub-foot"><a class="btn primary block" href="#/login">ĐĂNG NHẬP QUẢN LÝ</a><div class="upd" id="upd"></div><div class="upd">Phiên bản giao diện: ${APP_VERSION}</div></div></main>`.s;
   await loadPublic();
 }
 const CACHE = 'nt44_pub_v1'; // chỉ lưu dữ liệu thông báo ĐÃ LỌC (không có thông tin khách) để mở trang là hiện ngay / xem được khi mất mạng
@@ -51,7 +52,10 @@ export async function loadPublic() {
   } catch (e) {
     const sp = $('#strip'); if (sp) sp.innerHTML = stripHtml({ alerts: [{ level: 'red', text: e.message }] }).s;
     if (cached) paint(cached.res, `Không kết nối được máy chủ – đang hiển thị bản lưu trên máy lúc ${new Date(cached.at).toLocaleString('vi-VN')}`);
-    else body.innerHTML = html`<div class="err-box"><b>Chưa tải được thông báo.</b><br>${e.message}<br><button class="btn sm" data-act="reload-public" style="margin-top:8px">Thử lại</button></div>`.s;
+    else {
+      body.innerHTML = html`<div class="err-box"><b>Chưa tải được thông báo.</b><br>${e.message}<div id="diag" class="small" style="margin-top:8px"></div><button class="btn sm" data-act="reload-public" style="margin-top:8px">Thử lại</button></div>`.s;
+      diagnose().then((l) => { const d = $('#diag'); if (d) d.innerHTML = html`<b>Tự kiểm tra:</b><br>${l.map((x) => html`${x}<br>`)}`.s; });
+    }
     if (cached) { const sp2 = $('#strip'); if (sp2) sp2.innerHTML = stripHtml({ ...cached.res.system, alerts: [...(cached.res.system?.alerts || []), { level: 'red', text: e.message }] }).s; }
   }
 }

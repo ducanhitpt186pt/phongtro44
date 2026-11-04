@@ -1,5 +1,5 @@
 import { html, vnd, dmy, field, toast, download, $, monthLabel, openModal } from '../util.js';
-import { api, D, S, save, today } from '../api.js';
+import { api, apiUrl, D, S, save, today } from '../api.js';
 
 import { acts, forms, rerender } from '../ui.js';
 
@@ -36,7 +36,7 @@ export function backupView() {
   const logs = D().activityLogs.slice(-40).reverse();
   return html`<div class="page-head"><h2>Sao lưu & khôi phục</h2></div>
     <section class="card"><h3>Sao lưu dữ liệu</h3><p class="muted">Tải toàn bộ dữ liệu (không gồm ảnh CCCD) về máy. Nên làm mỗi tháng và cất ở nơi khác (Google Drive, email…). Hệ thống cũng tự lưu bản sao mỗi tháng trong kho dữ liệu riêng tư trên GitHub.</p>
-      <a class="btn primary" href="/api/backup/export" download>⬇ Tải database.json</a></section>
+      <a class="btn primary" href="${apiUrl('backup/export')}" download>⬇ Tải database.json</a></section>
     <section class="card" style="margin-top:12px"><h3>Khôi phục từ file JSON</h3><p class="warn-box">⚠ Khôi phục sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Hệ thống tự lưu một bản an toàn của dữ liệu hiện tại trước khi ghi đè.</p>
       <form data-form="restore"><input type="file" name="file" accept="application/json,.json" required style="margin-bottom:12px"><div id="rsum" class="calc" hidden></div>${field('Gõ chính xác: GHI DE để xác nhận', html`<input name="confirm" autocomplete="off" placeholder="GHI DE">`)}<div class="err-inline"></div><button class="btn danger" type="submit">KIỂM TRA & KHÔI PHỤC</button></form></section>
     ${cleanupCard()}

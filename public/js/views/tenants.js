@@ -1,5 +1,5 @@
 import { html, raw, vnd, dmy, field, openModal, closeModal, toast, $, GENDER, INV_STATUS, INV_COLOR } from '../util.js';
-import { D, DV, save, api, room, tenant, invD, latestInvOf } from '../api.js';
+import { D, DV, save, api, apiUrl, room, tenant, invD, latestInvOf } from '../api.js';
 import { acts, forms, live, rerender, go } from '../ui.js';
 import { idBox, resetImages, getBlob, uploadImage } from '../images.js';
 import { personFields, collectPerson, collectOccupants } from './room.js';
@@ -29,7 +29,7 @@ export function tenantView(id) {
   const pays = D().payments.filter((p) => chainIds.has(p.chainId)).slice().reverse();
   const img = (side, label) => { const m = t.idImages?.[side]; return html`<div class="card"><b>CCCD ${label}</b>
     <div class="idprev" id="show-${side}" style="margin:8px 0">${m ? html`<button class="btn" data-act="show-id" data-side="${side}" data-id="${m.id}">Xem ảnh</button>` : html`<span>Chưa có ảnh</span>`}</div>
-    <div class="row">${m ? html`<a class="btn sm" href="/api/storage/${m.id}?download=1" download>⬇ Tải về</a>` : ''}<button class="btn sm" data-act="id-replace" data-side="${side}" data-tid="${id}">${m ? 'Thay ảnh' : 'Thêm ảnh'}</button>${m ? html`<button class="btn sm danger" data-act="id-delete" data-id="${m.id}">Xóa ảnh</button>` : ''}</div>${m ? html`<div class="muted small" style="margin-top:6px">Tải lên ${dmy(m.uploadedAt.slice(0, 10))}</div>` : ''}</div>`; };
+    <div class="row">${m ? html`<a class="btn sm" href="${apiUrl(`storage/${m.id}?download=1`)}" download>⬇ Tải về</a>` : ''}<button class="btn sm" data-act="id-replace" data-side="${side}" data-tid="${id}">${m ? 'Thay ảnh' : 'Thêm ảnh'}</button>${m ? html`<button class="btn sm danger" data-act="id-delete" data-id="${m.id}">Xóa ảnh</button>` : ''}</div>${m ? html`<div class="muted small" style="margin-top:6px">Tải lên ${dmy(m.uploadedAt.slice(0, 10))}</div>` : ''}</div>`; };
   return html`<a class="back" href="#/tenants">← Khách thuê</a>
     <div class="page-head"><h2>${t.fullName}</h2>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`}${t.purgedAt ? html`<span class="badge">Hồ sơ đã xóa ${dmy(t.purgedAt)}</span>` : html`<button class="btn sm" data-act="edit-tenant" data-id="${id}">Sửa thông tin</button>`}</div>
     <section class="card"><dl class="kv"><dt>Ngày sinh</dt><dd>${dmy(t.dob)}</dd><dt>Giới tính</dt><dd>${GENDER[t.gender]}</dd><dt>Điện thoại</dt><dd>${t.phone}</dd><dt>Số CCCD</dt><dd>${t.cccd}</dd><dt>Ngày cấp / Nơi cấp</dt><dd>${dmy(t.cccdIssueDate)} · ${t.cccdIssuePlace}</dd><dt>Địa chỉ thường trú</dt><dd>${t.address}</dd><dt>Công nợ hiện tại</dt><dd class="${s.debt ? 'owe' : 'okc'}">${vnd(s.debt)}</dd></dl></section>
@@ -39,7 +39,7 @@ export function tenantView(id) {
     <h2 class="sec">Hóa đơn</h2><div class="list">${D().invoices.filter((i) => chainIds.has(i.chainId)).slice().reverse().map((i) => { const x = invD(i.id); return html`<div class="li click" data-act="open-invoice" data-id="${i.id}" style="cursor:pointer"><span><b>${i.code}</b> · ${i.roomName} · ${dmy(i.dueDate)}</span><span>${vnd(i.total)} <span class="badge ${INV_COLOR[x.status]}">${INV_STATUS[x.status]}</span></span></div>`; })}</div>
     <h2 class="sec">Lịch sử thanh toán</h2><div class="list">${pays.length ? pays.map((p) => html`<div class="li"><span>${dmy(p.date)} · <b>${vnd(p.amount)}</b> ${p.voided ? html`<span class="badge red">Đã hủy: ${p.voidReason}</span>` : ''}</span><span class="muted small">${p.note}</span></div>`) : html`<div class="empty-state">Chưa có giao dịch.</div>`}</div>`;
 }
-acts['show-id'] = (el) => { $(`#show-${el.dataset.side}`).innerHTML = html`<img alt="CCCD" src="/api/storage/${el.dataset.id}?t=${Date.now()}">`.s; };
+acts['show-id'] = (el) => { $(`#show-${el.dataset.side}`).innerHTML = html`<img alt="CCCD" src="${apiUrl(`storage/${el.dataset.id}?t=${Date.now()}`)}">`.s; };
 acts['id-replace'] = (el) => { resetImages(); const side = el.dataset.side; openModal(`Ảnh CCCD ${side === 'front' ? 'mặt trước' : 'mặt sau'}`, html`<form data-form="id-upload" data-tid="${el.dataset.tid}" data-side="${side}">${idBox(side)}<div class="err-inline"></div><button class="btn primary block" type="submit">LƯU ẢNH</button></form>`); };
 forms['id-upload'] = async (f) => { const side = f.dataset.side; if (!getBlob(side)) throw new Error('Chưa có ảnh. Hãy chụp hoặc chọn ảnh.'); try { await uploadImage(f.dataset.tid, side); } catch (e) { toast(e.message, 'err'); throw e; } resetImages(); closeModal(); toast('Đã lưu ảnh (ảnh cũ đã được xóa khỏi kho)'); rerender(); };
 acts['id-delete'] = async (el) => { if (!confirm('Xóa ảnh CCCD này khỏi kho lưu trữ? Không thể hoàn tác.')) return; await save('DELETE', `storage/${el.dataset.id}`, undefined, 'Đã xóa ảnh'); rerender(); };

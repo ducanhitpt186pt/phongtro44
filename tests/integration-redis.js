@@ -10,11 +10,11 @@ globalThis.fetch = async (u, o = {}) => {
   if (o.headers.Authorization !== 'Bearer tok') return R(401, { error: 'unauthorized' });
   const a = JSON.parse(o.body); cmds++;
   if (a[0] === 'EVAL') {
-    const [, script, , k1, k2, ...argv] = a;
-    if (script.includes("return {redis.call('GET'")) return R(200, { result: [kv.get(k1) ?? null, kv.get(k2) ?? null] });
+    const [, script, , k1, k2, k3, ...argv] = a; const bump = (n) => { const c = Number(kv.get(k3) || 0) + n; kv.set(k3, String(c)); return c; };
+    if (script.includes("return {redis.call('GET'")) { const c = bump(3); return R(200, { result: [kv.get(k1) ?? null, kv.get(k2) ?? null, c] }); }
     if (failEval > 0) { failEval--; return R(500, { error: 'boom' }); }
     if (beforeEval) { const f = beforeEval; beforeEval = null; f(); }
-    const cur = kv.get(k1); if ((cur === undefined && argv[0] === '') || cur === argv[0]) { kv.set(k2, argv[1]); kv.set(k1, argv[2]); return R(200, { result: 1 }); } return R(200, { result: 0 });
+    const c = bump(4); const cur = kv.get(k1); if ((cur === undefined && argv[0] === '') || cur === argv[0]) { kv.set(k2, argv[1]); kv.set(k1, argv[2]); return R(200, { result: [1, c] }); } return R(200, { result: [0, c] });
   }
   if (a[0] === 'SET') { if (a.includes('NX') && kv.has(a[1])) return R(200, { result: null }); kv.set(a[1], a[2]); if (a.includes('EX')) ttl.set(a[1], a[a.indexOf('EX') + 1]); return R(200, { result: 'OK' }); }
   return R(200, { error: 'ERR unknown' });
@@ -42,5 +42,10 @@ await t('API công khai: không lộ thông tin khách, có % lưu trữ, không
   const pub = await call('GET', '/api/public/reminders', undefined, false); const s = JSON.stringify(pub.body); for (const x of ['Trần Thị B', '0912345678', '001195000002', 'Lê Văn Phấn']) assert.ok(!s.includes(x)); assert.equal(pub.body.system.alerts.length, 0);
 });
 await t('mỗi lần ĐỌC tốn 1 lệnh, mỗi lần GHI tốn ~2 lệnh (tiết kiệm hạn mức 500.000 lệnh/tháng)', async () => { cmds = 0; await call('GET', '/api/data'); assert.equal(cmds, 1); cmds = 0; await call('POST', '/api/rooms', { name: 'Đếm lệnh' }); assert.ok(cmds <= 3, 'tốn ' + cmds); });
+await t('hiển thị hạn mức Upstash: số lệnh/% và dung lượng dữ liệu; cảnh báo khi gần đầy', async () => {
+  const pub = await call('GET', '/api/public/reminders', undefined, false); const u = pub.body.system.upstash; assert.ok(u && u.commands > 0 && u.commandLimit === 500000 && typeof u.commandPct === 'number' && u.dbKb > 0 && u.dbLimitMb === 256);
+  const k = [...kv.keys()].find((x) => x.startsWith('nt44:cmd:')); kv.set(k, '480000'); await call('GET', '/api/data'); const p2 = await call('GET', '/api/index?path=public/reminders', undefined, false); await new Promise((r) => setTimeout(r, 0));
+  const d = await call('GET', '/api/data'); assert.ok(d.body.system.alerts.some((x) => x.level === 'red' && /Upstash/.test(x.text)), 'phải cảnh báo đỏ khi ≥95%');
+});
 await t('sao lưu/khôi phục + bản an toàn', async () => { const ex = await call('GET', '/api/backup/export'); const ok = await call('POST', '/api/backup/restore', { db: ex.body, confirm: 'GHI DE' }); assert.equal(ok.status, 200); assert.ok([...kv.keys()].some((k) => k.startsWith('nt44:x:backups/truoc-khi-khoi-phuc'))); });
 server.close(); console.log(`\nTích hợp Redis: ${pass} đạt`); process.exit(process.exitCode || 0);

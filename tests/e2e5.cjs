@@ -12,7 +12,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const d1 = await api('data'); ok(d1.db.invoices.find((i) => i.roomName === 'Phòng 1').rent === 1200000 && d1.db.priceHistories.some((p) => p.old && p.old.rent === 1200000), 'hóa đơn kỳ hiện tại giữ giá cũ; lịch sử giá có giá cũ/mới');
   // 2. Trả phòng Phòng 1 (đã đóng đủ 1.200.000; ở 14 ngày → hoàn 640.000)
   await pg.click('button:has-text("Trả phòng")'); await pg.fill('form[data-form=checkout] [name=elecFinal]', '100'); await pg.fill('[name=waterFinal]', '10'); await pg.click('button:has-text("XEM TÍNH TOÁN")'); await pg.waitForSelector('text=Xác nhận quyết toán');
-  const q = await pg.innerText('.dialog'); ok(q.includes('14 ngày') && q.includes('560.000') && q.includes('640.000'), 'quyết toán: 14 ngày × 40.000 = 560.000, hoàn 640.000');
+  const q = await pg.innerText('.dialog'); const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10); const days = Math.round((Date.parse(today) - Date.parse('2026-10-20')) / 864e5); const fm = (n) => n.toLocaleString('vi-VN'); ok(q.includes(days + ' ngày') && q.includes(fm(40000 * days)) && q.includes(fm(1200000 - 40000 * days)), `quyết toán: ${days} ngày × 40.000 = ${fm(40000 * days)}, hoàn ${fm(1200000 - 40000 * days)}`);
   await pg.screenshot({ path: '/tmp/shots/40-checkout.png' });
   await pg.click('button:has-text("XÁC NHẬN QUYẾT TOÁN")'); await pg.waitForSelector('text=SỐ TIỀN CHỦ NHÀ HOÀN LẠI KHÁCH'); ok(true, 'hóa đơn quyết toán hiển thị số tiền hoàn');
   ok((await api('data')).db.rooms.find((r) => r.id === 'room-1').status === 'empty', 'phòng chuyển sang Trống');

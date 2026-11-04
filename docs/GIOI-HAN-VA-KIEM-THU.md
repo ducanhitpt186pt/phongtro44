@@ -7,6 +7,7 @@
 4. **Nợ của khách đã trả phòng** vẫn hiện ở thông báo cho tới khi thu đủ (để không bỏ sót nợ).
 
 ## Giới hạn kỹ thuật
+- **Số liệu hạn mức Upstash hiển thị là ƯỚC TÍNH** theo bộ đếm của chính ứng dụng (mỗi lần đọc +3, mỗi lần ghi +4, cộng theo tháng giờ Việt Nam), không phải số liệu chính thức của Upstash; số chính xác xem ở bảng điều khiển Upstash. Dung lượng dữ liệu tính theo kích thước dữ liệu nén đã lưu. Cảnh báo cam từ 80%, đỏ từ 95%.
 - **Nơi lưu dữ liệu: Upstash Redis gói miễn phí** (256 MB, 500.000 lệnh/tháng, 10 GB băng thông; theo trang giá của Upstash khi tôi tra cứu, không cần thẻ). Mỗi lần đọc tốn 1 lệnh, mỗi lần ghi ~2 lệnh; trang thông báo công khai được đệm ~20 giây nên 1 người mở liên tục cũng chỉ ~90.000 lệnh/tháng. Dung lượng dữ liệu thực tế chỉ vài trăm KB (đã nén gzip). Nếu chạm hạn mức, Upstash **chặn** chứ không tự tính tiền (trừ khi bạn tự thêm thẻ); web sẽ báo lỗi rõ và không lưu dở.
 - **Chưa kiểm chứng với Upstash thật:** logic "so sánh rồi ghi" dùng một lệnh EVAL (Lua) ngắn; tôi chỉ chạy được với bản giả lập mô phỏng đúng ngữ nghĩa, chưa chạy script Lua trên Upstash thật. Nếu Upstash trả lỗi lạ ở lần lưu đầu tiên, báo tôi kèm nội dung lỗi.
 - **Upstash có thể tạm lưu trữ/ngưng cơ sở dữ liệu miễn phí không hoạt động lâu** (chính sách có thể thay đổi). Nhà trọ dùng hằng ngày nên khó xảy ra, nhưng vẫn phải tải bản sao lưu về hằng tháng.
