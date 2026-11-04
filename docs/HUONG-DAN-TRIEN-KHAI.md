@@ -80,6 +80,9 @@ Xem `public/fonts/HUONG-DAN-FONT.txt`. Mặc định dùng font Inter (giống f
 ## Phụ lục (tùy chọn): lưu dữ liệu ở GitHub hoặc Blob thay vì Upstash
 Đặt biến `DB_DRIVER` = `github` (kèm `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_BRANCH`) hoặc `blob`. Không khuyến nghị: GitHub token có thể hết hạn.
 
+## Tự kiểm tra bằng trang /kiemtra.html
+Mở `https://<địa-chỉ-web>/kiemtra.html`: trang này tự kiểm tra từng mắt xích (giao diện, máy chủ Vercel, mật khẩu, Upstash, kho ảnh) và nói bạn sai ở đâu.
+
 ## Tự kiểm tra bằng trang /api/health
 Mở `https://<địa-chỉ-web-của-bạn>/api/health`. Trang này chỉ hiện đúng/sai, không lộ mật khẩu:
 - Thấy chữ JSON (`"api":"đang chạy"`) = phần máy chủ đã chạy. Nếu báo 404 = Vercel chưa nhận thư mục `api` (kiểm tra GitHub có `api/index.js` và `vercel.json`, rồi Redeploy).
