@@ -4,6 +4,10 @@ import { APP_VERSION } from '../version.js';
 import { lunarText } from '../lunar.js';
 import { acts, forms, go } from '../ui.js';
 import { stripHtml } from './strip.js';
+import { usagePanel } from './usage.js';
+import { calendarPanel, eventBanner } from './calendar.js';
+import { icon, ROOM_ICON, ROOM_TONE } from '../icons.js';
+import { ROOM_STATUS } from '../util.js';
 
 const LEVEL = { red: 'red', orange: 'orange', blue: 'blue', green: 'green' };
 export function noticeCard(it, { link = false, tenantName = '' } = {}) {
@@ -19,18 +23,25 @@ export function noticeCard(it, { link = false, tenantName = '' } = {}) {
     ${it.also?.length ? html`<div class="also">Đồng thời: ${it.also.join('; ')}</div>` : ''}</article>`;
 }
 
+function rosterCard(r) {
+  const tone = ROOM_TONE[r.status];
+  const sub = { empty: 'Phòng trống – sẵn sàng cho thuê', repair: 'Đang sửa chữa', notready: 'Chưa sẵn sàng' }[r.status];
+  return html`<article class="card room-card st-${tone}"><div class="rhead"><span class="rbadge ${tone}">${raw(icon(ROOM_ICON[r.status], '1.6em'))}</span><div class="sp"><h3>${r.roomName}</h3><span class="badge ${tone}">${ROOM_STATUS[r.status]}</span></div></div>
+    ${r.startDate ? html`<dl class="kv"><dt>Ngày vào</dt><dd>${dmy(r.startDate)}</dd>${r.tenantName !== undefined ? html`<dt>Khách</dt><dd class="big">${r.tenantName}</dd>` : ''}<dt>Số người</dt><dd>${r.people}</dd><dt>Nợ</dt><dd class="${r.debt ? 'owe' : 'okc'}">${vnd(r.debt)}</dd>${r.note ? html`<dt>Ghi chú</dt><dd>${r.note}</dd>` : ''}</dl>` : html`<div class="rempty ${tone}"><b>${sub}</b></div>`}</article>`;
+}
 export function dateBlock(today) { return html`<div class="pub-date">${weekday(today)}, ngày ${dmy(today)}</div><div class="pub-lunar">Âm lịch: ${lunarText(today)}</div>`; }
 
 export async function publicView(app) {
-  app.innerHTML = html`<main class="wrap narrow"><header class="pub-head"><h1>NHÀ TRỌ 44 LÊ VĂN PHẤN<span class="credit">ducanhitpt186</span></h1><div id="strip"></div><div id="pubdate"></div></header><div id="pubbody"><p class="boot">Đang tải thông báo…</p></div>
-    <div class="pub-foot"><a class="btn primary block" href="#/login">ĐĂNG NHẬP QUẢN LÝ</a><div class="upd" id="upd"></div><div class="upd">Phiên bản giao diện: ${APP_VERSION}</div></div></main>`.s;
+  app.innerHTML = html`<main class="wrap narrow"><header class="pub-head"><h1>NHÀ TRỌ 44 LÊ VĂN PHẤN<span class="credit">ducanhitpt186</span></h1><div id="strip"></div><div id="pubdate"></div></header><div id="pubbanner"></div><div id="pubbody"><p class="boot">Đang tải thông báo…</p></div>
+    <div class="pub-foot"><a class="btn primary block big" href="#/login">Ghi Điện & Nước - Tính Tiền Phòng</a><div class="upd" id="upd"></div><div class="upd">Phiên bản giao diện: ${APP_VERSION}</div></div><div id="pubcal" style="margin-top:20px"></div></main>`.s;
   await loadPublic();
 }
 const CACHE = 'nt44_pub_v1'; // chỉ lưu dữ liệu thông báo ĐÃ LỌC (không có thông tin khách) để mở trang là hiện ngay / xem được khi mất mạng
 const readCache = () => { try { return JSON.parse(localStorage.getItem(CACHE)); } catch { return null; } };
 function paint(res, note = '') {
   const body = $('#pubbody'); if (!body) return;
-  const s = res.summary, items = res.items;
+  S.pub = res; const s = res.summary, items = res.items;
+  $('#pubbanner').innerHTML = eventBanner(res.events, res.today).s; $('#pubcal').innerHTML = calendarPanel().s;
   $('#pubdate').innerHTML = dateBlock(res.today).s; $('#strip').innerHTML = stripHtml(res.system).s;
   body.innerHTML = html`<div class="sum-title">TỔNG QUAN CẦN XỬ LÝ</div>
     <div class="stats">
@@ -40,7 +51,10 @@ function paint(res, note = '') {
       <div class="stat ${s.overdue ? 'red' : ''}"><b>${s.overdue}</b><span>phòng đã quá hạn thanh toán</span></div>
       <div class="stat wide ${s.totalRemaining ? 'red' : ''}"><b>${vnd(s.totalRemaining)}</b><span>tổng tiền còn cần thu</span></div>
     </div>
-    <div class="notices">${items.length ? items.map((i) => noticeCard(i)) : html`<div class="empty-state ok"><b>Không có việc cần xử lý.</b><br>Tất cả các phòng đã hoàn tất theo lịch.</div>`}</div>`.s;
+    <div class="notices">${items.length ? items.map((i) => noticeCard(i)) : html`<div class="empty-state ok"><b>Không có việc cần xử lý.</b><br>Tất cả các phòng đã hoàn tất theo lịch.</div>`}</div>
+    ${usagePanel(res.usage)}
+    <div class="sum-title" style="margin-top:26px">DANH SÁCH PHÒNG</div>
+    <div class="notices" style="margin-top:0">${(res.roster || []).map(rosterCard)}</div>`.s;
   const u = $('#upd'); if (u) u.textContent = note || `Cập nhật lúc ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
 }
 export async function loadPublic() {

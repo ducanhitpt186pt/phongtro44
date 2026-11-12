@@ -6,7 +6,7 @@ async function get(u) { try { const r = await fetch(u, { cache: 'no-store' }); c
 async function run() {
   out.innerHTML = '<div class="boot">Đang kiểm tra…</div>'; const rows = [];
   const v = await get('/js/version.js'); const ver = /'([^']+)'/.exec(v.text || '')?.[1];
-  rows.push(row(v.status === 200 && !!ver, `Giao diện (file trên GitHub → Vercel): ${ver ? 'phiên bản ' + ver : 'không đọc được'}`, v.status === 200 ? 'Phiên bản mới nhất khi tôi viết là 2026-11-04-c. Nếu cũ hơn hoặc không có: Vercel chưa triển khai bản mới (xem Deployments).' : 'Thiếu file public/js/version.js → bạn chưa upload bản mới lên GitHub hoặc Vercel chưa triển khai.'));
+  rows.push(row(v.status === 200 && !!ver, `Giao diện (file trên GitHub → Vercel): ${ver ? 'phiên bản ' + ver : 'không đọc được'}`, v.status === 200 ? 'Phiên bản mới nhất khi tôi viết là 2026-11-14-a. Nếu cũ hơn hoặc không có: Vercel chưa triển khai bản mới (xem Deployments).' : 'Thiếu file public/js/version.js → bạn chưa upload bản mới lên GitHub hoặc Vercel chưa triển khai.'));
   const a = await get('/api/health'); const b = await get('/api/index?path=health'); const h = (a.json && a.json.ok ? a.json : b.json && b.json.ok ? b.json : null);
   rows.push(row(!!h, `Phần máy chủ Vercel (/api): ${h ? 'đang chạy' : 'KHÔNG chạy'}`, `/api/health → ${a.status || 'không kết nối'} · /api/index?path=health → ${b.status || 'không kết nối'}.${h ? '' : ' Cả hai không trả JSON = Vercel chưa chạy thư mục api (thiếu api/index.js, vercel.json hoặc triển khai lỗi).'}`));
   if (h) {

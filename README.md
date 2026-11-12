@@ -20,6 +20,8 @@ lib/store.js            Đọc/ghi có kiểm tra phiên bản, thử lại khi 
 lib/drivers/            redis.js (mặc định), blobdb.js, github.js
 lib/billing.js          LÕI TÍNH TIỀN: hóa đơn, nợ, thanh toán, đổi giá, trả phòng, chuyển phòng
 lib/reminders.js        Tự tính thông báo + API công khai đã lọc
+lib/sheets.js           Sao lưu Google Sheet (chỉ thêm dòng) qua Apps Script
+lib/events.js           Kiểm tra dữ liệu sự kiện
 lib/cleanup.js          Đo dung lượng ảnh + dọn dữ liệu khách trả phòng quá 2 năm
 lib/schema.js           Cấu trúc dữ liệu + kiểm tra toàn vẹn
 lib/handlers/index.js   Các thao tác nghiệp vụ gọi từ API
@@ -39,4 +41,4 @@ docs/                   Hướng dẫn triển khai, giới hạn
 ## Kiểm thử
 `npm test` (logic tính tiền + dọn dữ liệu, 30 ca) · `node tests/integration-redis.js` (API + Upstash giả lập, 11 ca) · `tests/integration-blob.js`, `tests/integration.js` (nơi lưu phụ) · `tests/e2e.cjs` (trình duyệt thật, cần Playwright; chạy cùng `node tests/e2e-server.js`).
 
-Hướng dẫn cho người không biết lập trình: **docs/HUONG-DAN-TRIEN-KHAI.md**.
+Sao lưu Google Sheet: **docs/GOOGLE-SHEET.md**. Cập nhật phiên bản không mất dữ liệu: **docs/CAP-NHAT-PHIEN-BAN.md**. Triển khai/sửa lỗi bằng dòng lệnh: **docs/HUONG-DAN-CMD.md**. Hướng dẫn cho người không biết lập trình: **docs/HUONG-DAN-TRIEN-KHAI.md**.

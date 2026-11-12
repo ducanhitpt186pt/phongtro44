@@ -1,20 +1,21 @@
-// Chụp / chọn / xem trước / xoay / nén ảnh CCCD (đa số trình duyệt di động mở camera sau qua capture="environment").
+// Chụp / chọn / xem trước / xoay / nén ảnh CCCD. Mỗi "ô ảnh" (slot) có tên riêng: khách = 'front'/'back'; người ở cùng = 'o1-front'...
 import { html, $, toast } from './util.js';
 import { api } from './api.js';
+import { icon } from './icons.js';
 import { acts, changes } from './ui.js';
 
-const st = { front: null, back: null }; // {file, rot, blob, url}
-export const resetImages = () => { for (const k of Object.keys(st)) { if (st[k]?.url) URL.revokeObjectURL(st[k].url); st[k] = null; } };
-export const getBlob = (side) => st[side]?.blob || null;
-const LABEL = { front: 'MẶT TRƯỚC', back: 'MẶT SAU' };
+const st = {}; // slot -> {file, rot, blob, url}
+export const resetImages = () => { for (const k of Object.keys(st)) { if (st[k]?.url) URL.revokeObjectURL(st[k].url); delete st[k]; } };
+export const getBlob = (slot) => st[slot]?.blob || null;
 
-export function idBox(side, { required = true } = {}) {
-  return html`<div class="idcap" data-side="${side}"><strong>CCCD ${LABEL[side].toLowerCase()}${required ? ' *' : ''}</strong>
-    <div class="idprev" id="prev-${side}"><span>Chưa có ảnh</span></div>
-    <div class="row"><label class="btn primary sp">📷 CHỤP CCCD ${LABEL[side]}<input type="file" accept="image/*" capture="environment" hidden data-change="id-file" data-side="${side}"></label>
-    <label class="btn sp">🖼 Chọn từ thư viện<input type="file" accept="image/*" hidden data-change="id-file" data-side="${side}"></label></div>
-    <div class="row" id="tools-${side}" hidden><button type="button" class="btn sm" data-act="id-rot" data-side="${side}">⟳ Xoay</button>
-    <button type="button" class="btn sm" data-act="id-clear" data-side="${side}">Chụp lại</button><span class="muted small" id="info-${side}"></span></div></div>`;
+export function idBox(slot, { title = '', required = true } = {}) {
+  const side = slot.endsWith('back') ? 'MẶT SAU' : 'MẶT TRƯỚC';
+  return html`<div class="idcap"><strong>${title || `CCCD ${side.toLowerCase()}`}${required ? ' *' : ''}</strong>
+    <div class="idprev" id="prev-${slot}"><span>Chưa có ảnh</span></div>
+    <div class="row"><label class="btn primary sp">${icon('camera', '1.15em')} CHỤP CCCD ${side}<input type="file" accept="image/*" capture="environment" hidden data-change="id-file" data-slot="${slot}"></label>
+    <label class="btn sp">${icon('photo', '1.15em')} Chọn từ thư viện<input type="file" accept="image/*" hidden data-change="id-file" data-slot="${slot}"></label></div>
+    <div class="row" id="tools-${slot}" hidden><button type="button" class="btn sm" data-act="id-rot" data-slot="${slot}">${icon('rotate')} Xoay</button>
+    <button type="button" class="btn sm" data-act="id-clear" data-slot="${slot}">Chụp lại</button><span class="muted small" id="info-${slot}"></span></div></div>`;
 }
 async function compress(file, rot) {
   const url = URL.createObjectURL(file);
@@ -30,20 +31,21 @@ async function compress(file, rot) {
   if (!blob) throw new Error('Trình duyệt không nén được ảnh');
   return blob;
 }
-async function refresh(side) {
-  const s = st[side]; const box = $(`#prev-${side}`); if (!box) return;
+async function refresh(slot) {
+  const s = st[slot]; const box = $(`#prev-${slot}`); if (!box) return;
   try {
     box.innerHTML = '<span>Đang xử lý ảnh…</span>';
     s.blob = await compress(s.file, s.rot);
     if (s.url) URL.revokeObjectURL(s.url); s.url = URL.createObjectURL(s.blob);
-    box.innerHTML = html`<img alt="Xem trước CCCD ${LABEL[side].toLowerCase()}" src="${s.url}">`.s;
-    $(`#tools-${side}`).hidden = false; $(`#info-${side}`).textContent = `${(s.blob.size / 1048576).toFixed(2)} MB`;
-  } catch (e) { box.innerHTML = '<span>Chưa có ảnh</span>'; st[side] = null; toast(e.message, 'err'); }
+    box.innerHTML = html`<img alt="Xem trước CCCD" src="${s.url}">`.s;
+    $(`#tools-${slot}`).hidden = false; $(`#info-${slot}`).textContent = `${(s.blob.size / 1048576).toFixed(2)} MB`;
+  } catch (e) { box.innerHTML = '<span>Chưa có ảnh</span>'; delete st[slot]; toast(e.message, 'err'); }
 }
-changes['id-file'] = async (el) => { const f = el.files?.[0]; if (!f) return; const side = el.dataset.side; if (st[side]?.url) URL.revokeObjectURL(st[side].url); st[side] = { file: f, rot: 0, blob: null, url: null }; el.value = ''; await refresh(side); };
-acts['id-rot'] = async (el) => { const s = st[el.dataset.side]; if (!s) return; s.rot = (s.rot + 90) % 360; await refresh(el.dataset.side); };
-acts['id-clear'] = (el) => { const side = el.dataset.side; if (st[side]?.url) URL.revokeObjectURL(st[side].url); st[side] = null; $(`#prev-${side}`).innerHTML = '<span>Chưa có ảnh</span>'; $(`#tools-${side}`).hidden = true; };
-export async function uploadImage(tenantId, side) {
-  const blob = st[side]?.blob; if (!blob) return null;
-  return api('POST', `storage/upload?tenantId=${encodeURIComponent(tenantId)}&side=${side}`, blob, { headers: { 'Content-Type': 'image/jpeg' } });
+changes['id-file'] = async (el) => { const f = el.files?.[0]; if (!f) return; const slot = el.dataset.slot; if (st[slot]?.url) URL.revokeObjectURL(st[slot].url); st[slot] = { file: f, rot: 0, blob: null, url: null }; el.value = ''; await refresh(slot); };
+acts['id-rot'] = async (el) => { const s = st[el.dataset.slot]; if (!s) return; s.rot = (s.rot + 90) % 360; await refresh(el.dataset.slot); };
+acts['id-clear'] = (el) => { const slot = el.dataset.slot; if (st[slot]?.url) URL.revokeObjectURL(st[slot].url); delete st[slot]; $(`#prev-${slot}`).innerHTML = '<span>Chưa có ảnh</span>'; $(`#tools-${slot}`).hidden = true; };
+// Tải ảnh của ô `slot` lên cho chủ ảnh `ownerId` (khách hoặc người ở cùng), mặt `side` = front|back
+export async function uploadImage(ownerId, slot, side = slot.endsWith('back') ? 'back' : 'front') {
+  const blob = st[slot]?.blob; if (!blob) return null;
+  return api('POST', `storage/upload?ownerId=${encodeURIComponent(ownerId)}&side=${side}`, blob, { headers: { 'Content-Type': 'image/jpeg' } });
 }

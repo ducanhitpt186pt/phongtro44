@@ -9,7 +9,7 @@ const dbText = () => Buffer.from(fakeStore.files.get('data/database.json').buf).
 let pass = 0; const t = async (n, f) => { try { await f(); pass++; console.log('  ✓', n); } catch (e) { console.log('  ✗', n, '\n   ', e.message); process.exitCode = 1; } };
 await t('dùng nơi lưu Vercel Blob, KHÔNG cần GitHub token', () => assert.equal(driverName(), 'blob'));
 await t('chưa đăng nhập: API riêng tư bị 401', async () => assert.equal((await call('GET', '/api/data', undefined, false)).status, 401));
-await t('đăng nhập; lần đầu tạo data/database.json với 7 phòng', async () => { const r = await call('POST', '/api/auth/login', { password: 'mat-khau-test' }, false); csrf = r.body.csrf; const d = await call('GET', '/api/data'); assert.equal(d.body.db.rooms.length, 7); });
+await t('đăng nhập; lần đầu tạo data/database.json với 7 phòng', async () => { const r = await call('POST', '/api/auth/login', { password: 'mat-khau-test' }, false); csrf = r.body.csrf; const d = await call('GET', '/api/data'); assert.equal(d.body.db.rooms.filter((r) => !r.kind).length, 7); });
 await t('ghi dữ liệu thật vào Blob + tự sao lưu tháng', async () => { assert.equal((await call('POST', '/api/rooms', { name: 'Phòng 8' })).status, 200); assert.ok(JSON.parse(dbText()).rooms.some((r) => r.name === 'Phòng 8')); assert.ok([...fakeStore.files.keys()].some((k) => /^backups\/\d{4}-\d{2}\.json$/.test(k))); });
 await t('XUNG ĐỘT ETag: ghi chen ngang → đọc lại, áp dụng lại, không mất dữ liệu', async () => {
   fakeStore.beforePut = () => { const f = fakeStore.files.get('data/database.json'); const d = JSON.parse(f.buf.toString()); d.rooms.push({ id: 'room-x', name: 'Chen ngang', status: 'empty', note: '', createdAt: 'x' }); f.buf = Buffer.from(JSON.stringify(d)); f.etag = '"changed"'; };
@@ -20,12 +20,39 @@ await t('hai yêu cầu ghi song song đều được lưu (không mất cái n�
 await t('API công khai không lộ thông tin khách; có dòng trạng thái lưu trữ', async () => {
   const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
   const r = await call('POST', '/api/tenants', { roomId: 'room-1', startDate: today, rent: 1200000, elecPrice: 3500, waterPrice: 15000, initElec: 1, initWater: 1, tenant: { fullName: 'Trần Thị B', dob: '1995-03-02', gender: 'female', phone: '0912345678', cccd: '001195000002', cccdIssueDate: '2022-01-05', cccdIssuePlace: 'Cục CS', address: '44 Lê Văn Phấn' } }); assert.equal(r.status, 200, JSON.stringify(r.body));
-  const pub = await call('GET', '/api/public/reminders', undefined, false); const s = JSON.stringify(pub.body); for (const x of ['Trần Thị B', '0912345678', '001195000002', 'Lê Văn Phấn']) assert.ok(!s.includes(x)); assert.equal(typeof pub.body.system.storagePct, 'number'); assert.equal(pub.body.system.alerts.length, 0);
+  const pub = await call('GET', '/api/public/reminders', undefined, false); const s = JSON.stringify(pub.body); for (const x of ['0912345678', '001195000002', 'Lê Văn Phấn', '1995-03-02']) assert.ok(!s.includes(x)); assert.equal(typeof pub.body.system.storagePct, 'number'); assert.equal(pub.body.system.alerts.length, 0);
 });
 await t('sao lưu/khôi phục có xác nhận và tạo bản an toàn', async () => { const ex = await call('GET', '/api/backup/export'); assert.equal((await call('POST', '/api/backup/restore', { db: ex.body })).status, 400); const ok = await call('POST', '/api/backup/restore', { db: ex.body, confirm: 'GHI DE' }); assert.equal(ok.status, 200); assert.ok([...fakeStore.files.keys()].some((k) => k.startsWith('backups/truoc-khi-khoi-phuc'))); });
 await t('đi qua rewrite /api/index?path=… vẫn đúng; /api/health tự kiểm tra, không lộ bí mật', async () => {
   const a = await call('GET', '/api/index?path=public/reminders', undefined, false); assert.equal(a.status, 200); assert.ok(a.body.items);
   const h = await call('GET', '/api/health', undefined, false); assert.equal(h.status, 200); assert.equal(h.body.kiemTraDocDuLieu, 'ok'); assert.equal(h.body.daDatMatKhau, true); const s = JSON.stringify(h.body); assert.ok(!s.includes('mat-khau-test') && !s.includes('xxxxxxxx'));
   const b = await call('POST', '/api/index?path=auth/login', { password: 'sai' }, false); assert.equal(b.status, 401);
+});
+await t('phiên đăng nhập 5 phút KHÔNG hoạt động: đang dùng thì tự gia hạn, bỏ không dùng 6 phút thì phải đăng nhập lại', async () => {
+  const realNow = Date.now; let off = 0; Date.now = () => realNow() + off;
+  try {
+    const login = await fetch(base + '/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: 'mat-khau-test' }) }); let ck = login.headers.get('set-cookie').split(';')[0];
+    const use = async (min) => { off += min * 60000; const r = await fetch(base + '/api/data', { headers: { cookie: ck } }); const n = r.headers.get('set-cookie'); if (n) ck = n.split(';')[0]; return r.status; };
+    assert.equal(await use(4), 200); assert.equal(await use(4), 200); assert.equal(await use(4), 200); // 12 phút tổng nhưng mỗi lần cách 4 phút => vẫn đăng nhập
+    assert.equal(await use(6), 401); // bỏ không dùng 6 phút => hết phiên
+    off = 0; const l2 = await fetch(base + '/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: 'mat-khau-test' }) }); ck = l2.headers.get('set-cookie').split(';')[0];
+    let st = 200; for (let i = 0; i < 200 && st === 200; i++) st = await use(4); assert.equal(st, 401, 'tối đa 12 giờ liên tục'); assert.ok(off >= 11.5 * 3600000 && off <= 12.2 * 3600000, 'hết hạn quanh mốc 12 giờ');
+  } finally { Date.now = realNow; }
+});
+await t('đăng nhập sai 8 lần → KHÓA 10 phút (kể cả nhập đúng mật khẩu); hết 10 phút mới được nhập lại; sai ít hơn 8 lần không bị khóa', async () => {
+  const realNow = Date.now; let off = 0; Date.now = () => realNow() + off; const H = { 'content-type': 'application/json', 'x-forwarded-for': '10.9.9.9' };
+  const tryLogin = async (pw, ip = '10.9.9.9') => fetch(base + '/api/auth/login', { method: 'POST', headers: { ...H, 'x-forwarded-for': ip }, body: JSON.stringify({ password: pw }) });
+  try {
+    for (let i = 0; i < 7; i++) assert.equal((await tryLogin('sai')).status, 401); assert.equal((await tryLogin('mat-khau-test')).status, 200, '7 lần sai chưa bị khóa, nhập đúng vẫn vào được'); // đăng nhập đúng xóa bộ đếm
+    for (let i = 0; i < 8; i++) assert.equal((await tryLogin('sai')).status, 401); const locked = await tryLogin('mat-khau-test'); assert.equal(locked.status, 429); assert.match((await locked.json()).error, /sai mật khẩu 8 lần.*10 phút/);
+    assert.equal((await tryLogin('mat-khau-test', '10.8.8.8')).status, 200, 'IP khác không bị ảnh hưởng');
+    off += 9 * 60000; assert.equal((await tryLogin('mat-khau-test')).status, 429, 'chưa đủ 10 phút'); off += 2 * 60000; assert.equal((await tryLogin('mat-khau-test')).status, 200, 'đủ 10 phút thì nhập lại được');
+  } finally { Date.now = realNow; }
+});
+await t('thông tin nhận tiền (ngân hàng / STK / tên chủ TK): lưu, kiểm tra hợp lệ, xóa', async () => {
+  const ok = await call('PUT', '/api/settings', { bank: { bankName: 'Vietcombank', accountNumber: '0123 456 789', accountName: 'nguyen van a' } }); assert.equal(ok.status, 200); assert.deepEqual(ok.body.settings.bank, { bankName: 'Vietcombank', accountNumber: '0123456789', accountName: 'NGUYEN VAN A' });
+  assert.equal((await call('PUT', '/api/settings', { bank: { bankName: 'VCB', accountNumber: 'abc', accountName: 'A' } })).status, 400); assert.equal((await call('PUT', '/api/settings', { bank: { bankName: '', accountNumber: '123456', accountName: 'A' } })).status, 400);
+  assert.equal((await call('GET', '/api/data')).body.settings.bank.accountNumber, '0123456789'); const del = await call('PUT', '/api/settings', { bank: { bankName: '', accountNumber: '', accountName: '' } }); assert.equal(del.body.settings.bank, null);
+  assert.equal((await call('GET', '/api/public/reminders', undefined, false)).body && JSON.stringify((await call('GET', '/api/public/reminders', undefined, false)).body).includes('0123456789'), false, 'trang ngoài không hiện STK');
 });
 server.close(); console.log(`\nTích hợp Blob: ${pass} đạt`); process.exit(process.exitCode || 0);

@@ -48,7 +48,7 @@ Chuẩn bị: email, điện thoại nhận mã, ~30 phút. Mở sẵn Notepad �
 **Deployments** → dòng trên cùng → dấu **⋯** → **Redeploy** → **Redeploy**. Đợi xong.
 
 ## Bước 7. Kiểm tra thực tế
-1. Mở địa chỉ `https://nha-tro-44-website-xxxx.vercel.app` bằng điện thoại: thấy "NHÀ TRỌ 44 LÊ VĂN PHẤN", dòng **Lưu trữ ảnh: 0%**, nút **ĐĂNG NHẬP QUẢN LÝ**. Không có dòng cảnh báo đỏ nào.
+1. Mở địa chỉ `https://nha-tro-44-website-xxxx.vercel.app` bằng điện thoại: thấy "NHÀ TRỌ 44 LÊ VĂN PHẤN", dòng **Lưu trữ ảnh: 0%**, nút **Ghi Điện & Nước - Tính Tiền Phòng**. Không có dòng cảnh báo đỏ nào.
 2. Đăng nhập → thấy 7 phòng → **Phòng 1** → **+ Thêm khách thuê** → điền thông tin, chụp 2 mặt CCCD → **LƯU KHÁCH THUÊ**.
 3. Mở web bằng cửa sổ ẩn danh (chưa đăng nhập): thấy "PHÒNG 1 – Chưa thanh toán", **không có tên khách**.
 4. Tải lại trang, đăng xuất rồi đăng nhập, mở bằng thiết bị khác: dữ liệu vẫn còn.
@@ -58,6 +58,13 @@ Chuẩn bị: email, điện thoại nhận mã, ~30 phút. Mở sẵn Notepad �
 
 ## Dữ liệu thử → bắt đầu thật
 Muốn xóa sạch dữ liệu thử: **Sao lưu** → khôi phục một file `database.json` mới tinh (chọn file sao lưu trước khi thêm khách thử), hoặc xóa từng khách thử rồi dùng **Dọn dữ liệu**. Cách nhanh nhất: sau khi triển khai, **chưa nhập khách thật** cho đến khi thử xong, và tải một bản sao lưu lúc dữ liệu còn trống để dùng khôi phục.
+
+## Các tính năng mới (bản 2026-11-12)
+- **Phiên đăng nhập 5 phút:** hết hạn sau 5 phút KHÔNG thao tác; đang dùng (bấm, gõ, cuộn) thì tự gia hạn nên không phải nhập lại mật khẩu. Tối đa 12 giờ liên tục. Đổi số phút bằng biến `SESSION_IDLE_MINUTES` trên Vercel.
+- **Người ở cùng:** vào phòng → **Thêm người ở cùng** (nút đỏ), phải có ảnh CCCD 2 mặt (trẻ em tick "Chưa có CCCD"). Số người tự đếm, không cần nhập.
+- **Chuyển phòng:** vào phòng → **Chuyển phòng** (từ phòng A sang phòng B trống).
+- **Trang ngoài:** danh sách phòng (ngày vào, họ tên khách, số người, nợ, ghi chú), điện nước so với tháng trước + cảnh báo rò rỉ khi tăng > 30% so với trung bình. Bật/tắt hiện họ tên + ghi chú ở **Sao lưu → Hiển thị trên trang ngoài**.
+- **Phòng Chủ Nhà:** thẻ riêng trong danh sách phòng; nhập chỉ số đồng hồ tổng đều đặn; hệ thống tính điện nước Chủ Nhà dùng = tổng − các phòng và cảnh báo khi tăng > 30%.
 
 ## Dọn dữ liệu cũ & dung lượng
 - Dòng dưới tiêu đề luôn hiện **% lưu trữ ảnh**. Từ 90% chuyển đỏ "sắp đầy" kèm nút **Dọn dữ liệu**.

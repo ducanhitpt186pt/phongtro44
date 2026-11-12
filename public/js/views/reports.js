@@ -1,7 +1,9 @@
-import { html, vnd, dmy, field, toast, download, $, monthLabel, openModal } from '../util.js';
+import { html, raw, vnd, dmy, field, toast, download, $, monthLabel, openModal } from '../util.js';
 import { api, apiUrl, D, S, save, today } from '../api.js';
+import { icon } from '../icons.js';
+import { GAS } from '../gas-code.js';
 
-import { acts, forms, rerender } from '../ui.js';
+import { acts, forms, changes, rerender } from '../ui.js';
 
 let range = null; let last = null;
 export function reportsView() {
@@ -39,6 +41,8 @@ export function backupView() {
       <a class="btn primary" href="${apiUrl('backup/export')}" download>⬇ Tải database.json</a></section>
     <section class="card" style="margin-top:12px"><h3>Khôi phục từ file JSON</h3><p class="warn-box">⚠ Khôi phục sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Hệ thống tự lưu một bản an toàn của dữ liệu hiện tại trước khi ghi đè.</p>
       <form data-form="restore"><input type="file" name="file" accept="application/json,.json" required style="margin-bottom:12px"><div id="rsum" class="calc" hidden></div>${field('Gõ chính xác: GHI DE để xác nhận', html`<input name="confirm" autocomplete="off" placeholder="GHI DE">`)}<div class="err-inline"></div><button class="btn danger" type="submit">KIỂM TRA & KHÔI PHỤC</button></form></section>
+    ${sheetCard()}
+    ${settingsCard()}
     ${cleanupCard()}
     <section class="card" style="margin-top:12px"><h3>Ảnh CCCD</h3><p class="muted">Ảnh nằm trong kho Vercel Blob riêng tư, không nằm trong file JSON. Tải từng ảnh ở trang hồ sơ khách (nút "Tải về") khi cần bản dự phòng.</p></section>
     <h2 class="sec">Nhật ký thao tác gần đây</h2><div class="list">${logs.map((l) => html`<div class="li"><span><b>${l.action}</b> <span class="muted">${l.detail}</span></span><span class="muted small">${l.at.slice(0, 16).replace('T', ' ')}</span></div>`)}</div>`;
@@ -71,3 +75,53 @@ acts['cleanup-run'] = async (el) => {
   el.disabled = true;
   try { const j = await save('POST', 'cleanup', { confirm: 'XOA' }, null); toast(`Đã xóa ${j.purged} hồ sơ, ${j.imagesDeleted} ảnh${j.imagesFailed ? ` (${j.imagesFailed} ảnh chưa xóa được, thử lại sau)` : ''}`); rerender(); } finally { el.disabled = false; }
 };
+
+function settingsCard() {
+  const on = S.snap.settings?.publicShowTenant !== false;
+  return html`<section class="card" style="margin-top:12px"><h3>Hiển thị trên trang ngoài (chưa đăng nhập)</h3>
+    <p class="muted small">Trang ngoài luôn hiện: số phòng, số tiền phải thu, ngày vào, số người, nợ. Tùy chọn dưới đây điều khiển việc hiện <b>họ tên khách</b> và <b>ghi chú của tháng</b>. Số điện thoại, CCCD, ngày sinh, địa chỉ, tên người ở cùng thì KHÔNG BAO GIỜ hiện. Ai biết địa chỉ web đều xem được trang ngoài.</p>
+    <label class="radios"><input type="checkbox" data-change="set-public" ${on ? raw('checked') : ''}> Hiện họ tên khách và ghi chú trên trang ngoài</label>
+    <label class="radios"><input type="checkbox" data-change="set-events" ${S.snap.settings?.publicShowEvents !== false ? raw('checked') : ''}> Hiện tên và ngày các sự kiện trên lịch ở trang ngoài (ghi chú sự kiện luôn ẩn)</label></section>`;
+}
+changes['set-public'] = async (el) => { await save('PUT', 'settings', { publicShowTenant: el.checked }, el.checked ? 'Trang ngoài sẽ hiện họ tên khách và ghi chú' : 'Trang ngoài đã ẩn họ tên khách và ghi chú'); rerender(); };
+
+changes['set-events'] = async (el) => { await save('PUT', 'settings', { publicShowEvents: el.checked }, el.checked ? 'Trang ngoài sẽ hiện sự kiện' : 'Trang ngoài đã ẩn sự kiện'); rerender(); };
+changes['set-personal'] = async (el) => { await save('PUT', 'settings', { sheetIncludePersonal: el.checked }, el.checked ? 'Sẽ gửi cả thông tin cá nhân khách vào Google Sheet' : 'Sẽ KHÔNG gửi SĐT/CCCD/địa chỉ vào Google Sheet'); rerender(); };
+function sheetCard() {
+  const sh = S.snap.sheets || {}; const personal = S.snap.settings?.sheetIncludePersonal !== false;
+  const fm = (iso) => (iso ? new Date(iso).toLocaleString('vi-VN') : '');
+  return html`<section class="card" style="margin-top:12px"><h3>${raw(icon('sheet', '1.2em'))} Sao lưu vào Google Sheet (chỉ thêm dòng, không xóa)</h3>
+    <p class="muted small" style="margin:6px 0">Mỗi khi bạn lưu dữ liệu (hóa đơn, thanh toán, khách, sự kiện…), hệ thống tự THÊM dòng mới vào Google Sheet trong Gmail của bạn; mỗi ngày thêm 1 bản sao lưu đầy đủ. Không có thao tác xóa hay sửa dòng cũ.</p>
+    ${sh.configured ? html`<div class="calc">${raw(icon('check'))} Đã cấu hình kết nối.${sh.lastOkAt ? ` Gửi thành công lúc ${fm(sh.lastOkAt)}.` : ' Chưa gửi lần nào kể từ khi máy chủ khởi động.'}${sh.lastError ? html`<br><b style="color:var(--red-t)">Lỗi gần nhất: ${sh.lastError}</b>` : ''}</div>
+      <div class="row"><button class="btn sm" data-act="sheet-ping">Kiểm tra kết nối</button><button class="btn sm" data-act="sheet-test">Gửi dòng thử</button><button class="btn sm" data-act="sheet-snap">Sao lưu đầy đủ ngay</button><button class="btn sm" data-act="sheet-all">Gửi toàn bộ chi tiết (làm 1 lần)</button></div>
+      <div id="sheetout" class="small" style="margin-top:10px"></div>
+      <label class="radios"><input type="checkbox" data-change="set-personal" ${personal ? raw('checked') : ''}> Gửi cả thông tin cá nhân khách (SĐT, CCCD, ngày sinh, địa chỉ) vào Google Sheet</label>
+      <p class="muted small" style="margin:0">Giữ Google Sheet ở chế độ riêng tư (đừng chia sẻ). Ảnh CCCD không được gửi vào Google Sheet.</p>`
+    : html`<div class="warn-box">Chưa kết nối. Làm theo 4 bước ngay bên dưới (khoảng 10 phút).</div>`}
+    <details class="gs-help" ${sh.configured ? '' : raw('open')}><summary>${sh.configured ? 'Xem lại hướng dẫn kết nối + mã Apps Script' : 'Hướng dẫn kết nối 4 bước + mã Apps Script (bấm để mở)'}</summary>
+      <ol class="small" style="padding-left:20px;line-height:1.6">
+        <li><b>Tạo mã bí mật:</b> bấm nút <b>Tạo mã bí mật</b> bên dưới (ghi lại mã này).</li>
+        <li><b>Tạo Google Sheet:</b> vào <a href="https://sheets.google.com" target="_blank" rel="noopener">sheets.google.com</a> bằng Gmail của bạn → <b>Trống</b>. Menu <b>Tiện ích → Apps Script</b> → bấm vào khung code, <b>Ctrl+A</b>, <b>Delete</b>, rồi bấm <b>Sao chép mã Apps Script</b> bên dưới và <b>Ctrl+V</b> dán vào → bấm biểu tượng đĩa mềm <b>Lưu</b>.</li>
+        <li><b>Triển khai:</b> nút xanh <b>Triển khai → Tùy chọn triển khai mới</b> → bánh răng ⚙ chọn <b>Ứng dụng web</b> → <b>Thực thi dưới dạng: Tôi</b>, <b>Quyền truy cập: Bất kỳ ai</b> → <b>Triển khai</b> → <b>Cấp quyền truy cập</b> (nếu Google cảnh báo: <b>Nâng cao → Đi tới … → Cho phép</b>) → <b>Sao chép URL ứng dụng web</b> (kết thúc bằng /exec).</li>
+        <li><b>Khai báo trên Vercel:</b> Settings → Environment Variables → thêm <code>GOOGLE_SHEET_WEBHOOK_URL</code> = URL vừa sao chép và <code>GOOGLE_SHEET_SECRET</code> = mã bí mật ở bước 1 → Deployments → ⋯ → Redeploy. Quay lại đây bấm <b>Kiểm tra kết nối</b>.</li></ol>
+      <div class="row" style="margin-bottom:8px"><button class="btn sm" data-act="gas-secret">Tạo mã bí mật</button><button class="btn sm primary" data-act="gas-copy">Sao chép mã Apps Script</button></div>
+      <div class="fld"><span>Mã bí mật của bạn (dán vào biến GOOGLE_SHEET_SECRET trên Vercel)</span><div class="row"><input id="gssecret" readonly placeholder="Bấm &quot;Tạo mã bí mật&quot;" style="flex:1;min-width:200px"><button class="btn sm" data-act="gas-copy-secret">Sao chép mã bí mật</button></div></div>
+      <textarea id="gscode" readonly rows="8" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem">${GAS}</textarea>
+      <p class="muted small" style="margin:6px 0 0">Mã chỉ có thao tác THÊM dòng, không có lệnh xóa hay sửa. Chi tiết: docs/GOOGLE-SHEET.md</p></details></section>`;
+}
+async function sheetCall(el, path, label) {
+  const out = $('#sheetout'); out.textContent = `${label}…`; el.disabled = true;
+  try { const j = await api('POST', path, {}); out.innerHTML = html`<span style="color:var(--green-t)">${raw(icon('check'))} Thành công.</span>${j.sheet ? html` Google Sheet: <b>${j.sheet}</b>${j.url ? html` · <a href="${j.url}" target="_blank" rel="noopener">Mở Sheet</a>` : ''}` : ''}${j.rows !== undefined ? ` Đã thêm ${j.rows} dòng.` : ''}${j.tabs ? html`<br>Các tab: ${j.tabs.map(([n, c]) => `${n} (${c} dòng)`).join(' · ')}` : ''}`.s; }
+  catch (e) { out.innerHTML = html`<span style="color:var(--red-t)">${raw(icon('alert'))} ${e.message}</span>`.s; } finally { el.disabled = false; }
+}
+acts['sheet-ping'] = (el) => sheetCall(el, 'sheets/ping', 'Đang kiểm tra');
+acts['sheet-test'] = (el) => sheetCall(el, 'sheets/test', 'Đang gửi dòng thử');
+acts['sheet-snap'] = (el) => sheetCall(el, 'sheets/snapshot', 'Đang gửi bản sao lưu đầy đủ');
+acts['sheet-all'] = async (el) => { if (!confirm('Gửi TOÀN BỘ chi tiết hiện có (hóa đơn, thanh toán, khách…) vào Google Sheet? Chỉ nên làm 1 lần khi mới kết nối; làm lại sẽ thêm dòng trùng.')) return; await sheetCall(el, 'sheets/export-all', 'Đang gửi toàn bộ chi tiết'); };
+
+const GAS_PLACEHOLDER = 'THAY-CHUOI-BI-MAT-CUA-BAN';
+function gasText() { const sec = $('#gssecret')?.value; return sec ? GAS.replace(GAS_PLACEHOLDER, sec) : GAS; }
+async function copyText(text, okMsg) { try { await navigator.clipboard.writeText(text); toast(okMsg); } catch { const t = document.createElement('textarea'); t.value = text; document.body.append(t); t.select(); try { document.execCommand('copy'); toast(okMsg); } catch { toast('Không sao chép tự động được, hãy chọn và sao chép bằng tay', 'err'); } t.remove(); } }
+acts['gas-secret'] = () => { const al = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'; const a = new Uint32Array(22); crypto.getRandomValues(a); const sec = 'nt44-' + [...a].map((x) => al[x % al.length]).join(''); $('#gssecret').value = sec; $('#gscode').value = gasText(); toast('Đã tạo mã bí mật và đưa vào đoạn mã Apps Script. Hãy sao chép mã Apps Script SAU bước này.'); };
+acts['gas-copy'] = async () => { if (!$('#gssecret').value) { toast('Hãy bấm "Tạo mã bí mật" trước, để mã Apps Script có sẵn mã bí mật của bạn.', 'err'); return; } await copyText(gasText(), 'Đã sao chép mã Apps Script (đã kèm mã bí mật). Dán vào Apps Script.'); };
+acts['gas-copy-secret'] = async () => { const v = $('#gssecret').value; if (!v) { toast('Chưa có mã bí mật', 'err'); return; } await copyText(v, 'Đã sao chép mã bí mật'); };

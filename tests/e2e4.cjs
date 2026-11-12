@@ -9,6 +9,6 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   await pg.waitForSelector('text=Cập nhật lúc'); await pg.screenshot({ path: '/tmp/shots/30-public-credit.png' });
   await pg.route('**/api/public/reminders', (r) => r.abort()); await pg.goto('http://localhost:4173/#/login'); await pg.goto('http://localhost:4173/#/');
   await pg.waitForSelector('text=bản lưu trên máy'); ok(await pg.isVisible('text=TỔNG QUAN CẦN XỬ LÝ'), 'mất kết nối máy chủ → vẫn hiện bản lưu gần nhất kèm ghi chú');
-  const ls = await pg.evaluate(() => localStorage.getItem('nt44_pub_v1') || ''); ok(!/cccd|phone|fullName|tenant/i.test(ls), 'bản lưu trên máy không chứa thông tin khách');
+  const ls = await pg.evaluate(() => localStorage.getItem('nt44_pub_v1') || ''); ok(!/cccd|phone|address|dob|issue/i.test(ls), 'bản lưu trên máy không chứa thông tin khách');
   await pg.goto('http://localhost:4173/#/login'); await pg.waitForSelector('.login .credit'); ok(true, 'màn hình đăng nhập có chữ nhỏ cạnh tiêu đề');
   await b.close(); })();

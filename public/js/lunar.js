@@ -57,3 +57,27 @@ export function lunarText(iso) {
   const [y, m, d] = iso.split('-').map(Number); const l = solarToLunar(d, m, y);
   return `${l.day}/${l.month}${l.leap ? ' (nhuận)' : ''} năm ${canChi(l.year)}`;
 }
+
+// ---- Đổi âm lịch → dương lịch (cùng thuật toán) ----
+function jdToDate(jd) {
+  let a, b, c;
+  if (jd > 2299160) { a = jd + 32044; b = Math.floor((4 * a + 3) / 146097); c = a - Math.floor((b * 146097) / 4); } else { b = 0; c = jd + 32082; }
+  const d = Math.floor((4 * c + 3) / 1461), e = c - Math.floor((1461 * d) / 4), m = Math.floor((5 * e + 2) / 153);
+  return [e - Math.floor((153 * m + 2) / 5) + 1, m + 3 - 12 * Math.floor(m / 10), b * 100 + d - 4800 + Math.floor(m / 10)];
+}
+// trả về [ngày, tháng, năm] dương lịch, hoặc null nếu ngày âm không tồn tại
+export function lunarToSolar(ld, lm, ly, leap = false) {
+  let a11, b11;
+  if (lm < 11) { a11 = lunarMonth11(ly - 1); b11 = lunarMonth11(ly); } else { a11 = lunarMonth11(ly); b11 = lunarMonth11(ly + 1); }
+  const k = Math.floor(0.5 + (a11 - 2415021.076998695) / 29.530588853);
+  let off = lm - 11; if (off < 0) off += 12;
+  if (b11 - a11 > 365) {
+    const lo = leapOffset(a11); let leapMonth = lo - 2; if (leapMonth < 0) leapMonth += 12;
+    if (leap && lm !== leapMonth) return null;
+    if (leap || off >= lo) off += 1;
+  } else if (leap) return null;
+  const s = jdToDate(newMoonDay(k + off) + ld - 1);
+  const back = solarToLunar(s[0], s[1], s[2]);
+  if (back.day !== ld || back.month !== lm || back.leap !== !!leap) return null; // ngày âm không có thật (vd: 30 của tháng thiếu)
+  return s;
+}

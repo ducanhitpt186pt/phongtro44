@@ -5,6 +5,7 @@ export const setRender = (f) => (renderFn = f);
 export const rerender = () => renderFn();
 export const go = (h) => { if (location.hash === h) renderFn(); else location.hash = h; };
 const report = (ex, f) => { if (f) { f.textContent = ex.message; f.scrollIntoView?.({ block: 'nearest' }); } else toast(ex.message, 'err'); };
+acts['modal-close'] = () => closeModal(); // nút ✕ của hộp thoại
 export function initEvents() {
   document.addEventListener('click', async (e) => {
     const el = e.target.closest('[data-act]'); if (!el) return;

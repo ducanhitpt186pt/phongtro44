@@ -1,0 +1,16 @@
+// Thông tin ngân hàng ở trang Chủ Nhà → hiện trên hóa đơn (HTML + ảnh JPG), không hiện ở trang ngoài.
+const { chromium } = require(require('child_process').execSync('npm root -g').toString().trim() + '/playwright'); const fs = require('fs');
+(async () => {
+  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, acceptDownloads: true }); const pg = await ctx.newPage(); const errs = []; pg.on('pageerror', (e) => errs.push(e.message)); pg.on('dialog', (d) => d.accept());
+  const ok = (c, m) => { console.log(c ? '  ✓' : '  ✗ FAIL', m); if (!c) process.exitCode = 1; };
+  const H = 'http://localhost:4173/'; await pg.goto(H + '#/login'); await pg.fill('input[name=password]', '20101963'); await pg.click('button:has-text("ĐĂNG NHẬP")'); await pg.waitForSelector('.room-card');
+  const inv = await pg.evaluate(() => fetch('/api/data').then((r) => r.json()).then((j) => j.db.invoices.filter((i) => i.elec).slice(-1)[0].id));
+  await pg.goto(H + '#/invoice/' + inv); await pg.waitForSelector('#bill'); ok(!(await pg.isVisible('.bbank')), 'chưa khai báo ngân hàng: hóa đơn không có khối chuyển khoản');
+  await pg.goto(H + '#/room/room-owner'); await pg.waitForSelector('form[data-form=bank]'); await pg.fill('[name=bankName]', 'Vietcombank'); await pg.fill('[name=accountNumber]', '0123 456 789'); await pg.fill('[name=accountName]', 'nguyễn văn a'); await pg.click('button:has-text("LƯU THÔNG TIN NHẬN TIỀN")'); await pg.waitForTimeout(600);
+  const bad = await pg.evaluate(() => fetch('/api/data').then((r) => r.json()).then((j) => j.settings.bank)); ok(bad && bad.accountNumber === '0123456789', 'lưu thông tin nhận tiền (số tài khoản được làm sạch: ' + (bad && bad.accountNumber) + ')');
+  await pg.fill('[name=accountName]', 'NGUYEN VAN A'); await pg.click('button:has-text("LƯU THÔNG TIN NHẬN TIỀN")'); await pg.waitForTimeout(600); ok((await pg.evaluate(() => fetch('/api/data').then((r) => r.json()).then((j) => j.settings.bank.accountName))) === 'NGUYEN VAN A', 'tên chủ tài khoản lưu viết hoa không dấu');
+  await pg.goto(H + '#/invoice/' + inv); await pg.waitForSelector('.bbank'); const t = await pg.innerText('.bbank'); ok(/Vietcombank/.test(t) && /0123456789/.test(t) && /NGUYEN VAN A/.test(t), 'hóa đơn hiện: ngân hàng, số tài khoản, tên chủ tài khoản');
+  const dl = pg.waitForEvent('download'); await pg.click('button:has-text("Tải hóa đơn")'); const d = await dl; const path = await d.path(); fs.copyFileSync(path, '/tmp/shots/bill-bank.jpg'); ok(fs.statSync(path).size > 20000, 'ảnh JPG có kèm khối chuyển khoản');
+  const p2 = await (await b.newContext()).newPage(); await p2.goto(H); await p2.waitForSelector('text=Cập nhật lúc'); ok(!(await p2.innerText('body')).includes('0123456789'), 'trang ngoài KHÔNG hiện số tài khoản');
+  console.log(errs.length ? 'LỖI JS: ' + errs.join('|') : 'Không có lỗi JS'); await b.close(); })().catch((e) => { console.error('E2E12 LỖI', e.message.slice(0, 400)); process.exit(1); });
