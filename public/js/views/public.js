@@ -4,7 +4,7 @@ import { APP_VERSION } from '../version.js';
 import { lunarText } from '../lunar.js';
 import { acts, forms, go } from '../ui.js';
 import { usageBar, alertsHtml, footStrip, refreshStatus } from './strip.js';
-import { a2hsButton } from '../a2hs.js';
+import { a2hsButton, a2hsChip } from '../a2hs.js';
 import { usagePanel } from './usage.js';
 import { calendarPanel, eventBanner, eventsAheadList } from './calendar.js';
 import { icon, ROOM_ICON, ROOM_TONE } from '../icons.js';
@@ -28,14 +28,18 @@ export function noticeCard(it, { link = false, tenantName = '', actions = false 
 
 function rosterCard(r) {
   const tone = ROOM_TONE[r.status];
-  const sub = { empty: 'Phòng trống – sẵn sàng cho thuê', repair: 'Đang sửa chữa', notready: 'Đang sửa chữa hoặc đang sử dụng' }[r.status];
-  return html`<article class="card click room-card st-${tone}" data-act="pub-room" data-id="${r.roomId}" data-name="${r.roomName}"><div class="rhead"><span class="rbadge ${tone}">${raw(icon(ROOM_ICON[r.status], '1.6em'))}</span><div class="sp"><h3>${r.roomName}</h3><span class="badge ${tone}">${ROOM_STATUS[r.status]}</span></div></div>
-    ${r.startDate ? html`<dl class="kv"><dt>Ngày vào</dt><dd>${dmy(r.startDate)}</dd>${r.tenantName !== undefined ? html`<dt>Khách</dt><dd class="big">${r.tenantName}</dd>` : ''}<dt>Số người</dt><dd>${r.people}</dd><dt>Nợ</dt><dd class="${r.debt ? 'owe' : 'okc'}">${vnd(r.debt)}</dd>${r.note ? html`<dt>Ghi chú</dt><dd>${r.note}</dd>` : ''}</dl>` : html`<div class="rempty ${tone}"><b>${sub}</b></div>`}</article>`;
+  return html`<article class="card click room-card st-${tone}" data-act="pub-room" data-id="${r.roomId}" data-name="${r.roomName}"><div class="rhead"><span class="rbadge ${tone}">${raw(icon(ROOM_ICON[r.status], '1.6em'))}</span><div class="sp"><h3>${r.roomName}</h3><span class="stx ${tone}">${ROOM_STATUS[r.status]}</span></div></div>
+    ${r.startDate ? html`<dl class="kv"><dt>Ngày vào</dt><dd>${dmy(r.startDate)}</dd>${r.tenantName !== undefined ? html`<dt>Khách</dt><dd class="big">${r.tenantName}</dd>` : ''}<dt>Số người</dt><dd>${r.people}</dd><dt>Nợ</dt><dd class="${r.debt ? 'owe' : 'okc'}">${vnd(r.debt)}</dd>${r.note ? html`<dt>Ghi chú</dt><dd>${r.note}</dd>` : ''}</dl>` : ''}</article>`;
+}
+// Nhắc ghi điện nước: phòng đã tới/qua ngày ghi và phòng sắp tới ngày ghi (tính theo ngày nhận phòng của từng khách)
+export function readingsBanner(rd) {
+  const due = rd?.due || [], soon = rd?.soon || []; if (!due.length && !soon.length) return html``;
+  return html`<div class="rdnote"><b>${icon('bolt', '1.15em')} Nhắc ghi điện nước</b>${due.length ? html`<div class="rdline due"><span>Đã tới ngày ghi:</span>${due.map((x) => html`<span class="rdchip">${x.roomName} <small>· ${x.daysLate ? `trễ ${x.daysLate} ngày` : 'hôm nay'} (${dmy(x.dueDate)})</small></span>`)}</div>` : ''}${soon.length ? html`<div class="rdline soon"><span>Sắp tới ngày ghi:</span>${soon.map((x) => html`<span class="rdchip">${x.roomName} <small>· còn ${x.daysLeft} ngày (${dmy(x.dueDate)})</small></span>`)}</div>` : ''}</div>`;
 }
 export function dateBlock(today) { return html`<div class="pub-date">${weekday(today)}, ngày ${dmy(today)}</div><div class="pub-lunar">Âm lịch: ${lunarText(today)}</div>`; }
 
 export async function publicView(app) {
-  app.innerHTML = html`<header class="hero"><a class="login-top" href="#/login"><span class="btn sm">${icon('login', '1.1em')} Đăng nhập</span></a><div class="hero-in"><h1>NHÀ TRỌ 44 LÊ VĂN PHẤN<span class="credit">ducanhitpt186</span></h1><div id="ubar">${usageBar(null)}</div><div id="alerts"></div><div id="pubdate"></div></div></header>
+  app.innerHTML = html`<header class="hero"><div class="hero-bar"><div id="a2hschip">${a2hsChip()}</div><a class="login-top" href="#/login"><span class="btn sm">${icon('login', '1.1em')} Đăng nhập</span></a></div><div class="hero-in"><h1>NHÀ TRỌ 44 LÊ VĂN PHẤN<span class="credit">ducanhitpt186</span></h1><div id="ubar">${usageBar(null)}</div><div id="alerts"></div><div id="pubdate"></div></div></header>
     <main class="wrap narrow"><div id="pubbanner"></div><div id="pubbody"><p class="boot">Đang tải thông báo…</p></div>
     <div id="pubcal" style="margin-top:20px"></div>
     <div id="a2hs">${a2hsButton()}</div>
@@ -59,7 +63,8 @@ function paint(res, note = '') {
     ${items.length ? html`<div class="notices">${items.map((i) => noticeCard(i))}</div>` : ''}
     ${eventsAheadList(res.events, res.today)}
     ${usagePanel(res.usage)}
-    <div class="sum-title" style="margin-top:26px">DANH SÁCH PHÒNG</div>
+    ${readingsBanner(res.readings)}
+    <div class="sum-title" style="margin-top:18px">DANH SÁCH PHÒNG</div>
     <div class="notices" style="margin-top:0">${(res.roster || []).map(rosterCard)}</div>`.s;
   const u = $('#upd'); if (u) u.textContent = note || `Cập nhật lúc ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
 }

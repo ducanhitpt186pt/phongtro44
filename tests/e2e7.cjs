@@ -30,7 +30,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const ym = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 7); await api('notes', { method: 'PUT', headers: { 'content-type': 'application/json', 'x-csrf-token': await pg.evaluate(() => fetch('/api/auth/session').then((r) => r.json()).then((j) => j.csrf)) }, body: JSON.stringify({ roomId: 'room-1', ym, text: 'mượn 500' }) });
   await pg.evaluate(async () => { const c = (await fetch('/api/auth/session').then((r) => r.json())).csrf; await fetch('/api/rooms/room-4', { method: 'PUT', headers: { 'content-type': 'application/json', 'x-csrf-token': c }, body: JSON.stringify({ status: 'repair', note: 'thay vòi nước' }) }); });
   const p2 = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })).newPage(); await p2.goto(H); await p2.waitForSelector('text=DANH SÁCH PHÒNG');
-  const t = await p2.innerText('body'); ok(t.includes('Khách Một') && t.includes('mượn 500') && /Số người\s*2/.test(t) && t.includes('Đang sửa chữa') && t.includes('Phòng trống'), 'trang ngoài: tên khách, ngày vào, số người, nợ, ghi chú; phòng sửa chữa/trống có màu + icon');
+  const t = await p2.innerText('body'); ok(t.includes('Khách Một') && t.includes('mượn 500') && /Số người\s*2/.test(t) && t.includes('Đang sửa chữa') && t.includes('Đang trống'), 'trang ngoài: tên khách, ngày vào, số người, nợ, ghi chú; phòng sửa chữa/trống có màu + icon');
   ok(!/0900000001|001090000001|Lê Thị Mai|Hà Nội/.test(t), 'trang ngoài không lộ SĐT/CCCD/địa chỉ/tên người ở cùng');
   await p2.screenshot({ path: '/tmp/shots/62-public-roster.png', fullPage: true });
   // công tắc ẩn họ tên

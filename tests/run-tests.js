@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { addMonthsClamp, periodIndexOf, periodStart, todayVN } from '../lib/dates.js';
 import { emptyDb, validateDb } from '../lib/schema.js';
 import * as B from '../lib/billing.js';
-import { buildReminders, buildSummary, publicReminders } from '../lib/reminders.js';
+import { buildReminders, buildSummary, publicReminders, readingsDue } from '../lib/reminders.js';
 import { purgeOld, storageInfo } from '../lib/cleanup.js';
 import { buildSystem } from '../lib/health.js';
 import { solarToLunar, lunarToSolar } from '../public/js/lunar.js';
@@ -407,6 +407,21 @@ t('NHẬN KHÁCH MỚI + "đã thu tiền phòng kỳ đầu": ghi nhận thu lu
   assert.equal(buildReminders(db, '2026-11-20').length, 0, 'đã thu đầu tháng: không có thông báo chưa thanh toán T11'); assert.equal(B.unpaidMonths(db, m.rental.chainId).length, 0);
   const t12 = B.createPeriodicInvoice(db, { rentalId: m.rental.id, periodIndex: 1, elecNew: 150, waterNew: 15 }, '2026-12-01'); assert.equal(t12.oldDebt, 0, 'Nợ cũ = 0'); const um = B.unpaidMonths(db, m.rental.chainId); assert.deepEqual(um.map((x) => x.ym), ['2026-12'], 'chỉ nợ T12'); assert.equal(buildReminders(db, '2026-12-01')[0].type, 'unpaid'); assert.equal(buildReminders(db, '2026-12-02')[0].type, 'overdue');
   const u = emptyDb('2026-01-01'); const m2 = B.moveIn(u, { roomId: 'room-1', startDate: '2026-11-01', rent: 1200000, elecPrice: 3000, waterPrice: 10000, initElec: 100, initWater: 10, tenant: { ...person } }, '2026-11-01'); assert.equal(B.remainingOf(u, m2.invoice), 1200000, 'không tick thì vẫn chưa thu (cách cũ)');
+});
+
+t('ĐỔI NGÀY NHẬN PHÒNG sớm hơn: cập nhật ngay → tới/qua ngày ghi điện nước thì báo cần ghi (không còn "Không có việc cần xử lý")', () => {
+  const { db, rental } = setup('2026-11-01', '2026-11-13'); assert.equal(buildReminders(db, '2026-11-13').length, 0, 'vào 1/11, hôm nay 13/11: chưa tới kỳ'); assert.equal(readingsDue(db, '2026-11-13').due.length, 0);
+  B.changeStartDate(db, rental.id, '2026-10-01', '2026-11-13'); assert.equal(rental.firstPeriodIndex, 0); assert.equal(db.invoices[0].periodIndex, 0);
+  const n = buildReminders(db, '2026-11-13'); assert.equal(n[0].type, 'need_readings', 'đã qua 1/11 mà chưa ghi điện nước → báo ngay'); assert.equal(n[0].dueDate, '2026-11-01');
+  const r = readingsDue(db, '2026-11-13'); assert.equal(r.due.length, 1); assert.equal(r.due[0].roomName, 'Phòng 1'); assert.equal(r.due[0].daysLate, 12);
+  assert.equal(readingsDue(db, '2026-10-27').soon[0].daysLeft, 5, 'sắp tới ngày ghi (trong 7 ngày) cũng được nhắc'); validateDb(db);
+});
+
+t('XÓA DÒNG của khách ĐÃ TRẢ PHÒNG (kể cả đã thanh toán / thanh toán 1 phần): xóa từ dòng đó trở đi; dòng đầu = xóa toàn bộ lịch sử thuê và hồ sơ khách', () => {
+  const mk = () => { const { db, rental } = setup('2026-01-10', '2026-01-10'); const f = db.invoices[0]; B.addPayment(db, { invoiceId: f.id, amount: f.total }, '2026-01-10'); const i2 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 1, elecNew: 150, waterNew: 12 }, '2026-02-10'); B.addPayment(db, { invoiceId: i2.id, amount: 100000 }, '2026-02-10'); const b = B.baseline(db, rental); const co = B.confirmCheckout(db, { rentalId: rental.id, date: '2026-02-20', elecFinal: b.elec + 5, waterFinal: b.water + 1, extras: [] }, '2026-02-20'); return { db, rental, f, i2, co }; };
+  let { db, f, i2, co } = mk(); assert.equal(db.rentals[0].status, 'ended'); const r1 = B.deleteInvoice(db, co.invoice.id); assert.equal(r1.invoicesRemoved, 1); assert.equal(db.checkoutRecords.length, 0, 'xóa hóa đơn trả phòng thì xóa luôn bản ghi hoàn tiền'); assert.equal(db.invoices.length, 2); assert.equal(i2.rolledOver, undefined); assert.equal(db.readings.filter((x) => x.final).length, 0); validateDb(db);
+  ({ db, f, i2, co } = mk()); const r2 = B.deleteInvoice(db, i2.id); assert.equal(r2.invoicesRemoved, 2, 'xóa tháng 2 (đã thanh toán 1 phần) kéo theo hóa đơn trả phòng'); assert.equal(db.invoices.length, 1); assert.equal(db.checkoutRecords.length, 0); validateDb(db);
+  ({ db, f, i2, co } = mk()); db.tenants[0].idImages.front = { id: 'img1', pathname: 'cccd/x.jpg', size: 1, uploadedAt: '2026-01-10T00:00:00Z' }; const r3 = B.deleteInvoice(db, f.id); assert.equal(r3.whole, true); assert.equal(db.invoices.length, 0); assert.equal(db.rentals.length, 0); assert.equal(db.tenants.length, 0, 'không còn lượt thuê nào → xóa hồ sơ khách'); assert.deepEqual(r3.paths, ['cccd/x.jpg']); assert.equal(db.payments.length, 0); assert.equal(db.readings.length, 0); assert.equal(db.priceHistories.length, 0); validateDb(db);
 });
 
 console.log(`\nKết quả: ${pass} đạt, ${fail} lỗi`);
