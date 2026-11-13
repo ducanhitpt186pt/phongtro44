@@ -35,8 +35,8 @@
 2. Nếu bản mới nhất ghi **Preview** thay vì **Production**: bấm dấu **⋯** ở dòng đó → **Promote to Production** → xác nhận.
 
 ## Phần 4. Kiểm tra
-1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-17-a`.
-2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-17-a".
+1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-18-b`.
+2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-18-b".
 3. Bấm **Ghi Điện & Nước - Tính Tiền Phòng**, đăng nhập: các phòng, khách, hóa đơn của bạn còn nguyên; trong danh sách phòng có thêm thẻ **Chủ Nhà**.
 
 ## Phần 5. Việc cần làm 1 lần sau khi cập nhật
@@ -91,6 +91,17 @@ Bạn không phải làm gì với Upstash. Khi bản mới mở lên, phần m�
 
 ### Trang chủ bị chuyển sang trang đăng nhập Vercel?
 Vercel → dự án → **Settings** → **Deployment Protection** → **Vercel Authentication** chọn **Disabled** (hoặc chỉ Preview) → **Save**.
+
+### 5.3f. Bản 2026-11-17: trả phòng và đồng hồ tổng
+- **Hóa đơn trả phòng:** Tiền phòng = số ngày ở × (giá thuê ÷ 30). Ví dụ giá 1.200.000 → 40.000 đ/ngày. Số ngày = ngày trả − ngày bắt đầu kỳ (vào 11, trả 13 là 2 ngày). Dưới các khoản có dòng **Trừ: đã thu trước (tiền phòng đầu kỳ)** rồi mới ra số **Khách còn phải trả** hoặc **Chủ nhà hoàn lại khách**. **Nợ cũ** không có thì không hiện.
+- **Ghi đồng hồ tổng hàng tháng:** trang chủ quản trị → thẻ **Chủ Nhà** (màu cam) → nút **Ghi đồng hồ tổng**. Cũng có thể bấm vào thẻ để xem chi tiết và sửa các lần ghi.
+- Lịch chia 60% | 40%; báo cáo bỏ thống kê "Khoản phát sinh / điều chỉnh"; ô **Tổng công nợ** nền đỏ nhạt.
+
+### 5.3g. Bản 2026-11-18: lời nhắc điện thoại, nợ cũ theo tháng, phát sinh khi thu tiền, xóa hóa đơn
+- **Thêm vào lời nhắc điện thoại:** ở mỗi sự kiện bấm **Nhắc điện thoại** → chọn giờ (mặc định **06:00**) và các mốc (mặc định **trước 3 ngày, trước 1 ngày và đúng ngày**) → **TẠO LỜI NHẮC (.ics)**. iPhone/iPad: mở file → **Thêm tất cả** vào Lịch. Android: mở file bằng **Google Lịch** → Lưu. Sự kiện lặp hằng năm được tạo cho 3 năm tới (âm lịch tự đổi sang đúng ngày dương mỗi năm).
+- **Nợ cũ:** mặc định 0. Chỉ là phần các tháng trước chưa trả hết, và hóa đơn ghi rõ **"Còn nợ tháng 10/2026: 200.000 đ"**. Hộp thoại **Tính tiền** cho biết trước nợ cũ tự động chuyển sang; ô **Nợ cũ** chỉ để nhập thêm khoản nợ chưa có trong hệ thống.
+- **Bấm Đã nhận tiền:** có ô **Tiền phát sinh** và **Nội dung phát sinh** (nếu có). Khoản này được cộng vào hóa đơn mới nhất của khách và hiện trên hóa đơn; số cần thu tự cập nhật.
+- **Xóa hóa đơn** (trang chi tiết phòng, cột cuối của bảng tháng): chỉ xóa được hóa đơn **mới nhất** của khách đang thuê (không phải hóa đơn đầu, không phải hóa đơn trả phòng/chuyển phòng). Có cảnh báo "dữ liệu quan trọng, không khôi phục được" và phải tích ô xác nhận. Xóa kèm các lần thu tiền và chỉ số điện nước của kỳ đó; nợ tháng trước trở lại như cũ. Muốn xóa tháng cũ hơn: xóa lùi dần từ tháng mới nhất. Nên **Tải database.json** trước khi xóa.
 
 ### 5.4. Lịch & sự kiện (mới)
 Tab **Lịch** (thanh dưới cùng): lịch tháng dương + âm, ngày lễ, thêm/sửa/xóa sự kiện. Trang chủ phía dưới nút "Ghi Điện & Nước - Tính Tiền Phòng" cũng có lịch (xem được, không sửa được khi chưa đăng nhập). Bật/tắt hiện sự kiện ở trang ngoài tại **Sao lưu → Hiển thị trên trang ngoài**.

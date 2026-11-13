@@ -3,6 +3,10 @@
 > **Mẹo:** không cần mở file này. Trên web: tab **Sao lưu → thẻ Sao lưu vào Google Sheet → "Hướng dẫn kết nối 4 bước"** có sẵn nút **Tạo mã bí mật** và **Sao chép mã Apps Script** (mã đã kèm mã bí mật của bạn, chỉ việc dán).
 > **Lưu ý:** bạn KHÔNG cần gửi link Sheet hay cấp quyền cho ai (kể cả tôi). Web tự ghi vào Sheet của bạn thông qua đoạn mã bạn dán; Sheet vẫn riêng tư.
 
+## Hỏi nhanh
+**File Google Sheet nằm ở đâu?** Do chính bạn tạo, nằm trong **Google Drive của tài khoản Gmail bạn dùng để tạo**. Muốn mở: vào https://drive.google.com → **Drive của tôi** → file tên `Nhà trọ 44 - sao lưu` (hoặc vào https://sheets.google.com, file xuất hiện ở danh sách "Gần đây"). Trên web quản lý: tab **Sao lưu** → **Kiểm tra kết nối** → bấm liên kết **Mở Sheet**.
+**Kết nối ra sao?** 3 mảnh nối với nhau: (1) Google Sheet của bạn, (2) đoạn mã Apps Script dán vào Sheet đó (cho ra một địa chỉ `https://script.google.com/.../exec`), (3) hai biến `GOOGLE_SHEET_WEBHOOK_URL` (địa chỉ ở bước 2) và `GOOGLE_SHEET_SECRET` (mã bí mật) khai báo trên nơi chạy web (Vercel hoặc Render). Mỗi lần bạn lưu dữ liệu trên web, web gọi địa chỉ đó để thêm dòng vào Sheet.
+
 ## Nó hoạt động thế nào (rất đơn giản)
 - Bạn tạo 1 file **Google Sheet** trong Gmail, dán vào đó một đoạn mã nhỏ (Apps Script) do tôi cung cấp. Đoạn mã này **chỉ có việc thêm dòng mới**, không có lệnh xóa hay sửa dòng cũ.
 - Mỗi khi bạn lưu dữ liệu trên web (thêm khách, lập hóa đơn, thu tiền, đồng hồ tổng, sự kiện…), web tự **thêm dòng** vào Sheet. Mỗi ngày còn thêm **1 bản sao lưu đầy đủ** (tab `SaoLuuDayDu`).
