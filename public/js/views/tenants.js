@@ -44,7 +44,7 @@ export function tenantView(id) {
 function idCard(owner, kind, side, label) {
   const m = owner.idImages?.[side];
   return html`<div class="card"><b>CCCD ${label}</b>
-    <div class="idprev" id="show-${owner.id}-${side}" style="margin:8px 0">${m ? html`<img class="idimg" alt="Ảnh CCCD ${label}" loading="lazy" data-act="zoom-id" data-id="${m.id}" src="${apiUrl(`storage/${m.id}`)}"><div class="idfail small" hidden>Không tải được ảnh. Kiểm tra kết nối kho ảnh (BLOB_READ_WRITE_TOKEN), hoặc bấm "Tải về".</div>` : html`<span class="muted">Chưa có ảnh</span>`}</div>
+    <div class="idprev" id="show-${owner.id}-${side}" style="margin:8px 0">${m ? html`<img class="idimg" alt="Ảnh CCCD ${label}" loading="lazy" decoding="async" data-act="zoom-id" data-id="${m.id}" src="${apiUrl(`storage/${m.id}`)}"><div class="idfail small" hidden>Không tải được ảnh. Kiểm tra kết nối kho ảnh (BLOB_READ_WRITE_TOKEN), hoặc bấm "Tải về".</div>` : html`<span class="muted">Chưa có ảnh</span>`}</div>
     <div class="row">${m ? html`<a class="btn sm" href="${apiUrl(`storage/${m.id}?download=1`)}" download>Tải về</a>` : ''}<button class="btn sm" data-act="id-replace" data-owner="${owner.id}" data-side="${side}">${m ? 'Thay ảnh' : 'Thêm ảnh'}</button>${m ? html`<button class="btn sm danger" data-act="id-delete" data-id="${m.id}">Xóa ảnh</button>` : ''}</div>${m ? html`<div class="muted small" style="margin-top:6px">Tải lên ${dmy(m.uploadedAt.slice(0, 10))}</div>` : ''}</div>`;
 }
 acts['zoom-id'] = (el) => openModal('Ảnh CCCD', html`<img alt="CCCD" class="idzoom" src="${apiUrl(`storage/${el.dataset.id}`)}">`);

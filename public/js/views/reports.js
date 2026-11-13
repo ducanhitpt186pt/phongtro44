@@ -5,6 +5,7 @@ import { GAS } from '../gas-code.js';
 
 import { acts, forms, changes, rerender } from '../ui.js';
 
+let logLimit = 10; // nhật ký: chỉ hiện 10 dòng mới nhất, bấm "Xem thêm" để hiện tiếp
 const HK = 'nt44_hidden_rows'; const hidden = () => { try { return new Set(JSON.parse(localStorage.getItem(HK) || '[]')); } catch { return new Set(); } }; const setHidden = (h) => { try { localStorage.setItem(HK, JSON.stringify([...h])); } catch { /* bỏ qua */ } };
 let range = null; let last = null;
 export function reportsView() {
@@ -36,7 +37,7 @@ acts['rep-csv'] = () => {
 acts['rep-json'] = () => download(`bao-cao-${last.from}-${last.to}.json`, JSON.stringify(last, null, 1));
 
 export function backupView() {
-  const logs = D().activityLogs.slice(-40).reverse();
+  const allLogs = D().activityLogs.slice().reverse(); const logs = allLogs.slice(0, logLimit);
   return html`<div class="page-head"><h2>Sao lưu & khôi phục</h2></div>
     <section class="card"><h3>Sao lưu dữ liệu</h3><p class="muted">Tải toàn bộ dữ liệu (không gồm ảnh CCCD) về máy. Nên làm mỗi tháng và cất ở nơi khác (Google Drive, email…). Hệ thống cũng tự lưu bản sao mỗi tháng trong kho dữ liệu riêng tư trên GitHub.</p>
       <a class="btn primary" href="${apiUrl('backup/export')}" download>⬇ Tải database.json</a></section>
@@ -46,7 +47,8 @@ export function backupView() {
     ${settingsCard()}
     ${cleanupCard()}
     <section class="card" style="margin-top:12px"><h3>Ảnh CCCD</h3><p class="muted">Ảnh nằm trong kho Vercel Blob riêng tư, không nằm trong file JSON. Tải từng ảnh ở trang hồ sơ khách (nút "Tải về") khi cần bản dự phòng.</p></section>
-    <h2 class="sec">Nhật ký thao tác gần đây</h2><div class="list">${logs.map((l) => html`<div class="li"><span><b>${l.action}</b> <span class="muted">${l.detail}</span></span><span class="muted small">${l.at.slice(0, 16).replace('T', ' ')}</span></div>`)}</div>`;
+    <h2 class="sec">Nhật ký thao tác gần đây</h2><div class="list" id="loglist">${logs.map((l) => html`<div class="li"><span><b>${l.action}</b> <span class="muted">${l.detail}</span></span><span class="muted small">${l.at.slice(0, 16).replace('T', ' ')}</span></div>`)}</div>
+    <div class="row" style="margin-top:10px">${allLogs.length > logLimit ? html`<button class="btn" data-act="logs-more">Xem thêm (còn ${allLogs.length - logLimit} dòng)</button>` : ''}${logLimit > 10 ? html`<button class="btn" data-act="logs-less">Thu gọn (10 dòng mới nhất)</button>` : ''}</div>`;
 }
 forms.restore = async (f, fd) => {
   const file = fd.get('file'); if (!file || !file.size) throw new Error('Chưa chọn file');
@@ -129,3 +131,6 @@ acts['gas-copy-secret'] = async () => { const v = $('#gssecret').value; if (!v) 
 
 acts['hide-row'] = (el) => { if (!confirm('Xóa dòng này khỏi báo cáo? (Chỉ ẩn trên báo cáo; hóa đơn và tiền thu vẫn được giữ nguyên trong sổ sách. Có nút Hiện lại.)')) return; const h = hidden(); h.add(el.dataset.key); setHidden(h); loadReport(); };
 acts['show-rows'] = () => { setHidden(new Set()); loadReport(); };
+
+acts['logs-more'] = () => { logLimit += 20; rerender(); };
+acts['logs-less'] = () => { logLimit = 10; rerender(); };

@@ -21,13 +21,13 @@ async function compress(file, rot) {
   const url = URL.createObjectURL(file);
   const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('Không đọc được ảnh này. Hãy chọn ảnh JPG/PNG khác.')); i.src = url; });
   URL.revokeObjectURL(url);
-  const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight)); // ảnh vừa đủ rõ, nhỏ hơn nên tải lên nhanh hơn
+  const scale = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight)); // nén nhỏ: vẫn đọc rõ chữ trên CCCD/QR, tải lên và hiển thị nhanh
   const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
   const swap = rot % 180 !== 0; const c = document.createElement('canvas'); c.width = swap ? h : w; c.height = swap ? w : h;
   const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
   g.translate(c.width / 2, c.height / 2); g.rotate((rot * Math.PI) / 180); g.drawImage(img, -w / 2, -h / 2, w, h);
-  let q = 0.82, blob;
-  do { blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', q)); q -= 0.06; } while (blob && blob.size > 1_400_000 && q > 0.5);
+  let q = 0.78, blob;
+  do { blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', q)); q -= 0.06; } while (blob && blob.size > 450_000 && q > 0.45);
   if (!blob) throw new Error('Trình duyệt không nén được ảnh');
   return blob;
 }

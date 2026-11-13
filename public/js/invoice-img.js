@@ -37,7 +37,7 @@ export async function renderBill(m) {
   await fonts();
   const W = 1080, P = 64, IW = W - P * 2;
   // bố cục: tính chiều cao trước
-  let h = P + 130; h += m.info.length * 58 + 20; h += m.meters.length ? m.meters.length * 62 + 20 : 0; h += m.calc.reduce((s, r) => s + 78 + (r.formula ? r.formula.split(String.fromCharCode(10)).length * 38 - 4 : 0), 0) + 30; h += 150; h += m.foot.length * 58; h += m.pay || m.qr ? (m.qr ? 340 : 250) : 0; h += 120;
+  let h = P + 130; h += m.info.length * 58 + 20; h += m.meters.length ? m.meters.length * 62 + 20 : 0; h += m.calc.reduce((s, r) => s + 78 + (r.formula ? r.formula.split(String.fromCharCode(10)).length * 38 - 4 : 0), 0) + 30; h += 150; h += m.foot.reduce((s, r) => s + (r[2] ? 84 : 58), 0); h += m.pay || m.qr ? (m.qr ? 340 : 250) : 0; h += 120;
   let qrImg = null; if (m.qr) { try { const r = await fetch(m.qr, { credentials: 'same-origin' }); qrImg = await createImageBitmap(await r.blob()); } catch { /* không tải được QR thì bỏ qua */ } }
   const cv = document.createElement('canvas'); cv.width = W; cv.height = h; const c = cv.getContext('2d');
   c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, h); rr(c, 24, 24, W - 48, h - 48, 40, '#f5f7fa');
@@ -47,7 +47,7 @@ export async function renderBill(m) {
   const words = m.title.split(' '); let line = '', lines = []; for (const w of words) { const t = line ? `${line} ${w}` : w; if (c.measureText(t).width > IW) { lines.push(line); line = w; } else line = t; } lines.push(line);
   lines.forEach((l, k) => c.fillText(l, W / 2, y + 46 + k * 56)); y += 46 + lines.length * 56 + 24; if (lines.length > 1) h += 0;
   c.strokeStyle = '#d9dee5'; c.lineWidth = 2; c.beginPath(); c.moveTo(P, y); c.lineTo(W - P, y); c.stroke(); y += 22;
-  const kv = (k, v, bold = false, red = false) => { c.textAlign = 'left'; c.fillStyle = red ? '#c42a1d' : '#6c6c70'; c.font = `${red ? 700 : 400} 32px ${FONT}`; c.fillText(k, P, y + 36); c.textAlign = 'right'; c.fillStyle = red ? '#c42a1d' : '#1c1c1e'; c.font = `${bold ? 700 : 600} 34px ${FONT}`; c.fillText(v, W - P, y + 36); y += 58; };
+  const kv = (k, v, bold = false, red = false) => { const big = red ? 1.45 : 1; c.textAlign = 'left'; c.fillStyle = red ? '#c42a1d' : '#6c6c70'; c.font = `${red ? 800 : 400} ${Math.round(32 * big)}px ${FONT}`; c.fillText(k, P, y + 36 * big + (red ? 4 : 0)); c.textAlign = 'right'; c.fillStyle = red ? '#c42a1d' : '#1c1c1e'; c.font = `${red || bold ? 800 : 600} ${Math.round(34 * big)}px ${FONT}`; c.fillText(v, W - P, y + 36 * big + (red ? 4 : 0)); y += Math.round(58 * big); };
   for (const [k, v] of m.info) kv(k, v);
   if (m.meters.length) { y += 10; for (const [a, b] of m.meters) { c.textAlign = 'left'; c.fillStyle = '#6c6c70'; c.font = `400 32px ${FONT}`; c.fillText(a[0], P, y + 38); c.fillStyle = '#1c1c1e'; c.font = `700 36px ${FONT}`; c.fillText(a[1], P + 250, y + 38); c.fillStyle = '#6c6c70'; c.font = `400 32px ${FONT}`; c.fillText(b[0], P + 480, y + 38); c.fillStyle = '#1c1c1e'; c.font = `700 36px ${FONT}`; c.fillText(b[1], P + 730, y + 38); y += 62; } y += 10; }
   y += 8;

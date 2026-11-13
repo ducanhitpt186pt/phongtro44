@@ -8,9 +8,12 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   await pg.goto(H + '#/login'); await pg.fill('input[name=password]', '20101963'); await pg.click('button:has-text("ĐĂNG NHẬP")'); await pg.waitForSelector('.room-card');
   const d0 = await pg.evaluate(() => fetch('/api/data').then((r) => r.json())); const next = d0.derived.rentals[Object.keys(d0.derived.rentals)[0]];
   // Đồng hồ tổng mới (hôm nay) khi phòng 1 chưa ghi số mới → kỳ Chủ Nhà phải "Đang chờ chốt"
-  await pg.goto(H + '#/room/room-owner'); await pg.waitForSelector('text=Chủ Nhà – đồng hồ tổng'); const last = d0.db.masterReadings.slice(-1)[0];
+  // Phòng 3 có khách từ trước đầu tháng nhưng CHƯA ghi chỉ số trong tháng này → tháng Chủ Nhà phải "Đang chờ" phòng đó
+  const first = new Date(Date.now() + 7 * 3600e3); first.setUTCDate(1); first.setUTCDate(-2); const startOld = first.toISOString().slice(0, 10); // 3 ngày trước đầu tháng
+  { const c = await pg.evaluate(() => fetch('/api/auth/session').then((r) => r.json()).then((j) => j.csrf)); await pg.evaluate(([c, sd]) => fetch('/api/tenants', { method: 'POST', headers: { 'content-type': 'application/json', 'x-csrf-token': c }, body: JSON.stringify({ roomId: 'room-3', startDate: sd, paidAlready: true, rent: 1000000, elecPrice: 3000, waterPrice: 10000, initElec: 100, initWater: 10, tenant: { fullName: 'Khách Ba', dob: '1990-01-01', gender: 'male', phone: '0900000003', cccd: '001090000003', cccdIssueDate: '2020-01-01', cccdIssuePlace: 'HN', address: 'HN' } }) }).then((r) => r.json()), [c, startOld]); }
+  await pg.goto(H + '#/room/room-owner'); await pg.reload(); await pg.waitForSelector('text=Chủ Nhà – đồng hồ tổng'); const last = d0.db.masterReadings.slice(-1)[0];
   await pg.click('button[data-act=master-add]'); await pg.waitForSelector('form[data-form=master]'); await pg.fill('form[data-form=master] [name=elec]', String(last.elec + 100)); await pg.fill('[name=water]', String(last.water + 5)); await pg.click('form[data-form=master] button[type=submit]'); await pg.waitForSelector('.badge:has-text("Đang chờ")');
-  ok(/Phòng 1/.test(await pg.innerText('.badge:has-text("Đang chờ")')), 'kỳ Chủ Nhà mới: "Đang chờ" phòng chưa ghi số (Phòng 1), kết quả chỉ tạm tính');
+  ok(/Phòng 3/.test(await pg.innerText('.badge:has-text("Đang chờ")')), 'tháng Chủ Nhà mới: "Đang chờ" phòng chưa ghi số trong tháng (Phòng 3), kết quả chỉ tạm tính');
   await pg.goto(H + '#/dashboard'); const dash = await pg.innerText('body'); ok(/Đang chờ chốt/.test(dash) || /chờ chốt/.test(dash), 'trên Tổng quan có ghi chú Chủ Nhà đang chờ chốt');
   // Ghi điện nước phòng 1 với "Ngày chốt số"
   await pg.goto(H + '#/room/room-1'); await pg.waitForSelector('button[data-act=readings]'); await pg.click('button[data-act=readings]'); const hasField = await pg.isVisible('input[name=readDate]');

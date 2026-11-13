@@ -80,4 +80,10 @@ await t('xóa hồ sơ khách cũ: đang thuê / còn nợ / chờ hoàn tiền 
   else if (rec.refund?.status === 'pending') { assert.match((await call('DELETE', `/api/tenants/${t0.id}`)).body.error, /hoàn tiền/); await call('POST', `/api/checkout/${rec.id}/refunded`, { date: d.today }); }
   const ok = await call('DELETE', `/api/tenants/${t0.id}`); assert.equal(ok.status, 200, JSON.stringify(ok.body)); const after = ok.body.db.tenants.find((x) => x.id === t0.id); assert.equal(after.fullName, '(Đã xóa hồ sơ)'); assert.equal(after.cccd, ''); assert.equal(after.phone, ''); assert.ok(ok.body.db.invoices.filter((i) => i.tenantId === t0.id).every((i) => i.tenantName === '(Đã xóa hồ sơ)') && ok.body.db.invoices.some((i) => i.tenantId === t0.id), 'hóa đơn/số tiền vẫn còn');
 });
+await t('đồng hồ tổng: ghi ngày nào cũng được (kể cả cùng ngày); chỉ bắt buộc số mới KHÔNG nhỏ hơn số cũ đã lưu', async () => {
+  const d0 = (await call('GET', '/api/data')).body.db.masterReadings; const last = d0.slice().sort((a, b) => a.date.localeCompare(b.date) || String(a.createdAt).localeCompare(String(b.createdAt))).pop(); const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+  const same = await call('POST', '/api/master-readings', { date: last.date, elec: last.elec + 10, water: last.water + 1 }); assert.equal(same.status, 200, 'cùng ngày với lần trước vẫn nhận: ' + JSON.stringify(same.body));
+  const low = await call('POST', '/api/master-readings', { date: today, elec: last.elec + 5, water: last.water + 1 }); assert.equal(low.status, 400); assert.match(low.body.error, /nhỏ hơn số cũ đã lưu/);
+  const eq = await call('POST', '/api/master-readings', { date: today, elec: last.elec + 10, water: last.water + 1 }); assert.equal(eq.status, 200, 'bằng số cũ vẫn được (đồng hồ chưa nhích)');
+});
 server.close(); console.log(`\nTích hợp Blob: ${pass} đạt`); process.exit(process.exitCode || 0);

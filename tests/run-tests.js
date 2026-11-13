@@ -8,7 +8,7 @@ import { purgeOld, storageInfo } from '../lib/cleanup.js';
 import { buildSystem } from '../lib/health.js';
 import { solarToLunar, lunarToSolar } from '../public/js/lunar.js';
 import * as EV from '../public/js/events-core.js';
-import { analyze, roomSeries, usageOverview, ownerSeries, roomUsageBetween } from '../lib/usage.js';
+import { analyze, roomSeries, usageOverview, ownerSeries } from '../lib/usage.js';
 
 let pass = 0, fail = 0;
 const t = (name, fn) => { try { fn(); pass++; console.log('  ✓', name); } catch (e) { fail++; console.log('  ✗', name, '\n   ', e.message); } };
@@ -221,25 +221,25 @@ function monthsDb(elecUsages, waterUsages, start = '2026-01-10') {
   elecUsages.forEach((u, i) => { e += u; w += waterUsages[i]; const d = B.createPeriodicInvoice(db, { rentalId: m.rental.id, periodIndex: i + 1, elecNew: e, waterNew: w }, periodStart(start, i + 1)); B.addPayment(db, { invoiceId: d.id, amount: d.total }, periodStart(start, i + 1)); });
   return { db, rental: m.rental };
 }
-t('so với tháng trước + trung bình năm: điện tăng, nước giảm, cảnh báo khi vượt 30% so với TB', () => {
+t('so với tháng trước + trung bình năm: điện tăng, nước giảm, cảnh báo khi vượt 20% so với TB', () => {
   const { db } = monthsDb([50, 50, 50, 70], [10, 10, 10, 5]); const a = analyze(roomSeries(db, 'room-1'), '2026-05-12');
   assert.equal(a.elec.cur, 70); assert.equal(a.elec.prev, 50); assert.equal(a.elec.trend, 'up'); assert.equal(a.elec.avg, 50); assert.ok(a.elec.alert, 'điện +40% so với TB phải cảnh báo');
   assert.equal(a.water.cur, 5); assert.equal(a.water.trend, 'down'); assert.ok(!a.water.alert, 'nước giảm không cảnh báo'); assert.equal(a.label, '2026-04');
   const o = usageOverview(db, '2026-05-12'); assert.equal(o.alerts.length, 1); assert.match(o.alerts[0].text, /Phòng 1: điện tăng 40%.*rò rỉ/);
 });
-t('tăng dưới 30% hoặc đúng 30% thì KHÔNG cảnh báo; dữ liệu 1 tháng dùng tháng trước làm mốc', () => {
-  const { db } = monthsDb([50, 50, 50, 64], [10, 10, 10, 10]); assert.ok(!analyze(roomSeries(db, 'room-1'), '2026-05-12').elec.alert);
+t('tăng dưới 20% hoặc đúng 20% thì KHÔNG cảnh báo; dữ liệu 1 tháng dùng tháng trước làm mốc', () => {
+  const { db } = monthsDb([50, 50, 50, 60], [10, 10, 10, 10]); assert.ok(!analyze(roomSeries(db, 'room-1'), '2026-05-12').elec.alert, '+20% đúng ngưỡng: không cảnh báo'); const over = monthsDb([50, 50, 50, 61], [10, 10, 10, 10]); assert.ok(analyze(roomSeries(over.db, 'room-1'), '2026-05-12').elec.alert, '+22% vượt 20%: cảnh báo');
   const one = monthsDb([50, 70], [10, 10]); const a = analyze(roomSeries(one.db, 'room-1'), '2026-03-12'); assert.equal(a.elec.avg, 50); assert.ok(a.elec.alert);
 });
-t('phòng Chủ Nhà = đồng hồ tổng − tổng các phòng (nội suy theo ngày, ước tính phần sau lần ghi cuối)', () => {
-  const { db } = monthsDb([50], [10]); // phòng 1: 10/01 chỉ số 1000 → 10/02 chỉ số 1050 (50 số / 31 ngày)
-  assert.ok(db.rooms.some((r) => r.kind === 'owner')); 
-  db.masterReadings.push({ id: 'm1', date: '2026-01-10', elec: 5000, water: 500, note: '', createdAt: '' }, { id: 'm2', date: '2026-02-10', elec: 5130, water: 520, note: '', createdAt: '' });
-  const s = ownerSeries(db); assert.equal(s.length, 1); assert.equal(Math.round(s[0].rooms.elec), 50); assert.equal(Math.round(s[0].owner.elec), 80); assert.equal(Math.round(s[0].owner.water), 10);
-  db.masterReadings.push({ id: 'm3', date: '2026-02-20', elec: 5200, water: 530, note: '', createdAt: '' }); const s2 = ownerSeries(db); assert.equal(s2[1].estimated, true); assert.ok(Math.abs(s2[1].rooms.elec - (50 / 31) * 10) < 0.01);
+t('phòng Chủ Nhà (theo THÁNG): số mới − số cũ − tổng các phòng đã ghi trong tháng; ngày ghi số tổng nào trong tháng cũng được', () => {
+  const mk = (newDate) => { const { db } = monthsDb([50], [10]); /* phòng 1 ghi ngày 10/02: dùng 50 số, 10 khối */ db.masterReadings.push({ id: 'm1', date: '2026-01-05', elec: 5000, water: 500, note: '', createdAt: '1' }, { id: 'm2', date: newDate, elec: 5130, water: 520, note: '', createdAt: '2' }); return db; };
+  assert.ok(monthsDb([50], [10]).db.rooms.some((r) => r.kind === 'owner'));
+  for (const d of ['2026-02-01', '2026-02-10', '2026-02-28']) { const s = ownerSeries(mk(d)); assert.equal(s.length, 1, d); assert.equal(s[0].ym, '2026-02'); assert.equal(Math.round(s[0].total.elec), 130); assert.equal(Math.round(s[0].rooms.elec), 50); assert.equal(Math.round(s[0].owner.elec), 80, 'Chủ Nhà dùng 80 số dù ghi số tổng ngày ' + d); assert.equal(Math.round(s[0].owner.water), 10); assert.equal(s[0].complete, true); }
+  assert.equal(ownerSeries(mk('2026-02-28'))[0].completedOn, '2026-02-28', 'ghi số tổng muộn hơn phòng cuối: chốt ngày ghi số tổng'); assert.equal(ownerSeries(mk('2026-02-01'))[0].completedOn, '2026-02-10', 'ghi sớm hơn: chốt ngày phòng cuối cùng ghi');
+  const db = mk('2026-02-10'); db.masterReadings.push({ id: 'm3', date: '2026-02-10', elec: 5140, water: 521, note: '', createdAt: '3' }); const s2 = ownerSeries(db); assert.equal(s2.length, 1, 'hai lần ghi trong cùng 1 tháng gộp thành 1 kỳ (lấy số mới nhất)'); assert.equal(Math.round(s2[0].total.elec), 140);
   validateDb(db); assert.equal(db.rooms.filter((r) => !r.kind).length, 7);
 });
-t('đồng hồ tổng: cảnh báo khi chủ nhà dùng tăng > 30% so với trung bình (sau khi mọi phòng đã chốt số)', () => {
+t('đồng hồ tổng: cảnh báo khi chủ nhà dùng tăng > 20% so với trung bình (sau khi mọi phòng đã chốt số)', () => {
   const { db } = monthsDb([0, 0, 0, 0], [0, 0, 0, 0]); const base = { elec: 5000, water: 500 }; const ms = [['2026-01-10', 0, 0], ['2026-02-10', 100, 10], ['2026-03-10', 200, 20], ['2026-04-10', 300, 30], ['2026-05-10', 450, 30]];
   ms.forEach(([d, e, w], i) => db.masterReadings.push({ id: 'm' + i, date: d, elec: base.elec + e, water: base.water + w, note: '', createdAt: '' }));
   const o = usageOverview(db, '2026-05-12'); assert.ok(o.owner.elec.alert); assert.ok(!o.owner.water.alert); assert.ok(o.alerts.some((a) => a.roomName === 'Chủ Nhà' && a.kind === 'elec'));
@@ -422,6 +422,14 @@ t('XÓA DÒNG của khách ĐÃ TRẢ PHÒNG (kể cả đã thanh toán / thanh
   let { db, f, i2, co } = mk(); assert.equal(db.rentals[0].status, 'ended'); const r1 = B.deleteInvoice(db, co.invoice.id); assert.equal(r1.invoicesRemoved, 1); assert.equal(db.checkoutRecords.length, 0, 'xóa hóa đơn trả phòng thì xóa luôn bản ghi hoàn tiền'); assert.equal(db.invoices.length, 2); assert.equal(i2.rolledOver, undefined); assert.equal(db.readings.filter((x) => x.final).length, 0); validateDb(db);
   ({ db, f, i2, co } = mk()); const r2 = B.deleteInvoice(db, i2.id); assert.equal(r2.invoicesRemoved, 2, 'xóa tháng 2 (đã thanh toán 1 phần) kéo theo hóa đơn trả phòng'); assert.equal(db.invoices.length, 1); assert.equal(db.checkoutRecords.length, 0); validateDb(db);
   ({ db, f, i2, co } = mk()); db.tenants[0].idImages.front = { id: 'img1', pathname: 'cccd/x.jpg', size: 1, uploadedAt: '2026-01-10T00:00:00Z' }; const r3 = B.deleteInvoice(db, f.id); assert.equal(r3.whole, true); assert.equal(db.invoices.length, 0); assert.equal(db.rentals.length, 0); assert.equal(db.tenants.length, 0, 'không còn lượt thuê nào → xóa hồ sơ khách'); assert.deepEqual(r3.paths, ['cccd/x.jpg']); assert.equal(db.payments.length, 0); assert.equal(db.readings.length, 0); assert.equal(db.priceHistories.length, 0); validateDb(db);
+});
+
+t('NỢ CỘNG DỒN: tháng nào chưa trả thì tháng sau cộng dồn, ghi rõ nợ từng tháng; trả bớt một tháng thì chỉ còn các tháng kia', () => {
+  const { db, rental } = setup('2026-01-10', '2026-01-10'); const first = db.invoices[0]; B.addPayment(db, { invoiceId: first.id, amount: first.total }, '2026-01-10'); // tháng đầu đã thu
+  const i1 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 1, elecNew: 150, waterNew: 12 }, '2026-02-10'); const own1 = i1.total - i1.oldDebt; assert.equal(i1.oldDebt, 0);
+  const i2 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 2, elecNew: 200, waterNew: 14 }, '2026-03-10'); const own2 = i2.total - i2.oldDebt; assert.equal(i2.oldDebt, own1, 'tháng 2 chưa trả → cộng sang tháng 3'); assert.deepEqual(i2.oldDebtMonths, [{ ym: '2026-02', amount: own1 }]);
+  const i3 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 3, elecNew: 260, waterNew: 16 }, '2026-04-10'); const own3 = i3.total - i3.oldDebt; assert.equal(i3.oldDebt, own1 + own2, 'tháng 3 và 4 chưa trả → cộng dồn cả hai'); assert.deepEqual(i3.oldDebtMonths, [{ ym: '2026-02', amount: own1 }, { ym: '2026-03', amount: own2 }], 'ghi rõ tiền nợ từng tháng');
+  assert.equal(B.remainingOf(db, i3), own1 + own2 + own3); B.addPayment(db, { invoiceId: i2.id, amount: own2 }, '2026-04-10'); assert.deepEqual(B.unpaidMonths(db, rental.chainId).map((m) => m.ym), ['2026-02', '2026-04'], 'trả riêng tháng 3 thì chỉ còn nợ tháng 2 và tháng 4'); assert.equal(B.remainingOf(db, i3), own1 + own3);
 });
 
 console.log(`\nKết quả: ${pass} đạt, ${fail} lỗi`);

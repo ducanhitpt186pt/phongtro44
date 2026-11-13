@@ -2,6 +2,7 @@ import { html, raw, vnd, num, dmy, field, openModal, closeModal, toInt, toDec, t
 import { D, DV, S, save, invD, latestInvOf, room } from '../api.js';
 import { acts, forms, rerender, go } from '../ui.js';
 import { payDialog } from './room.js';
+import { billArticle } from './bill.js';
 import { billModel, saveBill } from '../invoice-img.js';
 import { icon } from '../icons.js';
 import { toast } from '../util.js';
@@ -14,16 +15,7 @@ export function invoiceView(id) {
   const m = billModel(i, x, S.snap.settings?.bank, S.snap.settings?.bankQr);
   const canShare = typeof navigator !== 'undefined' && !!navigator.canShare;
   return html`<div class="row noprint" style="margin-bottom:12px"><a class="back sp" href="#/room/${i.roomId}">← ${i.roomName}</a></div>
-  <article class="bill" id="bill"><h1>${m.title}</h1>
-    <dl class="binfo">${m.info.map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`)}</dl>
-    ${m.meters.length ? html`<div class="bmeters">${m.meters.map((row) => html`<div class="bm">${row.map(([k, v]) => html`<span>${k}</span><b>${v}</b>`)}</div>`)}</div>` : ''}
-    <div class="bcalc">${m.calc.map((r) => html`<div class="bl ${r.info ? 'info' : ''}"><div class="bl1"><span>${r.label}</span><b class="${r.amount < 0 ? 'neg' : ''}">${r.info ? `(${m.money(r.amount)})` : m.money(r.amount)}</b></div>${r.formula ? html`<div class="bf">${r.formula}</div>` : ''}</div>`)}</div>
-    <div class="btotal"><span>${m.total.label}</span><b>${m.total.value}</b></div>
-    ${m.pay || m.qr ? html`<div class="bbank ${m.qr ? 'hasqr' : ''}"><b>${m.pay ? 'THÔNG TIN CHUYỂN KHOẢN' : 'QUÉT MÃ QR ĐỂ CHUYỂN KHOẢN'}</b><div class="bbrow">${m.pay ? html`<dl>${m.pay.map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`)}</dl>` : ''}${m.qr ? html`<img class="bqr" alt="QR chuyển khoản" src="${m.qr}">` : ''}</div></div>` : ''}
-    ${m.foot.length ? html`<dl class="binfo" style="margin-top:12px">${m.foot.map(([k, v, red]) => html`<dt class="${red ? 'owe' : ''}">${k}</dt><dd class="${red ? 'owe' : ''}">${v}</dd>`)}</dl>` : ''}
-    ${i.rolledOver ? html`<p class="bnote">Còn nợ ${vnd(i.rolledOver.amount)} đã chuyển sang hóa đơn kỳ sau.</p>` : ''}
-    ${i.note ? html`<p class="bnote">Ghi chú: ${i.note}</p>` : ''}
-    <div class="bstamp"><span class="stamp ${INV_COLOR[x.status]}">${INV_STATUS[x.status].toUpperCase()}</span></div></article>
+  ${billArticle(i, x, 'bill')}
   ${isLatest && x.remaining > 0 ? html`<div class="row noprint" style="justify-content:center;margin:14px 0 0"><button class="btn green big" data-act="pay" data-id="${i.id}">${icon('check', '1.2em')} Đã nhận tiền (còn ${vnd(x.remaining)})</button></div>` : ''}<div class="row noprint" style="justify-content:center;margin:14px 0"><button class="btn primary" data-act="bill-jpg">${raw(icon('photo', '1.15em'))} Tải hóa đơn (ảnh JPG)</button>${canShare ? html`<button class="btn" data-act="bill-share">Gửi Zalo / Chia sẻ</button>` : ''}<button class="btn" data-act="print">In</button>${isLatest && i.kind === 'periodic' ? html`<button class="btn" data-act="adjust" data-id="${i.id}">Điều chỉnh</button>` : ''}</div>
   <p class="muted small noprint" style="text-align:center;margin:0 0 16px">Bấm "Tải hóa đơn" để lưu ảnh JPG vào điện thoại rồi gửi Zalo cho khách. Trên điện thoại, "Gửi Zalo / Chia sẻ" mở sẵn danh sách ứng dụng để chọn Zalo.</p>
   <section class="card noprint" style="max-width:640px;margin:0 auto">
