@@ -35,8 +35,8 @@
 2. Nếu bản mới nhất ghi **Preview** thay vì **Production**: bấm dấu **⋯** ở dòng đó → **Promote to Production** → xác nhận.
 
 ## Phần 4. Kiểm tra
-1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-20-a`.
-2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-20-a".
+1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-22-a`.
+2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-22-a".
 3. Bấm **Ghi Điện & Nước - Tính Tiền Phòng**, đăng nhập: các phòng, khách, hóa đơn của bạn còn nguyên; trong danh sách phòng có thêm thẻ **Chủ Nhà**.
 
 ## Phần 5. Việc cần làm 1 lần sau khi cập nhật
@@ -118,6 +118,18 @@ Vercel → dự án → **Settings** → **Deployment Protection** → **Vercel 
 - **Nhận khách mới:** ô **"Đã thu đủ tiền phòng kỳ đầu"** được **tích sẵn**. Lưu khách là hệ thống tự ghi nhận đã thu tiền phòng đầu kỳ (ngày thu = ngày nhận phòng). Nên không còn thông báo "Chưa thanh toán T11". Bỏ tích nếu chưa nhận tiền.
 - **Tháng sau (T12):** chỉ phát sinh nợ khi bạn nhập điện nước của phòng đó; **Nợ cũ = 0** nếu tháng đầu đã thu.
 - **Khách đã nhập từ trước mà tháng đầu chưa ghi nhận thu:** trang chi tiết phòng có thẻ **"Tiền phòng kỳ đầu chưa ghi nhận đã thu"** với nút **Ghi nhận đã thu tiền phòng đầu kỳ**; bấm một lần là xong (thẻ này không phải thông báo nợ).
+
+### 5.3j. Bản 2026-11-21: hiển thị phòng gọn và nhắc ghi điện nước
+- **Tình trạng phòng** chỉ là **chữ màu** (không nền, không viền): *Đang cho thuê* (xanh dương), *Đang trống* (xanh nhạt), *Đang khóa* (xám), *Đang sửa chữa* (đỏ).
+- **Phòng khóa/sửa** trên trang quản lý chỉ hiện "Phòng 5 · Đang khóa" và **ghi chú của phòng** (ví dụ "Đang Bán Trứng"); trang ngoài không hiện ghi chú riêng. Thẻ **Chủ Nhà** bỏ dòng chữ thừa.
+- **Nhắc ghi điện nước** (khung màu cam): nằm phía trên **"DANH SÁCH PHÒNG"** (trang ngoài) và **"Các phòng"** (trang quản lý), liệt kê phòng **đã tới ngày ghi** (kèm "trễ n ngày") và phòng **sắp tới ngày ghi** (trong 5 ngày). Tính theo ngày nhận phòng của từng khách. Ví dụ khách ở từ 1/10: tới 1/11 là báo.
+- **Đổi ngày nhận phòng sớm hơn** (ví dụ 1/11 → 1/10): hệ thống cập nhật ngay, nên nếu đã qua ngày ghi (1/11) mà chưa ghi điện nước thì báo liền, không còn "Không có việc cần xử lý".
+
+### 5.3k. Bản 2026-11-22
+- **Xóa dòng trong "Hóa đơn theo tháng":** mọi dòng (đã thanh toán, thanh toán 1 phần, trả phòng; khách đang thuê hay đã trả phòng) đều có nút **Xóa**. Xóa một dòng thì xóa luôn các dòng sau nó của cùng khách (kèm thu tiền, chỉ số điện nước, kết quả trả phòng). Tháng vừa xóa **quay về dòng trống "Chưa có hóa đơn"** để nhập mới, bảng vẫn đủ 12 tháng. Xóa dòng đầu của khách đã trả phòng = xóa toàn bộ lịch sử thuê và hồ sơ khách (nếu không còn lượt thuê khác). Tháng có 2 dòng (hai khách khác nhau) thì xóa riêng từng dòng. Luôn có cảnh báo và ô xác nhận; nên **Tải database.json** trước.
+- **Sửa số liệu hóa đơn mới nhất:** mở hóa đơn → **Điều chỉnh** (có thể đưa về 0 hoặc xóa trống).
+- **Tổng quan và Tổng quan cần xử lý:** nền **trắng**, chỉ chữ màu (xanh, cam, tím, đỏ…); thông báo cũng nền trắng.
+- **iPhone/iPad:** nút **"Thêm icon trên iOS"** nằm ngay đầu trang (cạnh nút Đăng nhập), bấm mở hướng dẫn 4 bước có hình chỉ nút Chia sẻ. iOS **không cho trang web tự thêm icon** nên bắt buộc làm: Safari → Chia sẻ → Thêm vào Màn hình chính → Thêm. Android/máy tính: nút "Thêm icon" mở hộp thoại cài đặt của trình duyệt.
 
 ### 5.4. Lịch & sự kiện (mới)
 Tab **Lịch** (thanh dưới cùng): lịch tháng dương + âm, ngày lễ, thêm/sửa/xóa sự kiện. Trang chủ phía dưới nút "Ghi Điện & Nước - Tính Tiền Phòng" cũng có lịch (xem được, không sửa được khi chưa đăng nhập). Bật/tắt hiện sự kiện ở trang ngoài tại **Sao lưu → Hiển thị trên trang ngoài**.
