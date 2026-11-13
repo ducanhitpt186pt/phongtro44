@@ -71,4 +71,13 @@ await t('đồng hồ tổng: sửa lần ghi (kiểm tra thứ tự với lần
   assert.equal((await call('PUT', `/api/master-readings/${idb}`, { date: dstr(10), elec: 1050, water: 120 })).status, 400, 'lần sau không được nhỏ hơn lần trước');
   assert.equal((await call('DELETE', `/api/master-readings/${idb}`)).status, 200);
 });
+await t('xóa hồ sơ khách cũ: đang thuê / còn nợ / chờ hoàn tiền thì KHÔNG xóa; đủ điều kiện thì xóa thông tin cá nhân, giữ số tiền', async () => {
+  const d = (await call('GET', '/api/data')).body; const t0 = d.db.tenants[0]; const r0 = d.db.rentals.find((x) => x.tenantId === t0.id && x.status === 'active');
+  const e1 = await call('DELETE', `/api/tenants/${t0.id}`); assert.equal(e1.status, 400); assert.match(e1.body.error, /đang thuê/);
+  const base = d.derived.rentals[r0.id]; const co = await call('POST', '/api/checkout', { rentalId: r0.id, date: d.today, elecFinal: base.baseElec + 10, waterFinal: base.baseWater + 1, extras: [] }); assert.equal(co.status, 200, JSON.stringify(co.body));
+  const inv = co.body.result.invoice; const rec = co.body.result.record;
+  if (inv.total > 0) { assert.equal((await call('DELETE', `/api/tenants/${t0.id}`)).status, 400, 'còn nợ thì không xóa'); await call('POST', '/api/payments', { invoiceId: inv.id, amount: inv.total }); }
+  else if (rec.refund?.status === 'pending') { assert.match((await call('DELETE', `/api/tenants/${t0.id}`)).body.error, /hoàn tiền/); await call('POST', `/api/checkout/${rec.id}/refunded`, { date: d.today }); }
+  const ok = await call('DELETE', `/api/tenants/${t0.id}`); assert.equal(ok.status, 200, JSON.stringify(ok.body)); const after = ok.body.db.tenants.find((x) => x.id === t0.id); assert.equal(after.fullName, '(Đã xóa hồ sơ)'); assert.equal(after.cccd, ''); assert.equal(after.phone, ''); assert.ok(ok.body.db.invoices.filter((i) => i.tenantId === t0.id).every((i) => i.tenantName === '(Đã xóa hồ sơ)') && ok.body.db.invoices.some((i) => i.tenantId === t0.id), 'hóa đơn/số tiền vẫn còn');
+});
 server.close(); console.log(`\nTích hợp Blob: ${pass} đạt`); process.exit(process.exitCode || 0);

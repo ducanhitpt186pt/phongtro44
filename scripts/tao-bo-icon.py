@@ -21,6 +21,6 @@ out.append('};')
 out.append('''// Trả về HTML an toàn (Raw) nên dùng trực tiếp trong mẫu html`` mà không bị thoát ký tự. plain=true: dùng màu chữ hiện tại.
 export const icon = (name, size = '1em', extra = '', plain = false) => { const p = P[name] || ['', '']; return raw(`<svg class="ic ${extra}" ${p[1] && !plain ? `data-c="${p[1]}"` : ''} width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${p[0]}"/></svg>`); };
 export const ROOM_ICON = { occupied: 'bed', empty: 'door-open', repair: 'wrench', notready: 'lock', owner: 'home' };
-export const ROOM_TONE = { occupied: 'blue', empty: 'green', repair: 'red', notready: 'gray', owner: 'orange' };''')
+export const ROOM_TONE = { occupied: 'blue', empty: 'sky', repair: 'red', notready: 'gray', owner: 'orange' };''')
 open('public/js/icons.js', 'w', encoding='utf8').write('\n'.join(out) + '\n')
 print('Đã tạo public/js/icons.js với', len(ICONS), 'icon')

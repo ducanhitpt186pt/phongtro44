@@ -8,7 +8,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   await page.goto('http://localhost:4173/'); await page.waitForSelector('text=TỔNG QUAN CẦN XỬ LÝ');
   ok(await page.isVisible('text=Không có việc cần xử lý'), 'trang ngoài hiển thị tổng quan khi chưa có việc');
   await page.screenshot({ path: '/tmp/shots/01-public.png' });
-  await page.click('text=Ghi Điện & Nước - Tính Tiền Phòng'); await page.fill('input[name=password]', 'sai'); await page.click('button:has-text("ĐĂNG NHẬP")');
+  await page.click('.login-top'); await page.fill('input[name=password]', 'sai'); await page.click('button:has-text("ĐĂNG NHẬP")');
   await page.waitForSelector('text=Mật khẩu không chính xác'); ok(true, 'sai mật khẩu → báo lỗi, vẫn ở màn đăng nhập'); ok(page.url().includes('login'), 'không vào dashboard');
   await page.screenshot({ path: '/tmp/shots/02-login.png' });
   await page.fill('input[name=password]', '20101963'); await page.click('button:has-text("ĐĂNG NHẬP")'); await page.waitForSelector('text=Các phòng');
@@ -30,15 +30,15 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const body = await p2.innerText('body'); ok(body.includes('Chưa thanh toán') && body.includes('1.200.000'), 'trang ngoài hiện Phòng 1 chưa thanh toán 1.200.000');
   ok(!/0987|001092|Thanh Hóa|Bình|1992/.test(body), 'trang ngoài KHÔNG lộ SĐT/CCCD/địa chỉ/ngày sinh/tên người ở cùng'); await p2.screenshot({ path: '/tmp/shots/05-public-notice.png', fullPage: true });
   // thanh toán một phần
-  await page.click('button[data-act=pay-month]'); await page.fill('form[data-form=pay] [name=amount]', '700000'); await page.click('button:has-text("ĐÃ NHẬN TIỀN")'); await page.waitForTimeout(800);
+  await page.click('button[data-act=pay-month]'); await page.fill('form[data-form=pay] [name=amount]', '700000'); await page.click('form[data-form=pay] button[type=submit]'); await page.waitForTimeout(800);
   await p2.reload(); await p2.waitForSelector('text=Đã thanh toán một phần'); const b2 = await p2.innerText('body'); ok(b2.includes('500.000'), 'trang ngoài: thanh toán một phần, còn 500.000');
-  await page.click('button[data-act=pay-month]'); await page.click('text=Trả đủ'); await page.click('button:has-text("ĐÃ NHẬN TIỀN")'); await page.waitForTimeout(800);
+  await page.click('button[data-act=pay-month]'); await page.click('text=Trả đủ'); await page.click('form[data-form=pay] button[type=submit]'); await page.waitForTimeout(800);
   await p2.reload(); await p2.waitForSelector('text=Không có việc cần xử lý'); ok(true, 'trả đủ → thông báo biến mất');
   await page.goto('http://localhost:4173/#/tenants'); await page.waitForSelector('text=Nguyễn Văn An'); await page.click('text=Nguyễn Văn An'); await page.waitForSelector('text=Người ở cùng'); await page.click('text=Xem ảnh >> nth=0'); await page.waitForSelector('.idprev img'); 
   await page.waitForFunction(() => { const i = document.querySelector('.idprev img'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 8000 }).catch(() => {}); ok(await page.evaluate(() => document.querySelector('.idprev img').complete && document.querySelector('.idprev img').naturalWidth > 0), 'xem ảnh CCCD qua API đã xác thực'); await page.screenshot({ path: '/tmp/shots/06-tenant.png', fullPage: true });
   await page.goto('http://localhost:4173/#/dashboard'); await page.screenshot({ path: '/tmp/shots/07-dashboard.png', fullPage: true });
   await page.goto('http://localhost:4173/#/backup'); await page.waitForSelector('text=Sao lưu dữ liệu'); await page.goto('http://localhost:4173/#/reports'); await page.waitForSelector('text=Tổng tiền đã thu'); ok(true, 'báo cáo & sao lưu mở được');
-  await page.click('button:has-text("Đăng xuất")'); await page.waitForSelector('text=Ghi Điện & Nước - Tính Tiền Phòng'); ok(true, 'đăng xuất về màn hình ngoài');
+  await page.click('button:has-text("Đăng xuất")'); await page.waitForSelector('.login-top'); ok(true, 'đăng xuất về màn hình ngoài');
   const r = await page.evaluate(() => fetch('/api/data').then((x) => x.status)); ok(r === 401, 'sau đăng xuất /api/data = 401');
   console.log(errs.length ? 'LỖI TRÌNH DUYỆT:\n' + errs.join('\n') : 'Không có lỗi JS/console'); if (errs.length) process.exitCode = 1;
   await b.close();

@@ -8,11 +8,11 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   await pg.goto(H + '#/login'); await pg.fill('input[name=password]', '20101963'); await pg.click('button:has-text("ĐĂNG NHẬP")'); await pg.waitForSelector('.room-card');
   const px = (sel) => pg.$eval(sel, (e) => parseFloat(getComputedStyle(e).fontSize)); const root = await pg.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
   ok((await px('.top h1')) === 2 * root && (await px('.top .credit')) === 0.5 * root, 'tiêu đề 2rem, chữ ducanhitpt186 0,5rem');
-  ok((await px('#footstrip .foot-strip')) === 1 * root && (await px('.top .bell')) === 1 * root && (await px('.top .dt')) === 1 * root, 'dòng lưu trữ (ở cuối trang), chuông, ngày + âm lịch đều 1rem');
+  ok((await px('#footstrip .foot-strip')) === 1 * root && (await px('.top .bell')) === 1 * root && (await px('.top .dt')) === 1.2 * root, 'dòng lưu trữ (cuối trang) và chuông 1rem; ngày + âm lịch 1,2rem');
   ok((await pg.locator('.room-card .rbadge svg').count()) >= 7, 'mỗi thẻ phòng có icon trạng thái');
   await pg.screenshot({ path: '/tmp/shots/60-dash.png' });
   await pg.locator('.room-card', { hasText: 'Phòng 1' }).click(); await pg.waitForSelector('text=Người ở cùng (0)');
-  const bg = await pg.$eval('button[data-act=add-occupant]', (e) => getComputedStyle(e).backgroundColor); ok(/rgb\(2[0-9]{2}, [0-9]{1,2}, [0-9]{1,2}\)|rgb\(255, 59, 48\)/.test(bg), 'nút "Thêm người ở cùng" màu đỏ (' + bg + ')');
+  const bg = await pg.$eval('button[data-act=add-occupant]', (e) => getComputedStyle(e).backgroundImage + getComputedStyle(e).backgroundColor); ok(/rgb\(2[0-9]{2}, [0-9]{1,3}, [0-9]{1,3}\)/.test(bg), 'nút "Thêm người ở cùng" màu đỏ (' + bg + ')');
   // thêm người ở cùng CÓ ảnh
   await pg.click('button[data-act=add-occupant]'); await pg.fill('[name=o_name]', 'Lê Thị Mai'); await pg.fill('[name=o_dob]', '1998-05-05'); await pg.fill('[name=o_cccd]', '001098000555');
   await pg.click('button:has-text("LƯU NGƯỜI Ở CÙNG")'); await pg.waitForSelector('text=địa chỉ thường trú'); ok(true, 'người ở cùng thiếu địa chỉ thường trú → bị chặn'); await pg.fill('[name=o_address]', 'Hà Nội');

@@ -20,8 +20,8 @@ export function dashboardView() {
   }
   const stat = (n, l, cls = '') => html`<div class="stat ${cls}"><b>${n}</b><span>${l}</span></div>`;
   return html`
-    <h2 class="sec" style="margin-top:4px">Thông báo cần xử lý (${rem.length})</h2>
-    <div class="notices" style="margin-top:0">${rem.length ? rem.map((i) => noticeCard({ ...i, period: i.periodLabel }, { link: true, tenantName: i.tenantId ? tenant(i.tenantId)?.fullName : '' })) : html`<div class="empty-state ok"><b>Không có việc cần xử lý.</b></div>`}</div>
+    <h2 class="sec sumrow" style="margin-top:4px"><span>Thông báo cần xử lý (${rem.length})</span>${rem.length ? '' : html`<span class="okpill">${icon('check', '1.1em')} Không có việc cần xử lý</span>`}</h2>
+    ${rem.length ? html`<div class="notices" style="margin-top:0">${rem.map((i) => noticeCard({ ...i, period: i.periodLabel }, { link: true, actions: true, tenantName: i.tenantId ? tenant(i.tenantId)?.fullName : '' }))}</div>` : ''}
     ${eventsAheadList(S.snap.db.events, today())}
     <h2 class="sec">Tổng quan</h2>
     <div class="cards7">${stat(rooms.length, 'Tổng số phòng')}${stat(toCollect, 'Phòng cần thu tiền', toCollect ? 'orange' : '')}${stat(vnd(need), 'Tổng tiền cần thu (kỳ hiện hành)')}${stat(vnd(debt), 'Tổng công nợ', debt ? 'red' : '')}</div>
@@ -38,7 +38,7 @@ function roomCard(r) {
   return html`<article class="card click room-card st-${tone}" data-act="open-room" data-id="${r.id}">
     <div class="rhead"><span class="rbadge ${tone}">${icon(ROOM_ICON[r.status], '1.6em')}</span><div class="sp"><h3>${r.name}</h3>${m ? html`<span class="room-sub">Vào ${dmy(m.r.startDate)}</span>` : html`<span class="badge ${tone}">${ROOM_STATUS[r.status]}</span>`}</div>${m ? html`<button class="btn red sm rbtn" data-act="readings" data-id="${m.r.id}">${icon('bolt', '1.1em')} Tính tiền</button>` : ''}</div>
     ${m ? html`<dl class="kv"><dt>Khách thuê</dt><dd class="big">${t?.fullName}</dd><dt>Số người</dt><dd>${people}</dd>
-      <dt>Tổng cần thu</dt><dd class="big">${vnd(m.inv.total)}</dd><dt>Đã thanh toán</dt><dd>${vnd(m.d.paid)}</dd>
+      <dt>Tổng cần thu</dt><dd class="big money">${vnd(m.inv.total)}</dd><dt>Đã thanh toán</dt><dd>${vnd(m.d.paid)}</dd>
       <dt>Còn nợ</dt><dd class="${m.d.remaining ? 'owe' : 'okc'}">${vnd(m.d.remaining)}</dd></dl>
       ${months.length ? html`<div class="mchips">${months.map((x) => html`<span class="mchip ${x.status}">Chưa thanh toán T${Number(x.ym.slice(5))}/${x.ym.slice(0, 4)}</span>`)}</div>` : ''}`
       : html`<div class="rempty ${tone}"><b>${lbl[0]}</b>${lbl[1] ? html`<span>${lbl[1]}</span>` : ''}</div>`}

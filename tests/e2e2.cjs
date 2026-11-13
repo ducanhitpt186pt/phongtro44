@@ -17,8 +17,8 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const inv = await page.innerText('#bill'); ok(inv.includes('100.000') && inv.includes('30.000') && inv.includes('1.400.000') && inv.includes('2.730.000'), 'hóa đơn kỳ 2: điện 100.000 + nước 30.000 + nợ cũ 1.400.000 + phòng 1.200.000 = 2.730.000');
   await page.screenshot({ path: '/tmp/shots/08-invoice.png', fullPage: true });
   await page.click('.invoice >> text=Hủy', { timeout: 1000 }).catch(() => {});
-  await page.click('button[data-act=pay]'); await page.fill('form[data-form=pay] [name=amount]', '99999999'); await page.click('button:has-text("ĐÃ NHẬN TIỀN")'); await page.waitForSelector('text=vượt quá'); ok(true, 'không cho thu vượt số còn phải thu');
-  await page.fill('form[data-form=pay] [name=amount]', '1000000'); await page.click('button:has-text("ĐÃ NHẬN TIỀN")'); await page.waitForSelector('text=1.730.000'); ok(true, 'thu 1 phần → còn nợ 1.730.000');
+  await page.click('button[data-act=pay]'); await page.fill('form[data-form=pay] [name=amount]', '99999999'); await page.click('form[data-form=pay] button[type=submit]'); await page.waitForSelector('text=vượt quá'); ok(true, 'không cho thu vượt số còn phải thu');
+  await page.fill('form[data-form=pay] [name=amount]', '1000000'); await page.click('form[data-form=pay] button[type=submit]'); await page.waitForSelector('text=1.730.000'); ok(true, 'thu 1 phần → còn nợ 1.730.000');
   await page.goto('http://localhost:4173/#/dashboard'); await page.locator('.room-card', { hasText: 'Phòng 2' }).click(); await page.click('button:has-text("Trả phòng")');
   await page.fill('[name=elecFinal]', '160'); await page.fill('[name=waterFinal]', '13'); await page.click('button:has-text("XEM TÍNH TOÁN")'); await page.waitForSelector('text=Đã lập hóa đơn kỳ'); ok(true, 'trả phòng khi đã lập hóa đơn kỳ sau trước hạn → chặn kèm giải thích');
   console.log(errs.length ? 'LỖI JS: ' + errs.join('|') : 'Không có lỗi JS'); await b.close();

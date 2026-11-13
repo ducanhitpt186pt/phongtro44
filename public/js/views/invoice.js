@@ -13,18 +13,18 @@ export function invoiceView(id) {
   const co = D().checkoutRecords.find((c) => c.invoiceId === i.id);
   const m = billModel(i, x, S.snap.settings?.bank);
   const canShare = typeof navigator !== 'undefined' && !!navigator.canShare;
-  return html`<div class="row noprint" style="margin-bottom:12px"><a class="back sp" href="#/room/${i.roomId}">← ${i.roomName}</a>${isLatest && x.remaining > 0 ? html`<button class="btn sm warn" data-act="pay" data-id="${i.id}">Thanh toán</button>` : ''}${isLatest && i.kind === 'periodic' ? html`<button class="btn sm" data-act="adjust" data-id="${i.id}">Điều chỉnh</button>` : ''}</div>
+  return html`<div class="row noprint" style="margin-bottom:12px"><a class="back sp" href="#/room/${i.roomId}">← ${i.roomName}</a></div>
   <article class="bill" id="bill"><h1>${m.title}</h1>
     <dl class="binfo">${m.info.map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`)}</dl>
     ${m.meters.length ? html`<div class="bmeters">${m.meters.map((row) => html`<div class="bm">${row.map(([k, v]) => html`<span>${k}</span><b>${v}</b>`)}</div>`)}</div>` : ''}
-    <div class="bcalc">${m.calc.map((r) => html`<div class="bl"><div class="bl1"><span>${r.label}</span><b class="${r.amount < 0 ? 'neg' : ''}">${m.money(r.amount)}</b></div>${r.formula ? html`<div class="bf">${r.formula}</div>` : ''}</div>`)}</div>
+    <div class="bcalc">${m.calc.map((r) => html`<div class="bl ${r.info ? 'info' : ''}"><div class="bl1"><span>${r.label}</span><b class="${r.amount < 0 ? 'neg' : ''}">${r.info ? `(${m.money(r.amount)})` : m.money(r.amount)}</b></div>${r.formula ? html`<div class="bf">${r.formula}</div>` : ''}</div>`)}</div>
     <div class="btotal"><span>${m.total.label}</span><b>${m.total.value}</b></div>
     ${m.pay ? html`<div class="bbank"><b>THÔNG TIN CHUYỂN KHOẢN</b><dl>${m.pay.map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`)}</dl></div>` : ''}
     ${m.foot.length ? html`<dl class="binfo" style="margin-top:12px">${m.foot.map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`)}</dl>` : ''}
     ${i.rolledOver ? html`<p class="bnote">Còn nợ ${vnd(i.rolledOver.amount)} đã chuyển sang hóa đơn kỳ sau.</p>` : ''}
     ${i.note ? html`<p class="bnote">Ghi chú: ${i.note}</p>` : ''}
     <div class="bstamp"><span class="stamp ${INV_COLOR[x.status]}">${INV_STATUS[x.status].toUpperCase()}</span></div></article>
-  <div class="row noprint" style="justify-content:center;margin:14px 0"><button class="btn primary" data-act="bill-jpg">${raw(icon('photo', '1.15em'))} Tải hóa đơn (ảnh JPG)</button>${canShare ? html`<button class="btn" data-act="bill-share">Gửi Zalo / Chia sẻ</button>` : ''}<button class="btn" data-act="print">In</button></div>
+  ${isLatest && x.remaining > 0 ? html`<div class="row noprint" style="justify-content:center;margin:14px 0 0"><button class="btn green big" data-act="pay" data-id="${i.id}">${icon('check', '1.2em')} Đã nhận tiền (còn ${vnd(x.remaining)})</button></div>` : ''}<div class="row noprint" style="justify-content:center;margin:14px 0"><button class="btn primary" data-act="bill-jpg">${raw(icon('photo', '1.15em'))} Tải hóa đơn (ảnh JPG)</button>${canShare ? html`<button class="btn" data-act="bill-share">Gửi Zalo / Chia sẻ</button>` : ''}<button class="btn" data-act="print">In</button>${isLatest && i.kind === 'periodic' ? html`<button class="btn" data-act="adjust" data-id="${i.id}">Điều chỉnh</button>` : ''}</div>
   <p class="muted small noprint" style="text-align:center;margin:0 0 16px">Bấm "Tải hóa đơn" để lưu ảnh JPG vào điện thoại rồi gửi Zalo cho khách. Trên điện thoại, "Gửi Zalo / Chia sẻ" mở sẵn danh sách ứng dụng để chọn Zalo.</p>
   <section class="card noprint" style="max-width:640px;margin:0 auto">
     ${pays.length ? html`<h3>Lịch sử thanh toán</h3><div class="list" style="margin:8px 0 12px">${pays.map((p) => html`<div class="li"><span>${dmy(p.date)} ${p.note ? `· ${p.note}` : ''}${p.voided ? html` <span class="badge red">Đã hủy: ${p.voidReason}</span>` : ''}</span><span style="${p.voided ? 'text-decoration:line-through' : ''}">${vnd(p.amount)} ${isLatest && !p.voided ? html`<button class="btn sm" data-act="void-pay" data-id="${p.id}">Hủy</button>` : ''}</span></div>`)}</div>` : html`<p class="muted small" style="margin:0 0 8px">Chưa có giao dịch thanh toán.</p>`}

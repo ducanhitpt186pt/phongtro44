@@ -4,7 +4,14 @@
   "private": true,
   "type": "module",
   "description": "Quản lý Nhà trọ 44 Lê Văn Phấn",
-  "engines": { "node": ">=20" },
-  "scripts": { "test": "node tests/run-tests.js" },
-  "dependencies": { "@vercel/blob": "^2.6.1" }
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tests/run-tests.js"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.6.1"
+  }
 }

@@ -10,7 +10,8 @@ const st = { y: null, m: null, sel: null, year: null };
 const evs = () => (S.loggedIn && S.snap ? S.snap.db.events : S.pub?.events || []);
 const T = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const lunarName = (s) => { const l = EV.lunarOf(s); return `${l.day}/${l.month}${l.leap ? ' nhuận' : ''} năm ${canChi(l.year)}`; };
-const refresh = () => { const pc = $('#pubcal'); if (pc && !S.loggedIn) pc.innerHTML = calendarPanel().s; else rerender(); };
+// Làm mới CHỈ khung lịch (không tải lại cả trang)
+const refresh = () => { const el = $('#cal'); if (!el) { rerender(); return; } const tmp = document.createElement('div'); tmp.innerHTML = calendarPanel({ editable: el.dataset.editable === '1' }).s; el.replaceWith(tmp.firstElementChild); };
 function init() { const t = today() || todayLocal(); if (st.y === null) { st.y = Number(t.slice(0, 4)); st.m = Number(t.slice(5, 7)); } if (!st.year) st.year = Number(t.slice(0, 4)); }
 function dayInfo(date, events) {
   const h = EV.holidaysInYear(Number(date.slice(0, 4))).filter((x) => x.date === date);
@@ -36,9 +37,9 @@ export function calendarPanel({ editable = false } = {}) {
   const l1 = EV.lunarOf(first), l2 = EV.lunarOf(last);
   const hol = EV.holidaysInMonth(st.y, st.m); const inMonth = EV.occurrences(events, first, last);
   const sel = st.sel && st.sel.startsWith(`${st.y}-${String(st.m).padStart(2, '0')}`) ? st.sel : null;
-  return html`<section class="cal" id="cal"><div class="calwrap"><div class="calmain"><div class="cal-head"><button class="btn sm ic-btn" data-act="cal-prev" aria-label="Tháng trước">${raw(icon('chevL', '1.2em'))}</button>
-    <div class="sp"><h2>Tháng ${st.m} năm ${st.y}</h2><div class="muted small">Âm lịch: tháng ${l1.month}${l1.month !== l2.month ? `–${l2.month}` : ''} năm ${canChi(l2.year)}</div></div>
-    <button class="btn sm" data-act="cal-today">Hôm nay</button><button class="btn sm ic-btn" data-act="cal-next" aria-label="Tháng sau">${raw(icon('chevR', '1.2em'))}</button>${editable ? html`<button class="btn sm primary" data-act="ev-add">${raw(icon('plus', '1.1em'))} Thêm sự kiện</button>` : ''}</div>
+  return html`<section class="cal" id="cal" data-editable="${editable ? 1 : 0}"><div class="calwrap"><div class="calmain"><div class="cal-head"><button class="btn sm ic-btn" data-act="cal-prev" aria-label="Tháng trước">${raw(icon('chevL', '1.2em'))}</button>
+    <div class="sp"><div class="cal-title"><select class="cal-sel" data-change="cal-month" aria-label="Chọn tháng">${Array.from({ length: 12 }, (_, i) => i + 1).map((m) => html`<option value="${m}" ${m === st.m ? raw('selected') : ''}>Tháng ${m}</option>`)}</select><select class="cal-sel" data-change="cal-year" aria-label="Chọn năm">${Array.from({ length: 13 }, (_, i) => Number((today() || todayLocal()).slice(0, 4)) - 5 + i).map((y) => html`<option value="${y}" ${y === st.y ? raw('selected') : ''}>${y}</option>`)}</select></div><div class="muted small">Âm lịch: tháng ${l1.month}${l1.month !== l2.month ? `–${l2.month}` : ''} năm ${canChi(l2.year)}</div></div>
+    <button class="btn sm" data-act="cal-today">Hôm nay</button><button class="btn sm ic-btn" data-act="cal-next" aria-label="Tháng sau">${raw(icon('chevR', '1.2em'))}</button><button class="btn sm primary" data-act="${editable ? 'ev-add' : 'pub-add-event'}">${raw(icon('plus', '1.1em'))} Thêm sự kiện</button></div>
     <div class="cal-grid"><div class="cal-wd">${T.map((x, i) => html`<span class="${i === 6 ? 'we' : ''}">${x}</span>`)}</div>
     <div class="cal-days">${grid.map((d, i) => {
       if (!d) return html`<span class="cd blank"></span>`;
@@ -58,13 +59,15 @@ function detailOf(date, events, editable) {
 }
 function eventList(events, editable) {
   const y = st.year; const all = EV.occurrences(events, `${y}-01-01`, `${y}-12-31`); const t = today() || todayLocal();
-  return html`<div class="row"><h3 class="cal-sub sp" style="margin:0">Danh sách sự kiện cần nhớ <span class="muted small">· năm ${y}</span></h3><button class="btn sm ic-btn" data-act="ev-year" data-d="-1" aria-label="Năm trước">${raw(icon('chevL', '1.1em'))}</button><button class="btn sm ic-btn" data-act="ev-year" data-d="1" aria-label="Năm sau">${raw(icon('chevR', '1.1em'))}</button>${editable ? html`<button class="btn primary sm" data-act="ev-add">${raw(icon('plus', '1.1em'))} Thêm sự kiện</button>` : ''}</div>
-    <div class="list" style="margin-top:10px">${all.length ? all.map((o) => html`<div class="li ${o.date < t ? 'past' : ''}"><span class="evdot" style="background:${o.ev.color}"></span><span class="sp"><b>${o.ev.name}</b><br><span class="muted small">${weekday(o.date)}, ${dmy(o.date)} · ${EV.lunarLabel(o.date)} âm lịch · ${o.ev.calendar === 'lunar' ? 'tính theo âm lịch' : 'tính theo dương lịch'} · ${o.ev.repeat ? 'lặp hằng năm' : 'chỉ 1 lần'}${editable && o.ev.note ? ` · ${o.ev.note}` : ''}</span></span>${editable ? html`<button class="btn sm" data-act="ev-edit" data-id="${o.ev.id}">${raw(icon('edit', '1em'))} Sửa</button><button class="btn sm danger" data-act="ev-del" data-id="${o.ev.id}">${raw(icon('trash', '1em'))} Xóa</button>` : ''}</div>`) : html`<div class="empty-state">Chưa có sự kiện nào trong năm ${y}.${editable ? ' Bấm "Thêm sự kiện" để tạo.' : ''}</div>`}</div>`;
+  return html`<div class="row"><h3 class="cal-sub sp evtitle" style="margin:0">Danh sách sự kiện cần nhớ<br><span>Năm ${y}</span></h3><button class="btn sm ic-btn" data-act="ev-year" data-d="-1" aria-label="Năm trước">${raw(icon('chevL', '1.1em'))}</button><button class="btn sm ic-btn" data-act="ev-year" data-d="1" aria-label="Năm sau">${raw(icon('chevR', '1.1em'))}</button>${editable ? html`<button class="btn primary sm" data-act="ev-add">${raw(icon('plus', '1.1em'))} Thêm sự kiện</button>` : ''}</div>
+    <div class="list" style="margin-top:10px">${all.length ? all.map((o) => html`<div class="li"><span class="evdot" style="background:${o.ev.color}"></span><span class="sp"><b>${o.ev.name}</b><br><span class="muted small">${weekday(o.date)}, ${dmy(o.date)} · ${EV.lunarLabel(o.date)} âm lịch · ${o.ev.calendar === 'lunar' ? 'tính theo âm lịch' : 'tính theo dương lịch'} · ${o.ev.repeat ? 'lặp hằng năm' : 'chỉ 1 lần'}${editable && o.ev.note ? ` · ${o.ev.note}` : ''}</span></span>${o.date < t ? html`<span class="badge">Đã qua</span>` : ''}${editable ? html`<span class="evact"><button class="btn sm" data-act="ev-edit" data-id="${o.ev.id}">${raw(icon('edit', '1em'))} Sửa</button><button class="btn sm danger" data-act="ev-del" data-id="${o.ev.id}">${raw(icon('trash', '1em'))} Xóa</button></span>` : ''}</div>`) : html`<div class="empty-state">Chưa có sự kiện nào trong năm ${y}.${editable ? ' Bấm "Thêm sự kiện" để tạo.' : ''}</div>`}</div>`;
 }
 acts['cal-prev'] = () => { st.m -= 1; if (st.m < 1) { st.m = 12; st.y -= 1; } st.sel = null; refresh(); };
 acts['cal-next'] = () => { st.m += 1; if (st.m > 12) { st.m = 1; st.y += 1; } st.sel = null; refresh(); };
 acts['cal-today'] = () => { const t = today() || todayLocal(); st.y = Number(t.slice(0, 4)); st.m = Number(t.slice(5, 7)); st.sel = t; refresh(); };
 acts['cal-day'] = (el) => { st.sel = el.dataset.date; refresh(); setTimeout(() => $('#caldetail')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 30); };
+changes['cal-month'] = (el) => { st.m = Number(el.value); st.sel = null; refresh(); };
+changes['cal-year'] = (el) => { st.y = Number(el.value); st.sel = null; refresh(); };
 acts['ev-year'] = (el) => { st.year += Number(el.dataset.d); refresh(); };
 
 // ---- Form thêm / sửa sự kiện ----

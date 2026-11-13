@@ -5,7 +5,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 }); const pg = await ctx.newPage(); const errs = []; pg.on('pageerror', (e) => errs.push(e.message)); pg.on('dialog', (d) => d.accept());
   const ok = (c, m) => { console.log(c ? '  ✓' : '  ✗ FAIL', m); if (!c) process.exitCode = 1; };
   await pg.goto('http://localhost:4173/'); await pg.waitForSelector('text=ĐIỆN – NƯỚC CÁC PHÒNG SO VỚI THÁNG TRƯỚC');
-  ok(await pg.isVisible('a:has-text("Ghi Điện & Nước - Tính Tiền Phòng")') && !(await pg.isVisible('text=ĐĂNG NHẬP QUẢN LÝ')), 'nút trang chủ: "Ghi Điện & Nước - Tính Tiền Phòng"');
+  ok(await pg.isVisible('.login-top') && !(await pg.isVisible('text=Ghi Điện & Nước - Tính Tiền Phòng')), 'trang chủ: có nút Đăng nhập góc phải, không còn nút "Ghi Điện & Nước - Tính Tiền Phòng"');
   const t = await pg.innerText('body');
   ok(/Phòng 1[\s\S]*50 → 80/.test(t) && /10 → 5/.test(t) && t.includes('▲ +60%') && t.includes('▼ −50%'), 'phòng 1: điện 50 → 80 (▲ +60%), nước 10 → 5 (▼ −50%)');
   ok(/TB các tháng gần nhất: 50 số/.test(t), 'hiện trung bình các tháng gần nhất trong năm');

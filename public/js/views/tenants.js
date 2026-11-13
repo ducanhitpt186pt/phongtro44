@@ -12,14 +12,14 @@ function statusOf(t) {
 }
 forms.noop = () => {};
 export function tenantsView() {
-  const list = D().tenants.slice().sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
+  const list = D().tenants.filter((t) => !t.purgedAt).sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
   const v = html`<div class="page-head"><h2>Khách thuê</h2></div>
     <form data-form="noop" data-live="tsearch"><input name="q" type="search" placeholder="Tìm theo tên, số điện thoại, CCCD…" aria-label="Tìm khách" autocomplete="off"></form>
     <div class="list" id="tlist" style="margin-top:12px">${list.map(tenantRow)}${list.length ? '' : html`<div class="empty-state">Chưa có khách. Vào một phòng trống để thêm khách thuê.</div>`}</div>`;
   return v;
 }
 const tenantRow = (t) => { const s = statusOf(t); return html`<div class="li" data-search="${(t.fullName + ' ' + t.phone + ' ' + t.cccd).toLowerCase()}"><a href="#/tenant/${t.id}"><b>${t.fullName}</b></a><span class="muted small">${t.phone}</span>
-  <span>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`} ${s.debt ? html`<span class="badge red">Nợ ${vnd(s.debt)}</span>` : ''}</span></div>`; };
+  <span>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`} ${s.debt ? html`<span class="badge red">Nợ ${vnd(s.debt)}</span>` : ''} ${!s.act ? html`<button class="btn sm danger" data-act="del-tenant" data-id="${t.id}">${icon('trash', '1em')} Xóa</button>` : ''}</span></div>`; };
 live.tsearch = (f) => { const q = f.q.value.trim().toLowerCase(); document.querySelectorAll('#tlist [data-search]').forEach((el) => (el.hidden = q && !el.dataset.search.includes(q))); };
 
 export function tenantView(id) {
@@ -30,7 +30,7 @@ export function tenantView(id) {
   const pays = D().payments.filter((p) => chainIds.has(p.chainId)).slice().reverse();
   const img = (side, label) => idCard(t, 'tenant', side, label);
   return html`<a class="back" href="#/tenants">← Khách thuê</a>
-    <div class="page-head"><h2>${t.fullName}</h2>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`}${t.purgedAt ? html`<span class="badge">Hồ sơ đã xóa ${dmy(t.purgedAt)}</span>` : html`<button class="btn sm" data-act="edit-tenant" data-id="${id}">Sửa thông tin</button>`}</div>
+    <div class="page-head"><h2>${t.fullName}</h2>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`}${t.purgedAt ? html`<span class="badge">Hồ sơ đã xóa ${dmy(t.purgedAt)}</span>` : html`<button class="btn sm" data-act="edit-tenant" data-id="${id}">Sửa thông tin</button>${!s.act ? html`<button class="btn sm danger" data-act="del-tenant" data-id="${id}">${icon('trash', '1em')} Xóa hồ sơ</button>` : ''}`}</div>
     <section class="card"><div class="zalo-row">${zaloBtn(t.fullName, t.zalo || t.phone)}${occ.map((o) => zaloBtn(o.fullName, o.zalo || o.phone))}</div><dl class="kv"><dt>Ngày sinh</dt><dd>${dmy(t.dob)}</dd><dt>Giới tính</dt><dd>${GENDER[t.gender]}</dd><dt>Điện thoại</dt><dd>${t.phone}</dd><dt>Số CCCD</dt><dd>${t.cccd}</dd><dt>Ngày cấp / Nơi cấp</dt><dd>${dmy(t.cccdIssueDate)} · ${t.cccdIssuePlace}</dd><dt>Địa chỉ thường trú</dt><dd>${t.address}</dd><dt>Công nợ hiện tại</dt><dd class="${s.debt ? 'owe' : 'okc'}">${vnd(s.debt)}</dd></dl></section>
     <h2 class="sec">Ảnh CCCD</h2><div class="idgrid">${img('front', 'mặt trước')}${img('back', 'mặt sau')}</div>
     <div class="row" style="margin:22px 0 10px"><h2 class="sec" style="margin:0" >Người ở cùng (${occ.length})</h2><span class="sp"></span>${s.act && !t.purgedAt ? html`<button class="btn red sm" data-act="add-occupant" data-tid="${id}">${raw(icon('plus', '1.1em'))} Thêm người ở cùng</button>` : ''}</div>
@@ -63,3 +63,8 @@ acts['edit-occupant'] = (el) => {
 };
 forms['occupant-edit'] = async (f) => { await save('PUT', `occupants/${f.dataset.id}`, { occupant: collectOccupant(f) }, 'Đã lưu'); closeModal(); rerender(); };
 acts['del-occupant'] = async (el) => { if (!confirm('Xóa người ở cùng này (khi họ đã dọn đi)? Ảnh CCCD của họ cũng bị xóa khỏi kho. Không thể hoàn tác.')) return; await save('DELETE', `occupants/${el.dataset.id}`, undefined, 'Đã xóa người ở cùng'); rerender(); };
+
+acts['del-tenant'] = async (el) => {
+  const t = tenant(el.dataset.id); if (!confirm(`Xóa hồ sơ khách "${t.fullName}"?\n\nSẽ xóa họ tên, số điện thoại, CCCD, địa chỉ và ảnh. Số tiền trên các hóa đơn cũ vẫn được giữ để báo cáo không bị sai. Không hoàn tác được.`)) return;
+  const j = await save('DELETE', `tenants/${el.dataset.id}`, undefined, 'Đã xóa hồ sơ khách'); go('#/tenants'); rerender();
+};

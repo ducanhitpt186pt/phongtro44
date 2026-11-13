@@ -6,12 +6,13 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const ok = (c, m) => { console.log(c ? '  ✓' : '  ✗ FAIL', m); if (!c) process.exitCode = 1; };
   const H = 'http://localhost:4173/'; const VN = (n = 0) => { const d = new Date(Date.now() + 7 * 3600e3 + n * 86400000); return d.toISOString().slice(0, 10); };
   await pg.goto(H); await pg.waitForSelector('#pubcal .cal-days');
-  const pos = await pg.evaluate(() => ({ btn: document.querySelector('.pub-foot a.btn').getBoundingClientRect().bottom, cal: document.querySelector('#pubcal .cal').getBoundingClientRect().top }));
-  ok(pos.cal > pos.btn, 'lịch tháng nằm DƯỚI nút "Ghi Điện & Nước - Tính Tiền Phòng"');
-  const info = await pg.evaluate(() => ({ cells: document.querySelectorAll('#pubcal .cd:not(.blank)').length, lunar1: [...document.querySelectorAll('#pubcal .ld.m1')].map((e) => e.textContent), today: document.querySelectorAll('#pubcal .cd.today').length, title: document.querySelector('#pubcal h2').textContent, wd: document.querySelector('#pubcal .cal-wd').textContent }));
+  const pos = await pg.evaluate(() => ({ btn: document.querySelector('#pubbody').getBoundingClientRect().bottom, cal: document.querySelector('#pubcal .cal').getBoundingClientRect().top }));
+  ok(pos.cal > pos.btn, 'lịch tháng nằm DƯỚI phần thông báo và danh sách phòng');
+  const info = await pg.evaluate(() => ({ cells: document.querySelectorAll('#pubcal .cd:not(.blank)').length, lunar1: [...document.querySelectorAll('#pubcal .ld.m1')].map((e) => e.textContent), today: document.querySelectorAll('#pubcal .cd.today').length, title: document.querySelectorAll('#pubcal .cal-sel')[0].selectedOptions[0].text + ' ' + document.querySelectorAll('#pubcal .cal-sel')[1].value, wd: document.querySelector('#pubcal .cal-wd').textContent }));
   ok(info.cells >= 28 && info.today === 1 && info.lunar1.length >= 1 && /T2T3T4T5T6T7CN/.test(info.wd), `lịch có ${info.cells} ngày, mỗi ô có ngày âm (mùng 1: ${info.lunar1.join(',')}), tuần bắt đầu T2, hôm nay được tô; "${info.title}"`);
   ok((await pg.innerText('#pubcal')).includes('Nhà giáo Việt Nam') || (await pg.innerText('#pubcal')).includes('Ngày lễ & sự kiện trong tháng'), 'có mục "Ngày lễ & sự kiện trong tháng"');
-  await pg.click('#pubcal [data-act=cal-next]'); await pg.waitForSelector('#pubcal h2:has-text("Tháng")'); ok(!(await pg.url()).includes('login') && (await pg.locator('#pubcal .cal').count()) === 1, 'bấm tháng sau: lịch đổi tháng mà không tải lại trang');
+  await pg.click('#pubcal [data-act=cal-next]'); await pg.waitForSelector('#pubcal .cal-sel'); ok(!(await pg.url()).includes('login') && (await pg.locator('#pubcal .cal').count()) === 1, 'bấm tháng sau: lịch đổi tháng mà không tải lại trang');
+  await pg.evaluate(() => { window.__marker = 1; }); await pg.selectOption('#pubcal select[data-change=cal-month]', '2'); await pg.selectOption('#pubcal select[data-change=cal-year]', String(new Date().getFullYear() + 1)); ok((await pg.evaluate(() => window.__marker)) === 1 && /Tháng 2/.test(await pg.$eval('#pubcal .cal-sel', (e) => e.selectedOptions[0].text)), 'chọn tháng/năm từ danh sách: lịch đổi ngay, KHÔNG tải lại trang');
   await pg.click('#pubcal [data-act=cal-today]');
   // đăng nhập, thêm sự kiện
   await pg.goto(H + '#/login'); await pg.fill('input[name=password]', '20101963'); await pg.click('button:has-text("ĐĂNG NHẬP")'); await pg.waitForSelector('.room-card'); await pg.goto(H + '#/dashboard'); await pg.waitForSelector('.cal');
