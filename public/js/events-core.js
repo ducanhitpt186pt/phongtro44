@@ -51,3 +51,30 @@ export function monthGrid(Y, M) {
   const first = new Date(Date.UTC(Y, M - 1, 1)).getUTCDay(); const lead = (first + 6) % 7; const days = dim(Y, M); const cells = [];
   for (let i = 0; i < lead; i++) cells.push(null); for (let d = 1; d <= days; d++) cells.push(iso(Y, M, d)); while (cells.length % 7) cells.push(null); return cells;
 }
+
+// ---- Lời nhắc điện thoại: tạo file .ics (Lịch của iPhone/Android/Google Calendar đều mở được) ----
+const icsEsc = (s) => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const byteLen = (s) => new TextEncoder().encode(s).length;
+function fold(line) { // gấp dòng tối đa 75 byte theo chuẩn iCalendar
+  if (byteLen(line) <= 75) return line; const parts = []; let cur = '', limit = 75;
+  for (const ch of line) { if (byteLen(cur + ch) > limit) { parts.push(cur); cur = ch; limit = 74; } else cur += ch; }
+  parts.push(cur); return parts.join('\r\n ');
+}
+const stamp = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+// Mỗi lần diễn ra (trong `years` năm tới) là một sự kiện lúc `time` (mặc định 06:00), có chuông báo trước 3 ngày, 1 ngày và đúng ngày (mặc định).
+export function buildIcs(events, { time = '06:00', alarms = [3, 1, 0], years = 3, today, now = new Date(), withNote = false } = {}) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(time)); const hh = m ? Math.min(23, Number(m[1])) : 6, mm = m ? Math.min(59, Number(m[2])) : 0;
+  const alarmDays = [...new Set(alarms.map(Number).filter((d) => [0, 1, 2, 3, 7].includes(d)))].sort((a, b) => b - a);
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nha tro 44//VI', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Nhà trọ 44'];
+  let count = 0; const to = addDays(today, 366 * years);
+  for (const ev of events) {
+    for (const o of occurrences([ev], today, to).slice(0, 12)) {
+      const [y, mo, d] = o.date.split('-'); const start = `${y}${mo}${d}T${pad(hh)}${pad(mm)}00`; const endMin = hh * 60 + mm + 30; const end = `${y}${mo}${d}T${pad(Math.min(23, Math.floor(endMin / 60)))}${pad(endMin % 60 > 59 ? 59 : endMin % 60)}00`;
+      const desc = [`Âm lịch: ${lunarLabel(o.date)}`, withNote && ev.note ? `Ghi chú: ${ev.note}` : ''].filter(Boolean).join('\n');
+      lines.push('BEGIN:VEVENT', `UID:nt44-${String(ev.id || ev.name).replace(/[^A-Za-z0-9]/g, '')}-${o.date}@nhatro44`, `DTSTAMP:${stamp(now)}`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${icsEsc(ev.name)}`, `DESCRIPTION:${icsEsc(desc)}`);
+      for (const k of alarmDays) lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc(`${ev.name} – ${k === 0 ? 'hôm nay' : k === 1 ? 'ngày mai' : `còn ${k} ngày`}`)}`, `TRIGGER:${k === 0 ? 'PT0S' : `-P${k}D`}`, 'END:VALARM');
+      lines.push('END:VEVENT'); count++;
+    }
+  }
+  lines.push('END:VCALENDAR'); return { count, ics: lines.map(fold).join('\r\n') + '\r\n' };
+}

@@ -24,7 +24,7 @@ export function dashboardView() {
     ${rem.length ? html`<div class="notices" style="margin-top:0">${rem.map((i) => noticeCard({ ...i, period: i.periodLabel }, { link: true, actions: true, tenantName: i.tenantId ? tenant(i.tenantId)?.fullName : '' }))}</div>` : ''}
     ${eventsAheadList(S.snap.db.events, today())}
     <h2 class="sec">Tổng quan</h2>
-    <div class="cards7">${stat(rooms.length, 'Tổng số phòng')}${stat(toCollect, 'Phòng cần thu tiền', toCollect ? 'orange' : '')}${stat(vnd(need), 'Tổng tiền cần thu (kỳ hiện hành)')}${stat(vnd(debt), 'Tổng công nợ', debt ? 'red' : '')}</div>
+    <div class="cards7">${stat(rooms.length, 'Tổng số phòng')}${stat(toCollect, 'Phòng cần thu tiền', 'redtxt')}${stat(vnd(need), 'Tổng tiền cần thu (kỳ hiện hành)', 'redtxt')}${stat(vnd(debt), 'Tổng công nợ', 'debt')}</div>
     ${usagePanel(DV().usage)}
     <div class="section-head"><h2 class="sec">Các phòng</h2><span class="sp"></span><button class="btn primary sm" data-act="add-room">${icon('plus', '1.1em')} Thêm phòng</button></div>
     <div class="grid">${rooms.map((r) => roomCard(r))}${ownerRoom ? ownerCard(ownerRoom) : ''}</div>
@@ -46,6 +46,6 @@ function roomCard(r) {
 }
 function ownerCard(r) {
   const o = DV().usage.owner;
-  return html`<article class="card click room-card st-orange owner-card" data-act="open-room" data-id="${r.id}"><div class="rhead"><span class="rbadge orange">${icon('home', '1.6em')}</span><div class="sp"><h3>${r.name}</h3><span class="badge orange">Đồng hồ tổng</span></div></div>
+  return html`<article class="card click room-card st-orange owner-card" data-act="open-room" data-id="${r.id}"><div class="rhead"><span class="rbadge orange">${icon('home', '1.6em')}</span><div class="sp"><h3>${r.name}</h3><span class="badge orange">Đồng hồ tổng</span></div><button class="btn primary sm ownbtn" data-act="master-add">${icon('bolt', '1.1em')} Ghi đồng hồ tổng</button></div>
     ${o ? html`<dl class="kv"><dt>Điện Chủ Nhà dùng</dt><dd class="big ${o.elec.alert ? 'owe' : ''}">${o.elec.cur} số</dd><dt>Nước Chủ Nhà dùng</dt><dd class="big ${o.water.alert ? 'owe' : ''}">${o.water.cur} khối</dd></dl>` : html`<div class="rempty orange"><b>Nhập chỉ số đồng hồ tổng</b><span>Điện nước Chủ Nhà = tổng − các phòng</span></div>`}</article>`;
 }

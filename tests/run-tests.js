@@ -346,5 +346,47 @@ t('BẤT BIẾN (kiểm thử ngẫu nhiên): tổng còn nợ của khách luô
   }
 });
 
+t('TRẢ PHÒNG: tiền phòng = số ngày × (giá ÷ 30); đã đóng đầu kỳ thì Nợ cũ = 0 và số đã thu được trừ riêng; chưa đóng thì hiện là Nợ cũ', () => {
+  const { db, rental } = setup('2026-11-01', '2026-11-01'); const first = db.invoices[0]; B.addPayment(db, { invoiceId: first.id, amount: first.total }, '2026-11-01'); const base = B.baseline(db, rental);
+  const r = B.confirmCheckout(db, { rentalId: rental.id, date: '2026-11-11', elecFinal: base.elec + 10, waterFinal: base.water + 1, extras: [] }, '2026-11-11'); const inv = r.invoice; const monthRent = first.rent;
+  assert.equal(inv.daysUsed, 10); assert.equal(inv.actualRent, Math.round((monthRent / 30) * 10)); assert.equal(inv.carryNet, -monthRent, 'đã đóng đủ đầu kỳ → khoản đã thu trước = giá thuê, Nợ cũ = 0');
+  assert.equal(inv.total, inv.actualRent + inv.elec.amount + inv.water.amount - monthRent, 'tổng = tiền phòng theo ngày + điện + nước − đã thu trước');
+  const u = setup('2026-11-01', '2026-11-01'); const b2 = B.baseline(u.db, u.rental); const r2 = B.confirmCheckout(u.db, { rentalId: u.rental.id, date: '2026-11-11', elecFinal: b2.elec, waterFinal: b2.water, extras: [] }, '2026-11-11'); // chưa đóng đồng nào
+  assert.equal(r2.invoice.carryNet, 0, 'chưa đóng: chưa thu = tiền phòng cả tháng, trừ đi phần thay bằng tiền phòng theo ngày → Nợ cũ 0'); assert.equal(r2.invoice.total, r2.invoice.actualRent, 'khách chưa đóng gì: chỉ còn phải trả tiền phòng đúng 10 ngày');
+});
+
+console.log('NỢ CŨ THEO THÁNG, PHÁT SINH KHI THU TIỀN, XÓA HÓA ĐƠN');
+t('NỢ CŨ mặc định 0; chỉ là phần các tháng trước CHƯA TRẢ HẾT và ghi rõ nợ của tháng nào', () => {
+  const { db, rental } = setup('2026-01-10', '2026-01-10'); const first = db.invoices[0]; B.addPayment(db, { invoiceId: first.id, amount: first.total - 200000 }, '2026-01-10');
+  const i2 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 1, elecNew: 150, waterNew: 12 }, '2026-02-10'); assert.equal(i2.oldDebt, 200000); assert.deepEqual(i2.oldDebtMonths, [{ ym: '2026-01', amount: 200000 }], 'ghi rõ nợ của tháng 1');
+  B.addPayment(db, { invoiceId: i2.id, amount: B.remainingOf(db, i2) }, '2026-02-10'); const i3 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 2, elecNew: 160, waterNew: 13 }, '2026-03-10'); assert.equal(i3.oldDebt, 0); assert.deepEqual(i3.oldDebtMonths, [], 'trả hết thì nợ cũ = 0');
+});
+t('PHÁT SINH khi bấm nhận tiền: cộng vào hóa đơn mới nhất kèm nội dung, rồi thu; hóa đơn trả phòng thì không', () => {
+  const { db, rental } = setup('2026-01-10', '2026-01-10'); const inv = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 1, elecNew: 150, waterNew: 12 }, '2026-02-10'); const t0 = inv.total;
+  throwsCode(() => B.addPayment(db, { invoiceId: inv.id, amount: 1000, extraAmount: -5 }, '2026-02-10'), 'BAD_REQUEST');
+  B.addPayment(db, { invoiceId: inv.id, amount: 100000, extraAmount: 50000, extraLabel: 'Sửa khóa cửa' }, '2026-02-10');
+  assert.equal(inv.total, t0 + 50000); assert.deepEqual(inv.extras.slice(-1)[0], { label: 'Sửa khóa cửa', amount: 50000 }); assert.equal(B.remainingOf(db, inv), t0 + 50000 - 100000); assert.match(inv.adjustments.slice(-1)[0].reason, /Sửa khóa cửa/); validateDb(db);
+  B.addPayment(db, { invoiceId: inv.id, amount: B.remainingOf(db, inv) }, '2026-02-10'); assert.equal(B.remainingOf(db, inv), 0);
+  const { db: d2, rental: r2 } = setup('2026-11-01', '2026-11-01'); const b = B.baseline(d2, r2); const co = B.confirmCheckout(d2, { rentalId: r2.id, date: '2026-11-11', elecFinal: b.elec + 10, waterFinal: b.water + 1, extras: [] }, '2026-11-11'); if (co.invoice.total > 0) throwsCode(() => B.addPayment(d2, { invoiceId: co.invoice.id, amount: 1, extraAmount: 1000 }, '2026-11-11'), 'LOCKED');
+});
+t('XÓA hóa đơn: chỉ hóa đơn MỚI NHẤT (không phải đầu tiên / trả phòng); xóa kèm thu tiền + chỉ số; nợ kỳ trước trở lại như cũ', () => {
+  const { db, rental } = setup('2026-01-10', '2026-01-10'); const first = db.invoices[0]; B.addPayment(db, { invoiceId: first.id, amount: first.total - 300000 }, '2026-01-10');
+  const remBefore = B.remainingOf(db, first); const nRead = db.readings.length; const i2 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 1, elecNew: 150, waterNew: 12 }, '2026-02-10'); B.addPayment(db, { invoiceId: i2.id, amount: 100000 }, '2026-02-10');
+  assert.ok(first.rolledOver); const res = B.deleteInvoice(db, i2.id); assert.equal(res.paymentsRemoved, 1); assert.equal(res.amountRemoved, 100000);
+  assert.equal(db.invoices.length, 1); assert.equal(first.rolledOver, undefined, 'bỏ dấu chuyển nợ'); assert.equal(B.remainingOf(db, first), remBefore, 'nợ tháng trước trở lại như cũ'); assert.equal(db.readings.length, nRead, 'chỉ số điện nước kỳ đó cũng bị xóa'); validateDb(db);
+  throwsCode(() => B.deleteInvoice(db, first.id), 'LOCKED'); // hóa đơn đầu tiên
+  const j2 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 1, elecNew: 150, waterNew: 12 }, '2026-02-10'); const j3 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 2, elecNew: 160, waterNew: 13 }, '2026-03-10');
+  throwsCode(() => B.deleteInvoice(db, j2.id), 'LOCKED'); B.deleteInvoice(db, j3.id); B.deleteInvoice(db, j2.id); assert.equal(db.invoices.length, 1, 'xóa lùi dần từ tháng mới nhất');
+});
+
+t('LỜI NHẮC ĐIỆN THOẠI (.ics): 6h sáng, báo trước 3 ngày + 1 ngày + đúng ngày; sự kiện lặp tạo nhiều lần; ký tự đặc biệt được thoát; dòng ≤ 75 byte', () => {
+  const ev = [{ id: 'e1', name: 'Giỗ ông, bà; nhớ "thắp hương"', calendar: 'solar', day: 25, month: 12, repeat: true, note: 'bí mật' }]; const { count, ics } = EV.buildIcs(ev, { today: '2026-11-13', now: new Date('2026-11-13T00:00:00Z') });
+  assert.equal(count, 3, '3 năm tới = 3 lần'); assert.ok(ics.startsWith('BEGIN:VCALENDAR\r\n') && ics.endsWith('END:VCALENDAR\r\n')); assert.ok(ics.includes('DTSTART:20261225T060000') && ics.includes('DTSTART:20271225T060000'), 'bắt đầu 06:00');
+  for (const tr of ['TRIGGER:-P3D', 'TRIGGER:-P1D', 'TRIGGER:PT0S']) assert.equal(ics.split(tr).length - 1, 3, tr); assert.ok(ics.includes('SUMMARY:Giỗ ông\\, bà\\; nhớ'), 'thoát dấu phẩy/chấm phẩy'); assert.ok(!ics.includes('bí mật'), 'không đưa ghi chú ra ngoài khi không yêu cầu');
+  for (const line of ics.split('\r\n')) assert.ok(new TextEncoder().encode(line).length <= 75, 'dòng quá dài: ' + line.slice(0, 40));
+  assert.equal(EV.buildIcs(ev, { today: '2026-11-13', alarms: [1], time: '07:30' }).ics.includes('T073000'), true); assert.equal(EV.buildIcs([{ ...ev[0], repeat: false, year: 2020 }], { today: '2026-11-13' }).count, 0, 'sự kiện 1 lần đã qua không có lần nào để nhắc');
+  const lun = EV.buildIcs([{ id: 'e2', name: 'Rằm', calendar: 'lunar', day: 15, month: 8, repeat: true }], { today: '2026-11-13' }); assert.ok(lun.ics.includes('DTSTART:20270914T060000') || lun.ics.includes('DTSTART:20270915T060000') || lun.count === 3, 'sự kiện âm lịch: mỗi năm một ngày dương khác nhau');
+});
+
 console.log(`\nKết quả: ${pass} đạt, ${fail} lỗi`);
 process.exit(fail ? 1 : 0);

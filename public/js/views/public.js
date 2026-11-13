@@ -53,8 +53,8 @@ function paint(res, note = '') {
     <div class="stats">
       <div class="stat wide rooms3"><div><b>${s.rooms}</b><span>Tổng số phòng</span></div><div><b>${s.rented}</b><span>Đang cho thuê</span></div><div><b>${s.closed}</b><span>Đang đóng</span></div></div>
       <div class="stat ${s.needReadings ? 'orange' : ''}"><b>${s.needReadings}</b><span>phòng cần ghi điện nước</span></div>
-      <div class="stat ${s.unpaidRooms ? 'red' : ''}"><b>${s.unpaidRooms}</b><span>phòng chưa thanh toán đủ</span></div>
-      <div class="stat wide ${s.totalRemaining ? 'red' : ''}"><b>${vnd(s.totalRemaining)}</b><span>tổng tiền còn cần thu</span></div>
+      <div class="stat redtxt"><b>${s.unpaidRooms}</b><span>phòng chưa thanh toán đủ</span></div>
+      <div class="stat wide redtxt"><b>${vnd(s.totalRemaining)}</b><span>tổng tiền còn cần thu</span></div>
     </div>
     ${items.length ? html`<div class="notices">${items.map((i) => noticeCard(i))}</div>` : ''}
     ${eventsAheadList(res.events, res.today)}

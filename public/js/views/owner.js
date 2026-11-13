@@ -28,7 +28,13 @@ export function ownerView() {
     <h2 class="sec">Lịch sử ghi đồng hồ tổng</h2>
     <div class="list">${ms.length ? ms.slice().reverse().map((m, i) => html`<div class="li"><span><b>${dmy(m.date)}</b> · điện ${num(m.elec)} · nước ${num(m.water)} ${m.note ? html`<span class="muted small">· ${m.note}</span>` : ''}${m.history?.length ? html` <span class="badge">đã sửa</span>` : ''}</span><span class="row"><button class="btn sm" data-act="master-edit" data-id="${m.id}">${icon('edit', '1em')} Sửa</button>${i === 0 ? html`<button class="btn danger sm" data-act="master-del" data-id="${m.id}">Xóa</button>` : ''}</span></div>`) : html`<div class="empty-state">Chưa có lần ghi nào.</div>`}</div>`;
 }
-forms.master = async (f, fd) => { await save('POST', 'master-readings', { date: fd.get('date'), elec: toDec(fd.get('elec')), water: toDec(fd.get('water')), note: fd.get('note') }, 'Đã lưu chỉ số đồng hồ tổng'); rerender(); };
+forms.master = async (f, fd) => { await save('POST', 'master-readings', { date: fd.get('date'), elec: toDec(fd.get('elec')), water: toDec(fd.get('water')), note: fd.get('note') }, 'Đã lưu chỉ số đồng hồ tổng'); closeModal(); rerender(); };
+acts['master-add'] = () => {
+  const ms = D().masterReadings.slice().sort((a, b) => a.date.localeCompare(b.date)); const last = ms[ms.length - 1];
+  openModal(last ? 'Ghi đồng hồ tổng tháng này' : 'Khai báo đồng hồ tổng hiện tại', html`<p class="muted small" style="margin-top:0">${last ? `Lần ghi trước (${dmy(last.date)}): điện ${num(last.elec)}, nước ${num(last.water)}. Nhập số MỚI trên đồng hồ tổng theo hóa đơn nhà nước.` : 'Lần đầu: nhập số đang hiện trên đồng hồ tổng hôm nay (làm mốc ban đầu). Sau này có thể bấm Sửa nếu nhập nhầm.'}</p>
+    <form data-form="master"><div class="two">${field('Ngày ghi *', html`<input type="date" name="date" value="${todayLocal()}" max="${todayLocal()}" required>`)}<div></div></div>
+      <div class="two">${field('Chỉ số điện TỔNG *', html`<input name="elec" inputmode="decimal" required>`)}${field('Chỉ số nước TỔNG *', html`<input name="water" inputmode="decimal" required>`)}</div>${field('Ghi chú', html`<input name="note" maxlength="200">`)}<div class="err-inline"></div><button class="btn primary block" type="submit">LƯU CHỈ SỐ ĐỒNG HỒ TỔNG</button></form>`);
+};
 acts['master-del'] = async (el) => { if (!confirm('Xóa lần ghi mới nhất này?')) return; await save('DELETE', `master-readings/${el.dataset.id}`, undefined, 'Đã xóa'); rerender(); };
 
 forms.bank = async (f, fd) => { await save('PUT', 'settings', { bank: { bankName: fd.get('bankName'), accountNumber: fd.get('accountNumber'), accountName: fd.get('accountName') } }, 'Đã lưu thông tin nhận tiền – sẽ hiện trên hóa đơn'); editBank = false; rerender(); };

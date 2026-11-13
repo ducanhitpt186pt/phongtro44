@@ -230,7 +230,7 @@ body{background-image:radial-gradient(60% 38% at 0% 0%,rgba(56,189,248,.24),tran
 .sum-title,h2.sec{color:var(--brand)}
 /* lịch: chỉ Chủ nhật màu đỏ; bố cục 70 / 30 */
 .calwrap{display:grid;gap:22px}
-@media(min-width:900px){.calwrap{grid-template-columns:minmax(0,7fr) minmax(0,3fr);gap:24px}.evside{border-left:1px solid var(--line);padding-left:22px;align-self:start;position:sticky;top:14px}.cd{height:4.6rem}.cd .sd{font-size:1.15rem}.cd .ld{font-size:.74rem}}
+@media(min-width:900px){.calwrap{grid-template-columns:minmax(0,6fr) minmax(0,4fr);gap:24px}.evside{border-left:1px solid var(--line);padding-left:22px;align-self:start;position:sticky;top:14px}.cd{height:4.6rem}.cd .sd{font-size:1.15rem}.cd .ld{font-size:.74rem}}
 .evside .li{flex-direction:column;align-items:stretch;gap:6px}.evside .li>.badge,.evside .li>.btn{align-self:flex-start}.evside .row{margin-bottom:6px}
 .cal-head{flex-wrap:wrap}.cal-head .sp{min-width:9rem}
 @media(min-width:1100px){.wrap.narrow{max-width:1100px}}
@@ -319,8 +319,8 @@ h2.sec,.sum-title{color:var(--brand-d);font-size:.95rem;font-weight:800}
 .nact{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
 .note.link{cursor:pointer}
 /* phòng trống: xanh biển nhẹ */
-.room-card.st-sky{--c:#0ea5e9}.rbadge.sky{background:rgb(14 165 233 / 15%);color:#0369a1}.rempty.sky{background:rgb(14 165 233 / 13%);color:#0369a1}.badge.sky{background:rgb(14 165 233 / 15%);color:#0369a1}
-@media(prefers-color-scheme:dark){.rbadge.sky,.rempty.sky,.badge.sky{color:#7dd3fc}}
+.room-card.st-sky{--c:#0ea5e9}.rbadge.sky{background:#e4effc;color:#0369a1}.rempty.sky{background:#e4effc;color:#0369a1}.badge.sky{background:#e4effc;color:#0369a1}
+@media(prefers-color-scheme:dark){.rbadge.sky,.rempty.sky,.badge.sky{background:rgb(14 165 233 / 18%);color:#7dd3fc}}
 /* nút tươi hơn */
 .btn.primary{background:linear-gradient(135deg,#1a8cff,#4f6bff);color:#fff;box-shadow:0 2px 6px rgb(26 140 255 / 30%)}.btn.primary:hover{background:linear-gradient(135deg,#0a72e6,#3d58ec)}
 .btn.red{background:linear-gradient(135deg,#ff6a5e,#e5392b);color:#fff;box-shadow:0 2px 6px rgb(229 57 43 / 28%)}.btn.red:hover{background:linear-gradient(135deg,#f0554a,#c42a1d)}
@@ -336,3 +336,13 @@ fieldset legend{font-weight:800}fieldset:nth-of-type(1){border-color:rgb(9 128 2
 .cal-title{display:flex;gap:6px;flex-wrap:wrap}.cal-sel{width:auto;min-height:40px;padding:4px 10px;font-weight:800;font-size:1.05rem}
 .evtitle{line-height:1.25}.evtitle span{font-size:1rem;font-weight:600;color:var(--mute)}
 .evside .li{opacity:1}.evact{display:inline-flex;gap:6px;flex-wrap:nowrap}.evside .li>.evact{align-self:flex-start}
+
+/* Công nợ: nền đỏ nhạt để chú ý */
+.stat.debt,.stat.red{--t:#e5392b;background:rgb(229 57 43 / 12%);border:1px solid rgb(229 57 43 / 28%)}.stat.debt b,.stat.red b{color:var(--red-t)}
+.cal .cd{min-width:0}.calmain,.evside{min-width:0}.evside .li{flex-wrap:wrap}.evside .li .sp{min-width:0;overflow-wrap:anywhere}
+.ownbtn{margin-left:auto}
+
+.bf{white-space:pre-line}
+
+/* chữ đỏ nổi bật cho số phòng chưa thanh toán / tiền còn cần thu */
+.stat.redtxt b,.stat.redtxt span{color:var(--red-t)}.stat.redtxt span{font-weight:600}

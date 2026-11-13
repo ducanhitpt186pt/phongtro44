@@ -7,7 +7,7 @@ export const go = (h) => { if (location.hash === h) renderFn(); else location.ha
 const report = (ex, f) => { if (f) { f.textContent = ex.message; f.scrollIntoView?.({ block: 'nearest' }); } else toast(ex.message, 'err'); };
 acts['modal-close'] = () => closeModal(); // nút ✕ của hộp thoại
 // Ô nhập tiền: gõ 1200000 hiện 1.200.000 (toInt() đã bỏ dấu chấm khi lưu)
-const MONEY = /^(amount|rent|elecPrice|waterPrice|manualDebt|newRent|newElecPrice|newWaterPrice|openingDebt|otherAmount|x\da)$/;
+const MONEY = /^(amount|rent|elecPrice|waterPrice|manualDebt|newRent|newElecPrice|newWaterPrice|openingDebt|otherAmount|extraAmount|x\da)$/;
 const fmtMoney = (el) => { const pos = el.selectionStart ?? el.value.length; const digitsBefore = el.value.slice(0, pos).replace(/\D/g, '').length; const out = el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); if (out === el.value) return; el.value = out; let c = 0, i = 0; for (; i < out.length && c < digitsBefore; i++) if (/\d/.test(out[i])) c++; try { el.setSelectionRange(i, i); } catch { /* một số kiểu ô nhập không hỗ trợ */ } };
 export function initMoney() {
   document.addEventListener('input', (e) => { const el = e.target; if (el instanceof HTMLInputElement && MONEY.test(el.name || '')) fmtMoney(el); }, true);

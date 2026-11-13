@@ -14,12 +14,14 @@ export function billModel(i, x, bank = null) {
   const calc = [];
   if (i.elec) calc.push({ label: 'Tiền điện', formula: `${n(i.elec.new)} − ${n(i.elec.old)} = ${n(i.elec.usage)} × ${n(i.elec.price)} đ`, amount: i.elec.amount });
   if (i.water) calc.push({ label: 'Tiền nước', formula: `${n(i.water.new)} − ${n(i.water.old)} = ${n(i.water.usage)} × ${n(i.water.price)} đ`, amount: i.water.amount });
-  if (i.kind === 'checkout' && i.monthRent) calc.push({ label: 'Tiền phòng', formula: `Giá thuê ${n(i.monthRent)} đ/tháng${i.rentBilled ? (i.carryBefore > 0 ? ' · chưa thu đủ, tính vào nợ cũ' : ' · đã thu đầu kỳ') : ''}`, amount: i.monthRent, info: true });
-  if (i.rent) calc.push({ label: 'Tiền phòng', formula: i.kind === 'periodic' && !i.elec ? 'Kỳ đầu (chưa có điện nước)' : '', amount: i.rent });
-  const debt = (i.oldDebt || 0) + (i.manualDebt || 0); if (debt) calc.push({ label: 'Nợ cũ', formula: i.oldDebt ? 'Các tháng trước chưa thanh toán' : '', amount: debt });
-  for (const l of i.adjustLines || []) calc.push({ label: l.label, formula: '', amount: l.amount });
+  const co = i.kind === 'checkout' && i.actualRent !== undefined; // hóa đơn trả phòng (bản mới): Tiền phòng = số ngày ở × giá/ngày, không còn dòng âm "trừ tiền thuê"
+  if (co) calc.push({ label: 'Tiền phòng', formula: `${n(i.daysUsed)} ngày × ${n(Math.round(i.rentPerDay))} đ/ngày (giá thuê ${n(i.monthRent)} đ ÷ 30 ngày)`, amount: i.actualRent });
+  else if (i.rent) calc.push({ label: 'Tiền phòng', formula: i.kind === 'periodic' && !i.elec ? 'Kỳ đầu (chưa có điện nước)' : '', amount: i.rent });
+  const debt = co ? Math.max(0, i.carryNet || 0) : (i.oldDebt || 0) + (i.manualDebt || 0); if (debt) { const months = (i.oldDebtMonths || []).map((x) => `Còn nợ tháng ${Number(x.ym.slice(5))}/${x.ym.slice(0, 4)}: ${n(x.amount)} đ`); const f = co ? ['Các khoản chưa thanh toán trước đó'] : [...(months.length ? months : i.oldDebt ? ['Các tháng trước chưa thanh toán'] : []), ...(i.manualDebt ? [`Nợ nhập thêm: ${n(i.manualDebt)} đ`] : [])]; calc.push({ label: 'Nợ cũ', formula: f.join('\n'), amount: debt }); }
+  if (!co) for (const l of i.adjustLines || []) calc.push({ label: l.label, formula: '', amount: l.amount });
   for (const e of i.extras || []) calc.push({ label: e.label === 'Chi phí khác' ? 'Chi phí khác' : `Chi phí khác: ${e.label}`, formula: '', amount: e.amount }); // không có thì không hiện dòng nào
-  const totalLabel = i.total < 0 ? `Chủ nhà hoàn lại cho khách` : `Tổng tiền ${i.roomName.toLowerCase()} là`;
+  if (co && (i.carryNet || 0) < 0) { calc.push({ label: 'Cộng các khoản', formula: '', amount: i.total - i.carryNet }); calc.push({ label: 'Trừ: đã thu trước (tiền phòng đầu kỳ)', formula: '', amount: i.carryNet }); }
+  const totalLabel = co ? (i.total < 0 ? 'Chủ nhà hoàn lại cho khách' : 'Khách còn phải trả') : i.total < 0 ? 'Chủ nhà hoàn lại cho khách' : `Tổng tiền ${i.roomName.toLowerCase()} là`;
   const foot = []; if (i.total > 0 && x.paid > 0) foot.push(['Đã thanh toán', vnd(x.paid)], ['Còn phải thu', vnd(x.remaining)]);
   const pay = bank && i.total > 0 ? [['Ngân hàng', bank.bankName], ['Số tài khoản', bank.accountNumber], ['Chủ tài khoản', bank.accountName]] : null;
   return { pay, title, info, meters, calc, total: { label: totalLabel, value: vnd(Math.abs(i.total)) }, foot, file: `hoa-don-${slug(i.roomName)}-${i.dueDate}.jpg`, room: i.roomName, money: vnd };
@@ -33,7 +35,7 @@ export async function renderBill(m) {
   await fonts();
   const W = 1080, P = 64, IW = W - P * 2;
   // bố cục: tính chiều cao trước
-  let h = P + 130; h += m.info.length * 58 + 20; h += m.meters.length ? m.meters.length * 62 + 20 : 0; h += m.calc.reduce((s, r) => s + (r.formula ? 112 : 78), 0) + 30; h += 150; h += m.foot.length * 58; h += m.pay ? 250 : 0; h += 120;
+  let h = P + 130; h += m.info.length * 58 + 20; h += m.meters.length ? m.meters.length * 62 + 20 : 0; h += m.calc.reduce((s, r) => s + 78 + (r.formula ? r.formula.split(String.fromCharCode(10)).length * 38 - 4 : 0), 0) + 30; h += 150; h += m.foot.length * 58; h += m.pay ? 250 : 0; h += 120;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = h; const c = cv.getContext('2d');
   c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, h); rr(c, 24, 24, W - 48, h - 48, 40, '#f5f7fa');
   let y = P + 6; c.textBaseline = 'alphabetic';
@@ -47,10 +49,10 @@ export async function renderBill(m) {
   if (m.meters.length) { y += 10; for (const [a, b] of m.meters) { c.textAlign = 'left'; c.fillStyle = '#6c6c70'; c.font = `400 32px ${FONT}`; c.fillText(a[0], P, y + 38); c.fillStyle = '#1c1c1e'; c.font = `700 36px ${FONT}`; c.fillText(a[1], P + 250, y + 38); c.fillStyle = '#6c6c70'; c.font = `400 32px ${FONT}`; c.fillText(b[0], P + 480, y + 38); c.fillStyle = '#1c1c1e'; c.font = `700 36px ${FONT}`; c.fillText(b[1], P + 730, y + 38); y += 62; } y += 10; }
   y += 8;
   for (const r of m.calc) {
-    const hh = r.formula ? 100 : 66; rr(c, P - 16, y, IW + 32, hh, 14, r.info ? '#eef3fb' : '#ffffff');
+    const fl = r.formula ? r.formula.split(String.fromCharCode(10)) : []; const hh = 66 + (fl.length ? fl.length * 38 - 4 : 0); rr(c, P - 16, y, IW + 32, hh, 14, r.info ? '#eef3fb' : '#ffffff');
     c.textAlign = 'left'; c.fillStyle = '#1c1c1e'; c.font = `600 33px ${FONT}`; let lab = r.label; while (c.measureText(lab).width > IW - 330 && lab.length > 6) lab = lab.slice(0, -2); if (lab !== r.label) lab += '…'; c.fillText(lab, P, y + 44);
     c.textAlign = 'right'; c.font = `700 36px ${FONT}`; c.fillStyle = r.info ? '#6c6c70' : r.amount < 0 ? '#1f8a3b' : '#1c1c1e'; c.fillText(r.info ? `(${m.money(r.amount)})` : m.money(r.amount), W - P, y + 44);
-    if (r.formula) { c.textAlign = 'left'; c.fillStyle = '#6c6c70'; c.font = `400 28px ${FONT}`; c.fillText(r.formula, P, y + 82); }
+    fl.forEach((ln, k) => { c.textAlign = 'left'; c.fillStyle = '#6c6c70'; c.font = `400 28px ${FONT}`; let t = ln; while (c.measureText(t).width > IW - 20 && t.length > 8) t = t.slice(0, -2); c.fillText(t === ln ? t : t + '…', P, y + 82 + k * 38); });
     y += hh + 12;
   }
   y += 18; rr(c, P - 16, y, IW + 32, 124, 28, '#007aff'); c.textAlign = 'left'; c.fillStyle = '#ffffff'; c.font = `600 32px ${FONT}`; c.fillText(m.total.label, P + 8, y + 52); c.textAlign = 'right'; c.font = `700 52px ${FONT}`; c.fillText(m.total.value, W - P - 8, y + 100); y += 124 + 26;
