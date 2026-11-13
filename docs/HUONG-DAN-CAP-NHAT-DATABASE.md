@@ -21,7 +21,7 @@ Bản mới có thêm dữ liệu mới (đồng hồ tổng, sự kiện, Zalo,
 3. Nếu bản mới ghi **Preview**: bấm **⋯** → **Promote to Production**.
 
 **Bước 4 – Kiểm tra**
-1. Mở `https://<tên-web>/kiemtra.html`: mọi dòng ✅, "phiên bản giao diện" là `2026-11-22-a`; dòng "Đọc dữ liệu từ Upstash: được".
+1. Mở `https://<tên-web>/kiemtra.html`: mọi dòng ✅, "phiên bản giao diện" là `2026-11-23-a`; dòng "Đọc dữ liệu từ Upstash: được".
 2. Mở web (Ctrl+F5), bấm **Ghi Điện & Nước - Tính Tiền Phòng**, đăng nhập. Phòng, khách, hóa đơn cũ **còn nguyên**; trong danh sách phòng có thẻ **Chủ Nhà**.
 3. Làm một thao tác lưu nhỏ (ví dụ vào Chủ Nhà → khai báo đồng hồ tổng, hoặc thêm một sự kiện). Lần lưu này ghi dữ liệu đã nâng cấp vào Upstash.
 

@@ -35,8 +35,8 @@
 2. Nếu bản mới nhất ghi **Preview** thay vì **Production**: bấm dấu **⋯** ở dòng đó → **Promote to Production** → xác nhận.
 
 ## Phần 4. Kiểm tra
-1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-22-a`.
-2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-22-a".
+1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-23-a`.
+2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-23-a".
 3. Bấm **Ghi Điện & Nước - Tính Tiền Phòng**, đăng nhập: các phòng, khách, hóa đơn của bạn còn nguyên; trong danh sách phòng có thêm thẻ **Chủ Nhà**.
 
 ## Phần 5. Việc cần làm 1 lần sau khi cập nhật
@@ -130,6 +130,16 @@ Vercel → dự án → **Settings** → **Deployment Protection** → **Vercel 
 - **Sửa số liệu hóa đơn mới nhất:** mở hóa đơn → **Điều chỉnh** (có thể đưa về 0 hoặc xóa trống).
 - **Tổng quan và Tổng quan cần xử lý:** nền **trắng**, chỉ chữ màu (xanh, cam, tím, đỏ…); thông báo cũng nền trắng.
 - **iPhone/iPad:** nút **"Thêm icon trên iOS"** nằm ngay đầu trang (cạnh nút Đăng nhập), bấm mở hướng dẫn 4 bước có hình chỉ nút Chia sẻ. iOS **không cho trang web tự thêm icon** nên bắt buộc làm: Safari → Chia sẻ → Thêm vào Màn hình chính → Thêm. Android/máy tính: nút "Thêm icon" mở hộp thoại cài đặt của trình duyệt.
+
+### 5.3l. Bản 2026-11-23
+- **Lưu khách nhanh hơn:** lưu xong là vào phòng ngay; ảnh CCCD tải lên ở chế độ nền (2 ảnh tải song song, ảnh nhỏ hơn nên nhanh hơn); mỗi ảnh bớt một lần đọc dữ liệu; ghi Google Sheet không còn bắt chờ (chạy nền).
+- **"Tiền phòng đầu kỳ đã nhận":** khách mới (đã tích thu tiền phòng kỳ đầu) hiện **Tiền phòng đầu kỳ đã nhận: <số tiền phòng>**, ở thẻ phòng và trang chi tiết phòng. Chỉ khi chưa tích mới ghi "chưa nhận".
+- **Đồng hồ tổng Chủ Nhà** (làm đúng cách tính của bạn):
+  - Bấm vào thẻ **Chủ Nhà** → thẻ **Số Đồng Hồ Tổng Cũ** (ngày chốt, số điện, số nước): nhập một lần, lưu lại như thông tin ngân hàng, bấm **Sửa** khi cần.
+  - Hàng tháng khi thanh toán điện nước với nhà nước: bấm nút **Ghi đồng hồ tổng** (thẻ Chủ Nhà ngoài trang chủ, hoặc nút trong trang Chủ Nhà) → nhập **số MỚI**. Hệ thống tính **Số mới − Số cũ = cả dãy trọ và nhà dùng**, rồi **trừ tổng các phòng** ra **Chủ Nhà dùng**. Số mới tháng này tự là số cũ của tháng sau.
+- **Ảnh QR ngân hàng:** thẻ thông tin ngân hàng có **Tải ảnh QR lên / Thay ảnh QR / Xóa ảnh QR**. QR chỉ hiện trên hóa đơn (màn hình và ảnh JPG) khi đã tải ảnh lên.
+- **Lịch:** ngày dương in đậm, ngày âm không in đậm.
+- **Thông báo cần xử lý:** có nút **Xem hóa đơn** để gửi khách. Hóa đơn của khách còn nợ hiện số điện nước cũ/mới, tiền phòng, **Đã thanh toán trước** và **Còn nợ** (màu đỏ).
 
 ### 5.4. Lịch & sự kiện (mới)
 Tab **Lịch** (thanh dưới cùng): lịch tháng dương + âm, ngày lễ, thêm/sửa/xóa sự kiện. Trang chủ phía dưới nút "Ghi Điện & Nước - Tính Tiền Phòng" cũng có lịch (xem được, không sửa được khi chưa đăng nhập). Bật/tắt hiện sự kiện ở trang ngoài tại **Sao lưu → Hiển thị trên trang ngoài**.
