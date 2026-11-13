@@ -4,7 +4,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const page = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); const errs = []; page.on('pageerror', (e) => errs.push(e.message));
   const ok = (c, m) => { console.log(c ? '  ✓' : '  ✗ FAIL', m); if (!c) process.exitCode = 1; };
   await page.goto('http://localhost:4173/#/login'); await page.fill('input[name=password]', '20101963'); await page.click('button:has-text("ĐĂNG NHẬP")'); await page.waitForSelector('text=Các phòng');
-  await page.locator('.room-card', { hasText: 'Phòng 2' }).click(); await page.click('text=+ Thêm khách thuê');
+  await page.locator('.room-card', { hasText: 'Phòng 2' }).click(); await page.click('button[data-act=movein]');
   await page.fill('[name=fullName]', 'Lê Thị Cúc'); await page.fill('[name=dob]', '1990-01-01'); await page.fill('[name=phone]', '0911222333'); await page.check('input[name=gender][value=female]');
   await page.fill('[name=cccd]', '001090009999'); await page.fill('[name=cccdIssueDate]', '2020-01-01'); await page.fill('[name=cccdIssuePlace]', 'Hà Nội'); await page.fill('[name=address]', 'Nam Định');
   const d3 = new Date(Date.now() + 7 * 3600e3); d3.setUTCDate(d3.getUTCDate() + 3); d3.setUTCMonth(d3.getUTCMonth() - 2); await page.fill('[name=startDate]', d3.toISOString().slice(0, 10)); await page.waitForSelector('#existbox:visible'); await page.fill('[name=openingDebt]', '200000'); await page.fill('[name=rent]', '1200000'); await page.fill('[name=elecPrice]', '2000'); await page.fill('[name=waterPrice]', '15000'); await page.fill('[name=initElec]', '100'); await page.fill('[name=initWater]', '10');
@@ -17,8 +17,8 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const inv = await page.innerText('#bill'); ok(inv.includes('100.000') && inv.includes('30.000') && inv.includes('1.400.000') && inv.includes('2.730.000'), 'hóa đơn kỳ 2: điện 100.000 + nước 30.000 + nợ cũ 1.400.000 + phòng 1.200.000 = 2.730.000');
   await page.screenshot({ path: '/tmp/shots/08-invoice.png', fullPage: true });
   await page.click('.invoice >> text=Hủy', { timeout: 1000 }).catch(() => {});
-  await page.click('button:has-text("Thanh toán")'); await page.fill('form[data-form=pay] [name=amount]', '99999999'); await page.click('button:has-text("XÁC NHẬN ĐÃ THU TIỀN")'); await page.waitForSelector('text=vượt quá'); ok(true, 'không cho thu vượt số còn phải thu');
-  await page.fill('form[data-form=pay] [name=amount]', '1000000'); await page.click('button:has-text("XÁC NHẬN ĐÃ THU TIỀN")'); await page.waitForSelector('text=1.730.000'); ok(true, 'thu 1 phần → còn nợ 1.730.000');
+  await page.click('button[data-act=pay]'); await page.fill('form[data-form=pay] [name=amount]', '99999999'); await page.click('button:has-text("ĐÃ NHẬN TIỀN")'); await page.waitForSelector('text=vượt quá'); ok(true, 'không cho thu vượt số còn phải thu');
+  await page.fill('form[data-form=pay] [name=amount]', '1000000'); await page.click('button:has-text("ĐÃ NHẬN TIỀN")'); await page.waitForSelector('text=1.730.000'); ok(true, 'thu 1 phần → còn nợ 1.730.000');
   await page.goto('http://localhost:4173/#/dashboard'); await page.locator('.room-card', { hasText: 'Phòng 2' }).click(); await page.click('button:has-text("Trả phòng")');
   await page.fill('[name=elecFinal]', '160'); await page.fill('[name=waterFinal]', '13'); await page.click('button:has-text("XEM TÍNH TOÁN")'); await page.waitForSelector('text=Đã lập hóa đơn kỳ'); ok(true, 'trả phòng khi đã lập hóa đơn kỳ sau trước hạn → chặn kèm giải thích');
   console.log(errs.length ? 'LỖI JS: ' + errs.join('|') : 'Không có lỗi JS'); await b.close();

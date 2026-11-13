@@ -55,4 +55,20 @@ await t('thông tin nhận tiền (ngân hàng / STK / tên chủ TK): lưu, ki�
   assert.equal((await call('GET', '/api/data')).body.settings.bank.accountNumber, '0123456789'); const del = await call('PUT', '/api/settings', { bank: { bankName: '', accountNumber: '', accountName: '' } }); assert.equal(del.body.settings.bank, null);
   assert.equal((await call('GET', '/api/public/reminders', undefined, false)).body && JSON.stringify((await call('GET', '/api/public/reminders', undefined, false)).body).includes('0123456789'), false, 'trang ngoài không hiện STK');
 });
+await t('xóa phòng: phòng chưa có lịch sử xóa được; phòng đã có khách/hóa đơn hoặc phòng Chủ Nhà thì KHÔNG; Zalo mặc định = SĐT; người ở cùng phải có địa chỉ', async () => {
+  const mk = await call('POST', '/api/rooms', { name: 'Phòng xóa thử' }); assert.equal(mk.status, 200); const rid = mk.body.result.id; assert.equal((await call('DELETE', `/api/rooms/${rid}`)).status, 200); assert.ok(!(await call('GET', '/api/data')).body.db.rooms.some((r) => r.id === rid));
+  const d = (await call('GET', '/api/data')).body.db; const busy = d.rooms.find((r) => d.rentals.some((x) => x.roomId === r.id)); const r1 = await call('DELETE', `/api/rooms/${busy.id}`); assert.equal(r1.status, 400); assert.equal(r1.body.code, 'HAS_HISTORY'); assert.equal((await call('DELETE', '/api/rooms/room-owner')).status, 400);
+  const t0 = d.tenants[0]; assert.equal(t0.zalo, t0.phone, 'zalo mặc định = số điện thoại');
+  const bad = await call('POST', '/api/occupants', { tenantId: t0.id, occupant: { fullName: 'A', dob: '1990-01-01', gender: 'male', cccd: '001090000777' } }); assert.equal(bad.status, 400); assert.match(bad.body.error, /địa chỉ/);
+  const good = await call('POST', '/api/occupants', { tenantId: t0.id, occupant: { fullName: 'A', dob: '1990-01-01', gender: 'male', cccd: '001090000777', address: 'HN', zalo: '0988 111 222' } }); assert.equal(good.status, 200); assert.equal(good.body.result.zalo, '0988111222');
+});
+await t('đồng hồ tổng: sửa lần ghi (kiểm tra thứ tự với lần trước/sau), xóa lần mới nhất', async () => {
+  const today = new Date(Date.now() + 7 * 3600e3); const dstr = (n) => new Date(today.getTime() - n * 86400000).toISOString().slice(0, 10);
+  const a = await call('POST', '/api/master-readings', { date: dstr(30), elec: 1000, water: 100 }); assert.equal(a.status, 200); const b = await call('POST', '/api/master-readings', { date: dstr(10), elec: 1200, water: 120 }); assert.equal(b.status, 200);
+  const ida = a.body.result.id, idb = b.body.result.id;
+  assert.equal((await call('PUT', `/api/master-readings/${ida}`, { date: dstr(30), elec: 1300, water: 100 })).status, 400, 'lần đầu không được lớn hơn lần sau');
+  const ok = await call('PUT', `/api/master-readings/${ida}`, { date: dstr(30), elec: 1100, water: 110, note: 'sửa' }); assert.equal(ok.status, 200); assert.equal(ok.body.db.masterReadings.find((x) => x.id === ida).elec, 1100); assert.ok(ok.body.db.masterReadings.find((x) => x.id === ida).history.length === 1);
+  assert.equal((await call('PUT', `/api/master-readings/${idb}`, { date: dstr(10), elec: 1050, water: 120 })).status, 400, 'lần sau không được nhỏ hơn lần trước');
+  assert.equal((await call('DELETE', `/api/master-readings/${idb}`)).status, 200);
+});
 server.close(); console.log(`\nTích hợp Blob: ${pass} đạt`); process.exit(process.exitCode || 0);

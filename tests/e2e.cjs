@@ -13,12 +13,12 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   await page.screenshot({ path: '/tmp/shots/02-login.png' });
   await page.fill('input[name=password]', '20101963'); await page.click('button:has-text("ĐĂNG NHẬP")'); await page.waitForSelector('text=Các phòng');
   ok(true, 'đúng mật khẩu → dashboard'); ok((await page.locator('.room-card:not(.owner-card)').count()) === 7, '7 phòng');
-  await page.locator('.room-card', { hasText: 'Phòng 1' }).click(); await page.waitForSelector('text=+ Thêm khách thuê'); await page.click('text=+ Thêm khách thuê');
+  await page.locator('.room-card', { hasText: 'Phòng 1' }).click(); await page.waitForSelector('button[data-act=movein]'); await page.click('button[data-act=movein]');
   await page.fill('[name=fullName]', 'Nguyễn Văn An'); await page.fill('[name=dob]', '1992-04-15'); await page.fill('[name=phone]', '0987654321'); await page.check('input[name=gender][value=male]');
   await page.fill('[name=cccd]', '001092001234'); await page.fill('[name=cccdIssueDate]', '2021-05-20'); await page.fill('[name=cccdIssuePlace]', 'Cục Cảnh sát QLHC về TTXH'); await page.fill('[name=address]', 'Thanh Hóa');
   const today = await page.inputValue('[name=startDate]'); await page.fill('[name=rent]', '1.200.000'); await page.fill('[name=elecPrice]', '3500'); await page.fill('[name=waterPrice]', '15000'); await page.fill('[name=initElec]', '100'); await page.fill('[name=initWater]', '10');
   await page.click('button[data-act=add-occ]'); await page.fill('[name=o_name]', 'Nguyễn Thị Bình'); await page.fill('[name=o_dob]', '2016-01-02'); await page.check('[name=o_noid]');
-  await page.click('button:has-text("LƯU KHÁCH THUÊ")'); await page.waitForSelector('text=Phải chụp hoặc chọn đủ ảnh'); ok(true, 'thiếu ảnh CCCD → bị chặn');
+  ok(await page.isVisible('text=không bắt buộc'), 'ảnh CCCD khách thuê không bắt buộc (ghi rõ trên form)');
   await page.setInputFiles('input[data-slot=front] >> nth=0', '/tmp/cccd.jpg'); await page.waitForSelector('#prev-front img'); await page.setInputFiles('input[data-slot=back] >> nth=1', '/tmp/cccd.jpg'); await page.waitForSelector('#prev-back img');
   ok(true, 'xem trước ảnh hai mặt'); await page.click('[data-act=id-rot][data-slot=front]'); await page.waitForTimeout(400);
   await page.screenshot({ path: '/tmp/shots/03-movein.png' });
@@ -30,9 +30,9 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const body = await p2.innerText('body'); ok(body.includes('Chưa thanh toán') && body.includes('1.200.000'), 'trang ngoài hiện Phòng 1 chưa thanh toán 1.200.000');
   ok(!/0987|001092|Thanh Hóa|Bình|1992/.test(body), 'trang ngoài KHÔNG lộ SĐT/CCCD/địa chỉ/ngày sinh/tên người ở cùng'); await p2.screenshot({ path: '/tmp/shots/05-public-notice.png', fullPage: true });
   // thanh toán một phần
-  await page.click('button:has-text("Thanh toán")'); await page.fill('form[data-form=pay] [name=amount]', '700000'); await page.click('button:has-text("XÁC NHẬN ĐÃ THU TIỀN")'); await page.waitForTimeout(800);
+  await page.click('button[data-act=pay-month]'); await page.fill('form[data-form=pay] [name=amount]', '700000'); await page.click('button:has-text("ĐÃ NHẬN TIỀN")'); await page.waitForTimeout(800);
   await p2.reload(); await p2.waitForSelector('text=Đã thanh toán một phần'); const b2 = await p2.innerText('body'); ok(b2.includes('500.000'), 'trang ngoài: thanh toán một phần, còn 500.000');
-  await page.click('button:has-text("Thanh toán")'); await page.click('text=Trả đủ'); await page.click('button:has-text("XÁC NHẬN ĐÃ THU TIỀN")'); await page.waitForTimeout(800);
+  await page.click('button[data-act=pay-month]'); await page.click('text=Trả đủ'); await page.click('button:has-text("ĐÃ NHẬN TIỀN")'); await page.waitForTimeout(800);
   await p2.reload(); await p2.waitForSelector('text=Không có việc cần xử lý'); ok(true, 'trả đủ → thông báo biến mất');
   await page.goto('http://localhost:4173/#/tenants'); await page.waitForSelector('text=Nguyễn Văn An'); await page.click('text=Nguyễn Văn An'); await page.waitForSelector('text=Người ở cùng'); await page.click('text=Xem ảnh >> nth=0'); await page.waitForSelector('.idprev img'); 
   await page.waitForFunction(() => { const i = document.querySelector('.idprev img'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 8000 }).catch(() => {}); ok(await page.evaluate(() => document.querySelector('.idprev img').complete && document.querySelector('.idprev img').naturalWidth > 0), 'xem ảnh CCCD qua API đã xác thực'); await page.screenshot({ path: '/tmp/shots/06-tenant.png', fullPage: true });

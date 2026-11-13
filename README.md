@@ -41,4 +41,4 @@ docs/                   Hướng dẫn triển khai, giới hạn
 ## Kiểm thử
 `npm test` (logic tính tiền + dọn dữ liệu, 30 ca) · `node tests/integration-redis.js` (API + Upstash giả lập, 11 ca) · `tests/integration-blob.js`, `tests/integration.js` (nơi lưu phụ) · `tests/e2e.cjs` (trình duyệt thật, cần Playwright; chạy cùng `node tests/e2e-server.js`).
 
-Sao lưu Google Sheet: **docs/GOOGLE-SHEET.md**. Cập nhật phiên bản không mất dữ liệu: **docs/CAP-NHAT-PHIEN-BAN.md**. Triển khai/sửa lỗi bằng dòng lệnh: **docs/HUONG-DAN-CMD.md**. Hướng dẫn cho người không biết lập trình: **docs/HUONG-DAN-TRIEN-KHAI.md**.
+Sao lưu Google Sheet: **docs/GOOGLE-SHEET.md**. Biểu tượng: Material Design Icons (Pictogrammers, Apache 2.0, xem public/vendor/ICONS-LICENSE.txt). Cập nhật phiên bản không mất dữ liệu: **docs/CAP-NHAT-PHIEN-BAN.md**. Triển khai/sửa lỗi bằng dòng lệnh: **docs/HUONG-DAN-CMD.md**. Hướng dẫn cho người không biết lập trình: **docs/HUONG-DAN-TRIEN-KHAI.md**.

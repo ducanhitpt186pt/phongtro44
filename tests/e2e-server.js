@@ -4,7 +4,7 @@ process.env.APP_PASSWORD = '20101963'; process.env.SESSION_SECRET = 'e'.repeat(4
 const { fakeStore } = await import('../lib/blob.js');
 if (process.env.E2E_SEED) fakeStore.files.set('data/database.json', { buf: Buffer.from(fs.readFileSync(process.env.E2E_SEED, 'utf8')), etag: '"seed"', at: new Date().toISOString() });
 const { entry } = await import('../lib/router.js');
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg' };
 const srv = http.createServer((req, res) => {
   if (req.url.startsWith('/api/')) return entry(req, res);
   let f = path.join('public', req.url.split('?')[0]); if (f.endsWith('/')) f += 'index.html';

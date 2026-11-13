@@ -9,7 +9,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const d0 = await pg.evaluate(() => fetch('/api/data').then((r) => r.json())); const next = d0.derived.rentals[Object.keys(d0.derived.rentals)[0]];
   // Đồng hồ tổng mới (hôm nay) khi phòng 1 chưa ghi số mới → kỳ Chủ Nhà phải "Đang chờ chốt"
   await pg.goto(H + '#/room/room-owner'); await pg.waitForSelector('text=Chủ Nhà – đồng hồ tổng'); const last = d0.db.masterReadings.slice(-1)[0];
-  await pg.fill('form[data-form=master] [name=elec]', String(last.elec + 100)); await pg.fill('[name=water]', String(last.water + 5)); await pg.click('button:has-text("LƯU CHỈ SỐ ĐỒNG HỒ TỔNG")'); await pg.waitForSelector('.badge:has-text("Đang chờ")');
+  await pg.fill('form[data-form=master] [name=elec]', String(last.elec + 100)); await pg.fill('[name=water]', String(last.water + 5)); await pg.click('form[data-form=master] button[type=submit]'); await pg.waitForSelector('.badge:has-text("Đang chờ")');
   ok(/Phòng 1/.test(await pg.innerText('.badge:has-text("Đang chờ")')), 'kỳ Chủ Nhà mới: "Đang chờ" phòng chưa ghi số (Phòng 1), kết quả chỉ tạm tính');
   await pg.goto(H + '#/dashboard'); const dash = await pg.innerText('body'); ok(/Đang chờ chốt/.test(dash) || /chờ chốt/.test(dash), 'trên Tổng quan có ghi chú Chủ Nhà đang chờ chốt');
   // Ghi điện nước phòng 1 với "Ngày chốt số"

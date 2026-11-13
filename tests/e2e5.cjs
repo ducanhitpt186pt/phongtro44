@@ -19,7 +19,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   await pg.goto(H + '#/dashboard'); ok((await txt()).includes('Cần hoàn tiền'), 'thông báo "cần hoàn tiền" hiện ở Tổng quan');
   await pg.locator('.note', { hasText: 'PHÒNG 1' }).click(); await pg.waitForSelector('text=Phòng đang trống'); await pg.goto(H + '#/tenants'); await pg.click('text=Khách Một'); await pg.click('.li:has-text("HD-") >> nth=0'); await pg.click('button:has-text("Xác nhận ĐÃ HOÀN")'); await pg.waitForSelector('text=Hoàn tiền: đã hoàn'); ok(true, 'xác nhận đã hoàn tiền');
   // 3. Phòng 2: thu 1 phần → hủy → sửa hóa đơn
-  await room('Phòng 2'); await pg.click('button:has-text("Thanh toán")'); await pg.fill('form[data-form=pay] [name=amount]', '500000'); await pg.click('button:has-text("XÁC NHẬN ĐÃ THU")'); await pg.waitForSelector('text=1.000.000'); ok(true, 'thu 500.000 → còn nợ 1.000.000');
+  await room('Phòng 2'); await pg.click('button[data-act=pay]'); await pg.fill('form[data-form=pay] [name=amount]', '500000'); await pg.click('button:has-text("ĐÃ NHẬN TIỀN")'); await pg.waitForSelector('text=1.000.000'); ok(true, 'thu 500.000 → còn nợ 1.000.000');
   await pg.click('text=Hóa đơn mới nhất'); await pg.goto(H + '#/room/room-2'); await pg.click('tr.click >> nth=0'); await pg.waitForSelector('#bill'); await pg.click('button[data-act=void-pay]'); await pg.fill('form[data-form=void-pay] [name=reason]', 'nhập nhầm'); await pg.click('button:has-text("HỦY GIAO DỊCH")'); await pg.waitForSelector('text=Đã hủy: nhập nhầm'); ok(true, 'hủy giao dịch có lý do (không xóa)');
   await pg.click('button:has-text("Điều chỉnh")'); await pg.fill('form[data-form=adjust] [name=x1l]', 'Sửa khóa'); await pg.fill('[name=x1a]', '50000'); await pg.fill('[name=reason]', 'phát sinh'); await pg.click('button:has-text("LƯU ĐIỀU CHỈNH")'); await pg.waitForSelector('text=Sửa khóa'); ok((await pg.innerText('#bill')).includes('1.550.000'), 'sửa hóa đơn: tổng 1.550.000, có lịch sử điều chỉnh');
   // 4. Chuyển phòng 2 → Phòng 1
@@ -28,7 +28,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   ok(d2.db.invoices.some((i) => i.kind === 'transfer' && i.roomName === 'Phòng 2'), 'hóa đơn chốt phòng cũ gắn với Phòng 2');
   // 5. Sửa khách, thêm/sửa phòng, ghi chú
   await pg.goto(H + '#/tenants'); await pg.click('text=Khách Hai'); await pg.click('button:has-text("Sửa thông tin")'); await pg.fill('form[data-form=tenant-edit] [name=phone]', '0988888888'); await pg.click('button:has-text("LƯU")'); await pg.waitForSelector('text=0988888888'); ok(true, 'sửa thông tin khách');
-  await pg.goto(H + '#/dashboard'); await pg.click('text=+ Thêm phòng'); await pg.fill('form[data-form=room] [name=name]', 'Phòng 8'); await pg.click('form[data-form=room] button[type=submit]'); await pg.waitForSelector('.room-card:has-text("Phòng 8")'); ok(true, 'thêm phòng mới');
+  await pg.goto(H + '#/dashboard'); await pg.click('button[data-act=add-room]'); await pg.fill('form[data-form=room] [name=name]', 'Phòng 8'); await pg.click('form[data-form=room] button[type=submit]'); await pg.waitForSelector('.room-card:has-text("Phòng 8")'); ok(true, 'thêm phòng mới');
   await room('Phòng 1'); const note = pg.locator('input.note-in').nth(10); await note.fill('Khách đi vắng'); await note.blur(); await pg.waitForTimeout(900); ok((await api('data')).db.monthlyNotes.some((n) => n.text === 'Khách đi vắng'), 'ghi chú theo tháng được lưu');
   // 6. Báo cáo + sao lưu/khôi phục
   await pg.goto(H + '#/reports'); await pg.waitForSelector('text=Tổng tiền đã thu'); ok((await txt()).toLowerCase().includes('theo phòng'), 'báo cáo hiển thị');
@@ -37,4 +37,4 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   await pg.setInputFiles('form[data-form=restore] input[type=file]', '/tmp/exp.json'); await pg.fill('form[data-form=restore] [name=confirm]', 'GHI DE'); await pg.click('button:has-text("KIỂM TRA & KHÔI PHỤC")'); await pg.waitForTimeout(1200);
   ok((await api('data')).db.invoices.length === before && (await api('data')).db.activityLogs.some((l) => l.action.startsWith('Khôi phục')), 'khôi phục JSON từ file: dữ liệu nguyên vẹn');
   console.log(errs.length ? 'LỖI JS: ' + errs.join('|') : 'Không có lỗi JS'); await b.close();
-})().catch((e) => { console.error('E2E5 LỖI', e.message.split('\n')[0]); process.exit(1); });
+})().catch((e) => { console.error('E2E5 LỖI', e.message.slice(0, 600)); process.exit(1); });

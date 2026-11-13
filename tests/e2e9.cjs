@@ -9,7 +9,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   await pg.goto('http://localhost:4173/#/invoice/' + id); await pg.waitForSelector('#bill');
   const t = await pg.innerText('#bill');
   ok(/^Hóa Đơn Phòng 1 - 44 Lê Văn Phấn/.test(t) && t.includes('Ngày tính tiền') && t.includes('Số nước cũ') && t.includes('Số nước mới') && t.includes('Số điện cũ') && t.includes('Số điện mới'), 'hóa đơn: tiêu đề "Hóa Đơn Phòng 1 - 44 Lê Văn Phấn", ngày tính tiền, số nước/điện cũ mới');
-  ok(/Tiền điện[\s\S]*1\.[0-9]{3} − 1\.[0-9]{3} = 80 × 3\.000 đ/.test(t) && /Tiền nước[\s\S]*= 5 × 10\.000 đ/.test(t) && t.includes('Tiền phòng') && t.includes('Tiền phí khác') && /Tổng tiền phòng 1 là/.test(t), 'công thức "mới − cũ = dùng × giá", tiền phòng, phí khác, "Tổng tiền phòng 1 là"');
+  ok(/Tiền điện[\s\S]*1\.[0-9]{3} − 1\.[0-9]{3} = 80 × 3\.000 đ/.test(t) && /Tiền nước[\s\S]*= 5 × 10\.000 đ/.test(t) && t.includes('Tiền phòng') && !t.includes('phí khác') && !t.includes('Chi phí khác') && !t.includes('Nợ cũ') && /Tổng tiền phòng 1 là/.test(t), 'công thức "mới − cũ = dùng × giá", tiền phòng, KHÔNG hiện dòng Nợ cũ / Chi phí khác khi không có, "Tổng tiền phòng 1 là"');
   await pg.screenshot({ path: '/tmp/shots/80-bill.png', fullPage: true });
   const writes = []; pg.on('request', (r) => { if (r.url().includes('/api/') && r.method() !== 'GET') writes.push(r.method() + ' ' + r.url()); });
   const dl = pg.waitForEvent('download'); await pg.click('button:has-text("Tải hóa đơn")'); const d = await dl; const path = await d.path(); const buf = fs.readFileSync(path);
