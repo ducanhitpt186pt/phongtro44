@@ -390,3 +390,10 @@ fieldset legend{font-weight:800}fieldset:nth-of-type(1){border-color:rgb(9 128 2
 .hero-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;max-width:980px;margin:0 auto 10px;position:relative;z-index:2}.hero .login-top{position:static!important;margin:0}
 .a2hs-chip{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:10px;padding:4px 12px 4px 6px;min-height:36px;background:rgb(255 255 255 / 24%);color:#fff;font:inherit;font-weight:700;font-size:.9rem;cursor:pointer}.a2hs-chip img{border-radius:6px}.a2hs-chip:hover{background:rgb(255 255 255 / 34%)}.a2hs-chip[hidden]{display:none}
 .a2hs-lead{margin:0 0 8px;line-height:1.45}.a2hs-fig{width:100%;max-width:340px;display:block;margin:6px auto 12px}
+
+/* QR ngân hàng + chi tiết nợ trên hóa đơn */
+.qrrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:6px 0 12px}.qrimg{width:130px;height:130px;object-fit:contain;border-radius:10px;background:#fff;border:1px solid var(--line)}
+.bbrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.bbrow dl{flex:1;min-width:200px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:8px 0 0}.bqr{width:150px;height:150px;object-fit:contain;background:#fff;border-radius:10px;margin:8px auto 0}
+.bill dt.owe,.bill dd.owe{color:#c42a1d;font-weight:800}
+/* lịch: ngày dương in đậm, ngày âm không đậm */
+.cd .sd{font-weight:800}.cd .ld,.cd .ld.m1{font-weight:400}

@@ -10,7 +10,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   // ---- quy tắc nợ: Phòng 2 mới vào ở, chưa ghi điện nước => chưa tính là nợ ----
   const st = await pg.innerText('.cards7'); ok(/Phòng cần thu tiền/.test(st) && /0\s*\n?\s*Phòng cần thu tiền|^0/m.test(st.replace(/\n+/g, '\n')) && /Tổng công nợ/.test(st), 'Tổng quan hiện đủ các ô');
   const nums = await pg.evaluate(() => [...document.querySelectorAll('.cards7 .stat')].map((s) => s.innerText.replace(/\n/g, ' | '))); ok(nums.some((x) => /^0 \| Phòng cần thu tiền/.test(x)) && nums.some((x) => /^0 đ \| Tổng công nợ/.test(x)) && nums.some((x) => /^0 đ \| Tổng tiền cần thu/.test(x)), 'chưa ghi điện nước: Phòng cần thu = 0, Tổng tiền cần thu = 0 đ, Tổng công nợ = 0 đ (chưa tính là nợ)');
-  const c2 = await pg.locator('.room-card', { hasText: 'Phòng 2' }).innerText(); ok(/Chưa nhận \(chưa tới kỳ\)/.test(c2) && !/Còn nợ/.test(c2), 'thẻ Phòng 2: ghi "Chưa nhận (chưa tới kỳ)" thay vì "Còn nợ"');
+  const c2 = await pg.locator('.room-card', { hasText: 'Phòng 2' }).innerText(); ok(/Tiền phòng đầu kỳ chưa nhận/.test(c2) && !/Còn nợ/.test(c2), 'thẻ Phòng 2 (kỳ đầu chưa ghi nhận thu): "Tiền phòng đầu kỳ chưa nhận", không ghi "Còn nợ"');
   ok(parseFloat(await pg.$eval('.room-card .kv dd', (e) => getComputedStyle(e).fontSize)) >= 16, 'chữ trong thẻ phòng ≥ 1rem');
   // ---- Zalo ----
   await pg.locator('.room-card', { hasText: 'Phòng 2' }).click(); await pg.waitForSelector('.zbtn');

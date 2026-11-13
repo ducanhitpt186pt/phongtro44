@@ -40,8 +40,8 @@ function roomCard(r) {
   return html`<article class="card click room-card st-${tone}" data-act="open-room" data-id="${r.id}">
     <div class="rhead"><span class="rbadge ${tone}">${icon(ROOM_ICON[r.status], '1.6em')}</span><div class="sp"><h3>${r.name}</h3><span class="stx ${tone}">${ROOM_STATUS[r.status]}${m ? html` <span class="room-sub">· Vào ${dmy(m.r.startDate)}</span>` : ''}</span></div>${m ? html`<button class="btn red sm rbtn" data-act="readings" data-id="${m.r.id}">${icon('bolt', '1.1em')} Tính tiền</button>` : ''}</div>
     ${m ? html`<dl class="kv"><dt>Khách thuê</dt><dd class="big">${t?.fullName}</dd><dt>Số người</dt><dd>${people}</dd>
-      <dt>Tổng cần thu</dt><dd class="big money">${vnd(m.inv.total)}</dd><dt>Đã thanh toán</dt><dd>${vnd(m.d.paid)}</dd>
-      <dt>${counted ? 'Còn nợ' : 'Chưa nhận (chưa tới kỳ)'}</dt><dd class="${counted && m.d.remaining ? 'owe' : 'okc'}">${vnd(m.d.remaining)}</dd></dl>
+      ${counted ? html`<dt>Tổng cần thu</dt><dd class="big money">${vnd(m.inv.total)}</dd><dt>Đã thanh toán</dt><dd>${vnd(m.d.paid)}</dd><dt>Còn nợ</dt><dd class="${m.d.remaining ? 'owe' : 'okc'}">${vnd(m.d.remaining)}</dd>`
+        : m.d.remaining > 0 ? html`<dt>Tiền phòng đầu kỳ chưa nhận</dt><dd class="big money">${vnd(m.d.remaining)}</dd>` : html`<dt>Tiền phòng đầu kỳ đã nhận</dt><dd class="big money okc">${vnd(m.d.paid)}</dd>`}</dl>
       ${months.length ? html`<div class="mchips">${months.map((x) => html`<span class="mchip ${x.status}">Chưa thanh toán T${Number(x.ym.slice(5))}/${x.ym.slice(0, 4)}</span>`)}</div>` : ''}`
       : (r.note ? html`<div class="rnote ${tone}">${r.note}</div>` : '')}
   </article>`;

@@ -1,6 +1,6 @@
 // Google Sheet (mô phỏng Apps Script: kiểm tra mã bí mật, CHỈ thêm dòng) + sự kiện + công tắc hiển thị.
 import assert from 'node:assert/strict'; import http from 'node:http'; import zlib from 'node:zlib';
-process.env.APP_PASSWORD = 'mat-khau-test'; process.env.SESSION_SECRET = 'x'.repeat(40); process.env.E2E_FAKE_BLOB = '1'; delete process.env.GITHUB_TOKEN;
+process.env.APP_PASSWORD = 'mat-khau-test'; process.env.SESSION_SECRET = 'x'.repeat(40); process.env.E2E_FAKE_BLOB = '1'; process.env.SHEETS_SYNC = '1'; delete process.env.GITHUB_TOKEN;
 const sheet = { tabs: {}, actions: [], down: false }; // tabs[name] = [dòng...]
 const hook = http.createServer((q, s) => { let b = ''; q.on('data', (c) => (b += c)); q.on('end', () => {
   if (sheet.down) { s.statusCode = 500; return s.end('boom'); }

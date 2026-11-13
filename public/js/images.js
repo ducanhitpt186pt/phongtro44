@@ -8,11 +8,11 @@ const st = {}; // slot -> {file, rot, blob, url}
 export const resetImages = () => { for (const k of Object.keys(st)) { if (st[k]?.url) URL.revokeObjectURL(st[k].url); delete st[k]; } };
 export const getBlob = (slot) => st[slot]?.blob || null;
 
-export function idBox(slot, { title = '', required = true } = {}) {
+export function idBox(slot, { title = '', required = true, qr = false } = {}) {
   const side = slot.endsWith('back') ? 'MẶT SAU' : 'MẶT TRƯỚC';
-  return html`<div class="idcap"><strong>${title || `CCCD ${side.toLowerCase()}`}${required ? ' *' : ''}</strong>
+  return html`<div class="idcap"><strong>${title || (qr ? 'Ảnh QR ngân hàng' : `CCCD ${side.toLowerCase()}`)}${required ? ' *' : ''}</strong>
     <div class="idprev" id="prev-${slot}"><span>Chưa có ảnh</span></div>
-    <div class="row"><label class="btn primary sp">${icon('camera', '1.15em')} CHỤP CCCD ${side}<input type="file" accept="image/*" capture="environment" hidden data-change="id-file" data-slot="${slot}"></label>
+    <div class="row"><label class="btn primary sp">${icon('camera', '1.15em')} ${qr ? 'CHỤP ẢNH QR' : `CHỤP CCCD ${side}`}<input type="file" accept="image/*" capture="environment" hidden data-change="id-file" data-slot="${slot}"></label>
     <label class="btn sp">${icon('photo', '1.15em')} Chọn từ thư viện<input type="file" accept="image/*" hidden data-change="id-file" data-slot="${slot}"></label></div>
     <div class="row" id="tools-${slot}" hidden><button type="button" class="btn sm" data-act="id-rot" data-slot="${slot}">${icon('rotate')} Xoay</button>
     <button type="button" class="btn sm" data-act="id-clear" data-slot="${slot}">Chụp lại</button><span class="muted small" id="info-${slot}"></span></div></div>`;
@@ -21,13 +21,13 @@ async function compress(file, rot) {
   const url = URL.createObjectURL(file);
   const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('Không đọc được ảnh này. Hãy chọn ảnh JPG/PNG khác.')); i.src = url; });
   URL.revokeObjectURL(url);
-  const scale = Math.min(1, 2200 / Math.max(img.naturalWidth, img.naturalHeight));
+  const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight)); // ảnh vừa đủ rõ, nhỏ hơn nên tải lên nhanh hơn
   const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
   const swap = rot % 180 !== 0; const c = document.createElement('canvas'); c.width = swap ? h : w; c.height = swap ? w : h;
   const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
   g.translate(c.width / 2, c.height / 2); g.rotate((rot * Math.PI) / 180); g.drawImage(img, -w / 2, -h / 2, w, h);
-  let q = 0.86, blob;
-  do { blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', q)); q -= 0.06; } while (blob && blob.size > 3_300_000 && q > 0.5);
+  let q = 0.82, blob;
+  do { blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', q)); q -= 0.06; } while (blob && blob.size > 1_400_000 && q > 0.5);
   if (!blob) throw new Error('Trình duyệt không nén được ảnh');
   return blob;
 }

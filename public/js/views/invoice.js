@@ -11,7 +11,7 @@ export function invoiceView(id) {
   const x = invD(i.id); const isLatest = latestInvOf(i.chainId).id === i.id && !i.rolledOver;
   const pays = D().payments.filter((p) => p.invoiceId === i.id);
   const co = D().checkoutRecords.find((c) => c.invoiceId === i.id);
-  const m = billModel(i, x, S.snap.settings?.bank);
+  const m = billModel(i, x, S.snap.settings?.bank, S.snap.settings?.bankQr);
   const canShare = typeof navigator !== 'undefined' && !!navigator.canShare;
   return html`<div class="row noprint" style="margin-bottom:12px"><a class="back sp" href="#/room/${i.roomId}">← ${i.roomName}</a></div>
   <article class="bill" id="bill"><h1>${m.title}</h1>
@@ -19,8 +19,8 @@ export function invoiceView(id) {
     ${m.meters.length ? html`<div class="bmeters">${m.meters.map((row) => html`<div class="bm">${row.map(([k, v]) => html`<span>${k}</span><b>${v}</b>`)}</div>`)}</div>` : ''}
     <div class="bcalc">${m.calc.map((r) => html`<div class="bl ${r.info ? 'info' : ''}"><div class="bl1"><span>${r.label}</span><b class="${r.amount < 0 ? 'neg' : ''}">${r.info ? `(${m.money(r.amount)})` : m.money(r.amount)}</b></div>${r.formula ? html`<div class="bf">${r.formula}</div>` : ''}</div>`)}</div>
     <div class="btotal"><span>${m.total.label}</span><b>${m.total.value}</b></div>
-    ${m.pay ? html`<div class="bbank"><b>THÔNG TIN CHUYỂN KHOẢN</b><dl>${m.pay.map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`)}</dl></div>` : ''}
-    ${m.foot.length ? html`<dl class="binfo" style="margin-top:12px">${m.foot.map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`)}</dl>` : ''}
+    ${m.pay || m.qr ? html`<div class="bbank ${m.qr ? 'hasqr' : ''}"><b>${m.pay ? 'THÔNG TIN CHUYỂN KHOẢN' : 'QUÉT MÃ QR ĐỂ CHUYỂN KHOẢN'}</b><div class="bbrow">${m.pay ? html`<dl>${m.pay.map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`)}</dl>` : ''}${m.qr ? html`<img class="bqr" alt="QR chuyển khoản" src="${m.qr}">` : ''}</div></div>` : ''}
+    ${m.foot.length ? html`<dl class="binfo" style="margin-top:12px">${m.foot.map(([k, v, red]) => html`<dt class="${red ? 'owe' : ''}">${k}</dt><dd class="${red ? 'owe' : ''}">${v}</dd>`)}</dl>` : ''}
     ${i.rolledOver ? html`<p class="bnote">Còn nợ ${vnd(i.rolledOver.amount)} đã chuyển sang hóa đơn kỳ sau.</p>` : ''}
     ${i.note ? html`<p class="bnote">Ghi chú: ${i.note}</p>` : ''}
     <div class="bstamp"><span class="stamp ${INV_COLOR[x.status]}">${INV_STATUS[x.status].toUpperCase()}</span></div></article>
@@ -33,8 +33,8 @@ export function invoiceView(id) {
     ${co ? html`<p class="small muted">Quyết toán: ${co.days} ngày thực tế × ${vnd(co.rentPerDay)}/ngày = ${vnd(co.actualRent)}. ${co.refund ? `Hoàn tiền: ${co.refund.status === 'done' ? 'đã hoàn ' + dmy(co.refund.date) : 'CHƯA hoàn'}.` : ''}</p>` : ''}
     ${co?.refund?.status === 'pending' ? html`<button class="btn primary block" data-act="refunded" data-id="${co.id}">Xác nhận ĐÃ HOÀN ${vnd(co.refund.amount)} cho khách</button>` : ''}</section>`;
 }
-acts['bill-jpg'] = async (el) => { const i = currentInvoice(); el.disabled = true; try { const r = await saveBill(billModel(i, invD(i.id), S.snap.settings?.bank)); if (r === 'downloaded') toast('Đã tải ảnh hóa đơn (xem trong mục Tải xuống / Ảnh)'); } finally { el.disabled = false; } };
-acts['bill-share'] = async (el) => { const i = currentInvoice(); el.disabled = true; try { await saveBill(billModel(i, invD(i.id), S.snap.settings?.bank), { share: true }); } finally { el.disabled = false; } };
+acts['bill-jpg'] = async (el) => { const i = currentInvoice(); el.disabled = true; try { const r = await saveBill(billModel(i, invD(i.id), S.snap.settings?.bank, S.snap.settings?.bankQr)); if (r === 'downloaded') toast('Đã tải ảnh hóa đơn (xem trong mục Tải xuống / Ảnh)'); } finally { el.disabled = false; } };
+acts['bill-share'] = async (el) => { const i = currentInvoice(); el.disabled = true; try { await saveBill(billModel(i, invD(i.id), S.snap.settings?.bank, S.snap.settings?.bankQr), { share: true }); } finally { el.disabled = false; } };
 const currentInvoice = () => D().invoices.find((x) => x.id === location.hash.split('/')[2]);
 acts.print = () => window.print();
 acts['void-pay'] = (el) => openModal('Hủy giao dịch thanh toán', html`<form data-form="void-pay" data-id="${el.dataset.id}"><p class="warn-box">Giao dịch không bị xóa, chỉ đánh dấu "Đã hủy" kèm lý do.</p>${field('Lý do hủy *', html`<input name="reason" required maxlength="200">`)}<div class="err-inline"></div><button class="btn danger block" type="submit">HỦY GIAO DỊCH</button></form>`);
