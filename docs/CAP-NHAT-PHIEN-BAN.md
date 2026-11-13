@@ -35,8 +35,8 @@
 2. Nếu bản mới nhất ghi **Preview** thay vì **Production**: bấm dấu **⋯** ở dòng đó → **Promote to Production** → xác nhận.
 
 ## Phần 4. Kiểm tra
-1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-18-b`.
-2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-18-b".
+1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-20-a`.
+2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-20-a".
 3. Bấm **Ghi Điện & Nước - Tính Tiền Phòng**, đăng nhập: các phòng, khách, hóa đơn của bạn còn nguyên; trong danh sách phòng có thêm thẻ **Chủ Nhà**.
 
 ## Phần 5. Việc cần làm 1 lần sau khi cập nhật
@@ -102,6 +102,22 @@ Vercel → dự án → **Settings** → **Deployment Protection** → **Vercel 
 - **Nợ cũ:** mặc định 0. Chỉ là phần các tháng trước chưa trả hết, và hóa đơn ghi rõ **"Còn nợ tháng 10/2026: 200.000 đ"**. Hộp thoại **Tính tiền** cho biết trước nợ cũ tự động chuyển sang; ô **Nợ cũ** chỉ để nhập thêm khoản nợ chưa có trong hệ thống.
 - **Bấm Đã nhận tiền:** có ô **Tiền phát sinh** và **Nội dung phát sinh** (nếu có). Khoản này được cộng vào hóa đơn mới nhất của khách và hiện trên hóa đơn; số cần thu tự cập nhật.
 - **Xóa hóa đơn** (trang chi tiết phòng, cột cuối của bảng tháng): chỉ xóa được hóa đơn **mới nhất** của khách đang thuê (không phải hóa đơn đầu, không phải hóa đơn trả phòng/chuyển phòng). Có cảnh báo "dữ liệu quan trọng, không khôi phục được" và phải tích ô xác nhận. Xóa kèm các lần thu tiền và chỉ số điện nước của kỳ đó; nợ tháng trước trở lại như cũ. Muốn xóa tháng cũ hơn: xóa lùi dần từ tháng mới nhất. Nên **Tải database.json** trước khi xóa.
+
+### 5.3h. Bản 2026-11-19
+- **Chỉ tính là NỢ khi kỳ đó đã nhập điện nước.** Khách mới vào ở (hóa đơn đầu, chỉ có tiền phòng) chưa tính là nợ, chưa báo "quá hạn", không cộng vào Phòng cần thu / Tổng tiền cần thu / Tổng công nợ. Khi bạn ghi điện nước cho kỳ sau, nếu tiền phòng kỳ đầu vẫn chưa bấm **Đã nhận tiền** thì nó thành **Nợ cũ (ghi rõ tháng)**. Ví dụ vào ở 1/1: tới 1/2 (khi đã ghi điện nước) mới có thể hiện chữ **Quá hạn**.
+- **Nút Zalo** có icon Zalo và màu xanh Zalo; bấm mở zalo.me/<số Zalo>.
+- **Ảnh CCCD** ở hồ sơ khách hiện sẵn, bấm vào ảnh để phóng to.
+- **Sửa ngày nhận phòng:** trang chi tiết phòng → "Vào ở … **Sửa ngày**". Chỉ sửa được khi khách mới có hóa đơn đầu tiên và chưa đổi giá; đã có tháng sau thì xóa các hóa đơn tháng sau trước.
+- **Xóa dòng hóa đơn:** nút **Xóa** ở mọi dòng của khách đang thuê. Xóa một tháng thì xóa luôn các tháng sau nó (kèm thu tiền và chỉ số điện nước). Dòng đầu tiên = **xóa khách nhập nhầm** (xóa khách, người ở cùng, ảnh, hóa đơn; phòng về Trống), chỉ làm được khi chưa có tháng sau. Luôn có cảnh báo dữ liệu quan trọng và ô xác nhận.
+- **Chuyển phòng** chỉ chọn được phòng đang Trống.
+- Nút **Thu toàn bộ nợ** đổi thành **Thanh toán**.
+- Chữ trong thẻ phòng to hơn (từ 1rem).
+
+### 5.3i. Bản 2026-11-20: nút Gọi và tiền phòng kỳ đầu
+- **Nút Gọi** (icon điện thoại, màu xanh lá) cho từng số điện thoại của khách và từng người ở cùng, nằm cạnh nút Zalo, ở trang chi tiết phòng và trang khách thuê. Bấm là gọi (`tel:`).
+- **Nhận khách mới:** ô **"Đã thu đủ tiền phòng kỳ đầu"** được **tích sẵn**. Lưu khách là hệ thống tự ghi nhận đã thu tiền phòng đầu kỳ (ngày thu = ngày nhận phòng). Nên không còn thông báo "Chưa thanh toán T11". Bỏ tích nếu chưa nhận tiền.
+- **Tháng sau (T12):** chỉ phát sinh nợ khi bạn nhập điện nước của phòng đó; **Nợ cũ = 0** nếu tháng đầu đã thu.
+- **Khách đã nhập từ trước mà tháng đầu chưa ghi nhận thu:** trang chi tiết phòng có thẻ **"Tiền phòng kỳ đầu chưa ghi nhận đã thu"** với nút **Ghi nhận đã thu tiền phòng đầu kỳ**; bấm một lần là xong (thẻ này không phải thông báo nợ).
 
 ### 5.4. Lịch & sự kiện (mới)
 Tab **Lịch** (thanh dưới cùng): lịch tháng dương + âm, ngày lễ, thêm/sửa/xóa sự kiện. Trang chủ phía dưới nút "Ghi Điện & Nước - Tính Tiền Phòng" cũng có lịch (xem được, không sửa được khi chưa đăng nhập). Bật/tắt hiện sự kiện ở trang ngoài tại **Sao lưu → Hiển thị trên trang ngoài**.
