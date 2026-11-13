@@ -1,7 +1,7 @@
 const MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => MAP[c]);
 class Raw { constructor(s) { this.s = s; } toString() { return this.s; } }
-export const raw = (s) => new Raw(s);
+export const raw = (s) => (s instanceof Raw ? s : new Raw(s));
 const one = (v) => (v instanceof Raw ? v.s : Array.isArray(v) ? v.map(one).join('') : esc(v));
 // Mẫu HTML tự động thoát ký tự đặc biệt (chống XSS). Dùng raw() hoặc kết quả html`` lồng nhau để chèn HTML.
 export function html(strings, ...vals) { let o = ''; strings.forEach((s, i) => { o += s; if (i < vals.length) o += one(vals[i]); }); return new Raw(o); }
@@ -12,7 +12,7 @@ export const monthLabel = (ym) => `Tháng ${ym.slice(5, 7)}/${ym.slice(0, 4)}`;
 export const WEEKDAYS = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
 export const weekday = (iso) => { const [y, m, d] = iso.split('-').map(Number); return WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]; };
 export const GENDER = { male: 'Nam', female: 'Nữ', other: 'Khác' };
-export const ROOM_STATUS = { occupied: 'Đang thuê', empty: 'Trống', repair: 'Sửa chữa', notready: 'Chưa sẵn sàng' };
+export const ROOM_STATUS = { occupied: 'Đang thuê', empty: 'Trống', repair: 'Đang sửa chữa', notready: 'Đang sửa chữa hoặc đang sử dụng' };
 export const INV_STATUS = { paid: 'Đã thanh toán', partial: 'Đã thanh toán một phần', unpaid: 'Chưa thanh toán', overdue: 'Quá hạn', rolled: 'Đã chuyển nợ sang kỳ sau', refund: 'Cần hoàn tiền cho khách' };
 export const INV_COLOR = { paid: 'green', partial: 'orange', unpaid: 'orange', overdue: 'red', rolled: 'gray', refund: 'blue' };
 

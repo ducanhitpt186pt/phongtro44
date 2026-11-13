@@ -35,8 +35,8 @@
 2. Nếu bản mới nhất ghi **Preview** thay vì **Production**: bấm dấu **⋯** ở dòng đó → **Promote to Production** → xác nhận.
 
 ## Phần 4. Kiểm tra
-1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-14-a`.
-2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-14-a".
+1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-16-b`.
+2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-16-b".
 3. Bấm **Ghi Điện & Nước - Tính Tiền Phòng**, đăng nhập: các phòng, khách, hóa đơn của bạn còn nguyên; trong danh sách phòng có thêm thẻ **Chủ Nhà**.
 
 ## Phần 5. Việc cần làm 1 lần sau khi cập nhật
@@ -63,6 +63,34 @@ Vào phòng → bấm tháng có hóa đơn (hoặc hóa đơn vừa lập) → 
 
 ### 5.3c. Thông tin nhận tiền trên hóa đơn
 Đăng nhập → danh sách phòng → bấm thẻ **Chủ Nhà** → khung **Thông tin nhận tiền (hiện trên hóa đơn)** → nhập **Tên ngân hàng**, **Số tài khoản** (chỉ số), **Tên chủ tài khoản** (tự viết hoa) → **LƯU THÔNG TIN NHẬN TIỀN**. Từ đó mọi hóa đơn có số tiền cần thu (kể cả ảnh JPG gửi Zalo) có khối **THÔNG TIN CHUYỂN KHOẢN**. Muốn bỏ: bấm **Xóa**.
+
+### 5.3d. Giao diện mới (bản 2026-11-15)
+- **Đầu trang** chỉ còn tiêu đề (2rem), ngày dương/âm (1rem) và **1 thanh màu** cho biết % bộ nhớ đã dùng (xanh → cam → đỏ khi ≥ 90%). Dòng chi tiết "Lưu trữ ảnh / Upstash" nằm ở **cuối trang**, dưới cùng là "Cập nhật lúc…" và "Phiên bản giao diện".
+- **Thêm vào màn hình chính** (cuối trang): bấm nút có icon Nhà trọ 44.
+  - iPhone/iPad: mở bằng **Safari** → bấm **Chia sẻ** (ô vuông mũi tên) → **Thêm vào Màn hình chính** → **Thêm**. (Web hiện sẵn hướng dẫn 4 bước khi bạn bấm nút.)
+  - Android/PC (Chrome/Edge): bấm nút là hiện hộp thoại cài đặt.
+  - Đã cài xong thì nút tự ẩn. Icon nằm ở `public/*.png` (tạo bằng `scripts/tao-icon.py`).
+- **Lịch** chia 70% | 30% trên iPad/máy tính; bên phải là **Danh sách sự kiện cần nhớ**; có 2 nút **Thêm sự kiện** (tiêu đề lịch và danh sách). Chỉ **Chủ nhật** màu đỏ.
+- Tông màu tươi trẻ: đầu trang gradient xanh – tím, ô thống kê nhiều màu.
+- Muốn đổi icon: thay các file `public/apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` (cùng tên). Nếu đã thêm icon cũ vào màn hình chính, xóa icon cũ rồi thêm lại để iPhone nhận icon mới.
+
+### 5.3e. Bản 2026-11-16: giao diện mới + thu tiền theo tháng
+- **Nền xanh nhạt** `rgb(9 128 255 / 10%)`, góc bo nhỏ, ô nhập nền xanh nhạt, nút nhiều màu, icon Material Design Icons (miễn phí, Apache 2.0, giấy phép trong `public/vendor/`).
+- **Đăng nhập:** phiên hết sau 5 phút không thao tác; **đóng tab/trình duyệt rồi mở lại là phải nhập lại mật khẩu**.
+- **Trang chủ quản trị:** thẻ phòng có "Vào dd/mm/yyyy" + nút đỏ **Tính tiền**; **+ Thêm phòng** ở góc phải; lịch + danh sách sự kiện nằm ngay dưới "Các phòng"; sự kiện 2 tháng tới ở đầu trang. Không còn tab Lịch.
+- **Màu phòng:** đỏ = sửa chữa, xám = chưa sẵn sàng (khóa), xanh biển = đang ở, xanh lá = trống, cam nhạt = Chủ Nhà. Bấm phòng đang sửa/chưa sẵn sàng sẽ hiện lý do + nút **Sửa Tình Trạng Phòng**; đổi sang Phòng trống mới xem được.
+- **Tính tiền:** chọn tháng; đi vắng bỏ tháng nào thì chọn tháng sau (tháng bị bỏ chỉ có tiền phòng, điện nước tính gộp). Có **2 dòng**: **Nợ cũ** và **Chi phí khác** – có nhập mới hiện trong hóa đơn, để trống thì hóa đơn không hiện.
+- **Chi tiết phòng:** nút **Zalo** (khách + từng người ở cùng; trống thì dùng số điện thoại), mục **Chưa thanh toán** từng tháng với nút **Thanh toán tháng N** → **ĐÃ NHẬN TIỀN** thì tháng đó hết thông báo.
+- **Người ở cùng:** thêm **địa chỉ thường trú**; ảnh CCCD (khách và người ở cùng) **không bắt buộc**.
+- **Xóa phòng** (chỉ phòng chưa có lịch sử) trong hộp thoại **Sửa Tình Trạng Phòng**.
+- **Chủ Nhà:** khai báo đồng hồ tổng hiện tại, mọi lần ghi đều **Sửa** được; thông tin ngân hàng xem được và bấm **Sửa** khi đổi ngân hàng.
+- Dữ liệu cũ **tự được nâng cấp**, không cần sửa database (xem mục "Nếu có thêm bảng dữ liệu mới" bên dưới).
+
+### Nếu có thêm bảng dữ liệu mới trong các bản sau
+Bạn không phải làm gì với Upstash. Khi bản mới mở lên, phần mềm tự thêm các phần mới vào dữ liệu cũ (hàm nâng cấp `migrateDb`), giữ nguyên dữ liệu hiện có. Sau khi cập nhật chỉ cần: mở `/kiemtra.html` (phiên bản đúng, các dòng ✅), đăng nhập và kiểm tra dữ liệu còn nguyên. Luôn **Sao lưu → Tải database.json** trước khi cập nhật.
+
+### Trang chủ bị chuyển sang trang đăng nhập Vercel?
+Vercel → dự án → **Settings** → **Deployment Protection** → **Vercel Authentication** chọn **Disabled** (hoặc chỉ Preview) → **Save**.
 
 ### 5.4. Lịch & sự kiện (mới)
 Tab **Lịch** (thanh dưới cùng): lịch tháng dương + âm, ngày lễ, thêm/sửa/xóa sự kiện. Trang chủ phía dưới nút "Ghi Điện & Nước - Tính Tiền Phòng" cũng có lịch (xem được, không sửa được khi chưa đăng nhập). Bật/tắt hiện sự kiện ở trang ngoài tại **Sao lưu → Hiển thị trên trang ngoài**.

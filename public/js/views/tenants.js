@@ -2,7 +2,7 @@ import { html, raw, vnd, dmy, field, openModal, closeModal, toast, $, GENDER, IN
 import { D, DV, save, api, apiUrl, room, tenant, invD, latestInvOf } from '../api.js';
 import { acts, forms, live, rerender, go } from '../ui.js';
 import { idBox, resetImages, getBlob, uploadImage } from '../images.js';
-import { personFields, collectPerson, occFields, collectOccupant } from './room.js';
+import { personFields, collectPerson, occFields, collectOccupant, zaloBtn } from './room.js';
 import { icon } from '../icons.js';
 
 function statusOf(t) {
@@ -31,10 +31,10 @@ export function tenantView(id) {
   const img = (side, label) => idCard(t, 'tenant', side, label);
   return html`<a class="back" href="#/tenants">← Khách thuê</a>
     <div class="page-head"><h2>${t.fullName}</h2>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`}${t.purgedAt ? html`<span class="badge">Hồ sơ đã xóa ${dmy(t.purgedAt)}</span>` : html`<button class="btn sm" data-act="edit-tenant" data-id="${id}">Sửa thông tin</button>`}</div>
-    <section class="card"><dl class="kv"><dt>Ngày sinh</dt><dd>${dmy(t.dob)}</dd><dt>Giới tính</dt><dd>${GENDER[t.gender]}</dd><dt>Điện thoại</dt><dd>${t.phone}</dd><dt>Số CCCD</dt><dd>${t.cccd}</dd><dt>Ngày cấp / Nơi cấp</dt><dd>${dmy(t.cccdIssueDate)} · ${t.cccdIssuePlace}</dd><dt>Địa chỉ thường trú</dt><dd>${t.address}</dd><dt>Công nợ hiện tại</dt><dd class="${s.debt ? 'owe' : 'okc'}">${vnd(s.debt)}</dd></dl></section>
+    <section class="card"><div class="zalo-row">${zaloBtn(t.fullName, t.zalo || t.phone)}${occ.map((o) => zaloBtn(o.fullName, o.zalo || o.phone))}</div><dl class="kv"><dt>Ngày sinh</dt><dd>${dmy(t.dob)}</dd><dt>Giới tính</dt><dd>${GENDER[t.gender]}</dd><dt>Điện thoại</dt><dd>${t.phone}</dd><dt>Số CCCD</dt><dd>${t.cccd}</dd><dt>Ngày cấp / Nơi cấp</dt><dd>${dmy(t.cccdIssueDate)} · ${t.cccdIssuePlace}</dd><dt>Địa chỉ thường trú</dt><dd>${t.address}</dd><dt>Công nợ hiện tại</dt><dd class="${s.debt ? 'owe' : 'okc'}">${vnd(s.debt)}</dd></dl></section>
     <h2 class="sec">Ảnh CCCD</h2><div class="idgrid">${img('front', 'mặt trước')}${img('back', 'mặt sau')}</div>
     <div class="row" style="margin:22px 0 10px"><h2 class="sec" style="margin:0" >Người ở cùng (${occ.length})</h2><span class="sp"></span>${s.act && !t.purgedAt ? html`<button class="btn red sm" data-act="add-occupant" data-tid="${id}">${raw(icon('plus', '1.1em'))} Thêm người ở cùng</button>` : ''}</div>
-    <div class="list">${occ.length ? occ.map((o) => html`<section class="card"><div class="row"><div class="sp"><b>${o.fullName}</b> · ${dmy(o.dob)} · ${GENDER[o.gender] || ''}<br><span class="muted small">${[o.phone, o.noId ? 'Chưa có CCCD (trẻ em)' : `CCCD ${o.cccd}`, o.note].filter(Boolean).join(' · ')}</span></div>
+    <div class="list">${occ.length ? occ.map((o) => html`<section class="card"><div class="row"><div class="sp"><b>${o.fullName}</b> · ${dmy(o.dob)} · ${GENDER[o.gender] || ''}<br><span class="muted small">${[o.phone, o.noId ? 'Chưa có CCCD (trẻ em)' : `CCCD ${o.cccd}`, o.address, o.note].filter(Boolean).join(' · ')}</span></div>
       <button class="btn sm" data-act="edit-occupant" data-id="${o.id}">Sửa</button><button class="btn danger sm" data-act="del-occupant" data-id="${o.id}">Xóa</button></div>
       ${o.noId ? '' : html`<div class="idgrid" style="margin-top:10px">${idCard(o, 'occ', 'front', 'mặt trước')}${idCard(o, 'occ', 'back', 'mặt sau')}</div>`}</section>`) : html`<div class="empty-state">Không có.</div>`}</div>
     <h2 class="sec">Lịch sử thuê</h2><div class="list">${rentals.map((r) => html`<div class="li"><span><a href="#/room/${r.roomId}">${room(r.roomId).name}</a> · ${dmy(r.startDate)} → ${r.endDate ? dmy(r.endDate) : 'nay'}</span><span class="badge ${r.status === 'active' ? 'blue' : ''}">${{ active: 'Đang thuê', ended: 'Đã trả phòng', transferred: 'Đã chuyển phòng' }[r.status]}</span></div>`)}</div>

@@ -15,10 +15,9 @@ export function billModel(i, x, bank = null) {
   if (i.elec) calc.push({ label: 'Tiền điện', formula: `${n(i.elec.new)} − ${n(i.elec.old)} = ${n(i.elec.usage)} × ${n(i.elec.price)} đ`, amount: i.elec.amount });
   if (i.water) calc.push({ label: 'Tiền nước', formula: `${n(i.water.new)} − ${n(i.water.old)} = ${n(i.water.usage)} × ${n(i.water.price)} đ`, amount: i.water.amount });
   if (i.rent) calc.push({ label: 'Tiền phòng', formula: i.kind === 'periodic' && !i.elec ? 'Kỳ đầu (chưa có điện nước)' : '', amount: i.rent });
-  if (i.oldDebt) calc.push({ label: 'Nợ cũ', formula: 'Chuyển từ kỳ trước', amount: i.oldDebt });
+  const debt = (i.oldDebt || 0) + (i.manualDebt || 0); if (debt) calc.push({ label: 'Nợ cũ', formula: i.oldDebt ? 'Các tháng trước chưa thanh toán' : '', amount: debt });
   for (const l of i.adjustLines || []) calc.push({ label: l.label, formula: '', amount: l.amount });
-  if (i.extras?.length) for (const e of i.extras) calc.push({ label: `Tiền phí khác: ${e.label}`, formula: '', amount: e.amount });
-  else calc.push({ label: 'Tiền phí khác', formula: '', amount: 0 });
+  for (const e of i.extras || []) calc.push({ label: e.label === 'Chi phí khác' ? 'Chi phí khác' : `Chi phí khác: ${e.label}`, formula: '', amount: e.amount }); // không có thì không hiện dòng nào
   const totalLabel = i.total < 0 ? `Chủ nhà hoàn lại cho khách` : `Tổng tiền ${i.roomName.toLowerCase()} là`;
   const foot = []; if (i.total > 0 && x.paid > 0) foot.push(['Đã thanh toán', vnd(x.paid)], ['Còn phải thu', vnd(x.remaining)]);
   const pay = bank && i.total > 0 ? [['Ngân hàng', bank.bankName], ['Số tài khoản', bank.accountNumber], ['Chủ tài khoản', bank.accountName]] : null;
