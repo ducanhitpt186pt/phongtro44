@@ -14,6 +14,8 @@ const calls = [...code.matchAll(/(?:save|api)\('(GET|POST|PUT|DELETE)', [`']([^`
 for (const [m, p] of calls) { const first = p.split('/')[0]; if (![...routes].some((r) => r === p || r.split('/')[0] === first)) fail(`giao diện gọi ${m} /api/${p} nhưng router không có`); }
 // router → handler tồn tại
 const handlers = read('lib/handlers/index.js'); for (const m of router.matchAll(/H\.(\w+(?:\.\w+)?)\(/g)) { const parts = m[1].split('.'); if (!new RegExp(`\\b${parts[parts.length - 1]}\\b`).test(handlers)) fail(`router gọi H.${m[1]} nhưng handlers không có`); }
+// khóa cấp 1 của handlers không được trùng (khóa sau sẽ ghi đè khóa trước và làm mất chức năng)
+{ const keys = [...handlers.matchAll(/^  (\w+): (?:\{|async|\()/gm)].map((m) => m[1]); const dup = keys.filter((k, i) => keys.indexOf(k) !== i); if (dup.length) fail(`handlers có khóa trùng: ${[...new Set(dup)].join(', ')}`); }
 // TODO/FIXME, console.log, debugger
 for (const f of [...walk('lib'), ...client]) { const s = read(f); if (/TODO|FIXME|XXX|debugger/.test(s)) fail(`${f}: còn TODO/FIXME/debugger`); if (/console\.log\(/.test(s) && f.startsWith('public')) fail(`${f}: còn console.log`); }
 // file tĩnh được tham chiếu có tồn tại

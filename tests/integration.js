@@ -55,13 +55,14 @@ await t('XUNG ĐỘT SHA: có ghi chen ngang → hệ thống đọc lại, áp 
 });
 await t('GitHub lỗi 500 khi ghi → báo THẤT BẠI, không báo thành công', async () => { failNext = 5; const r = await call('POST', '/api/rooms', { name: 'Phòng 9' }); assert.equal(r.status, 502); assert.equal(r.body.ok, false); assert.ok(!JSON.parse(files.get('database.json').text).rooms.some((x) => x.name === 'Phòng 9')); failNext = 0; });
 await t('lỗi nghiệp vụ trả 400 với thông báo tiếng Việt', async () => { const r = await call('POST', '/api/payments', { invoiceId: (await call('GET', '/api/data')).body.db.invoices[0].id, amount: 99999999 }); assert.equal(r.status, 400); assert.match(r.body.error, /vượt quá/); });
-await t('thanh toán 1 phần rồi API công khai phản ánh đúng và KHÔNG lộ thông tin khách', async () => {
+await t('thanh toán 1 phần ở kỳ đầu: API công khai chưa báo nợ (chưa ghi điện nước) và KHÔNG lộ thông tin khách', async () => {
   const inv = (await call('GET', '/api/data')).body.db.invoices[0];
   assert.equal((await call('POST', '/api/payments', { invoiceId: inv.id, amount: 500000 })).status, 200);
   const pub = await call('GET', '/api/public/reminders', undefined, false);
   assert.equal(pub.status, 200); const s = JSON.stringify(pub.body);
   for (const x of ['0912345678', '001195000002', 'Lê Văn Phấn', '1995-03-02', 'Con']) assert.ok(!s.includes(x), 'Lộ ' + x);
-  assert.ok(pub.body.items.some((i) => i.roomName === 'Phòng 1' && i.remaining === 700000 && i.type === 'partial'));
+  assert.ok(!pub.body.items.some((i) => i.roomName === 'Phòng 1' && ['partial', 'unpaid', 'overdue'].includes(i.type)), 'kỳ đầu chưa ghi điện nước: chưa tính là nợ, chưa có thông báo nợ');
+  assert.equal(pub.body.summary.totalRemaining, 0);
 });
 await t('sao lưu: xuất JSON; khôi phục cần xác nhận + tạo bản an toàn', async () => {
   const ex = await call('GET', '/api/backup/export'); assert.equal(ex.body.schemaVersion, 1);

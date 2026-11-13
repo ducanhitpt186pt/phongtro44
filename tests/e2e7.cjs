@@ -23,7 +23,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const data = await api('data'); const mai = data.db.occupants.find((o) => o.fullName === 'Lê Thị Mai'); ok(mai.idImages.front && mai.idImages.back, 'ảnh CCCD người ở cùng được lưu (2 mặt)');
   await pg.screenshot({ path: '/tmp/shots/61-room.png', fullPage: true });
   // hồ sơ khách: xem ảnh người ở cùng, xóa người ở cùng
-  await pg.click('a:has-text("Hồ sơ khách")'); await pg.waitForSelector('text=Lê Thị Mai'); await pg.locator('button:has-text("Xem ảnh")').nth(0).click();
+  await pg.click('a:has-text("Hồ sơ khách")'); await pg.waitForSelector('text=Lê Thị Mai'); await pg.waitForSelector('img.idimg');
   await pg.waitForFunction(() => [...document.querySelectorAll('.idprev img')].some((i) => i.complete && i.naturalWidth > 0), null, { timeout: 8000 }).catch(() => {}); ok(await pg.evaluate(() => [...document.querySelectorAll('.idprev img')].some((i) => i.complete && i.naturalWidth > 0)), 'xem được ảnh CCCD của người ở cùng');
   await pg.locator('button[data-act=del-occupant]').nth(1).click(); await pg.waitForSelector('text=Người ở cùng (1)'); ok(true, 'xóa người ở cùng (ảnh bị xóa khỏi kho)');
   // ghi chú + sửa chữa → trang ngoài

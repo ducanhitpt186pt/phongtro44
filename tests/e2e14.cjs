@@ -30,7 +30,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   await pg.goto(H + '#/dashboard'); await pg.locator('.room-card', { hasText: 'Phòng 2' }).click(); await pg.waitForSelector('.zalo-row'); const rp = await pg.innerText('body');
   ok(/Phòng 2 – Khách Hai/.test(rp) && /Sửa Tình Trạng Phòng/.test(rp) && !/Sửa phòng/.test(rp) && !bad(rp), 'chi tiết phòng: "Phòng 2 – Khách Hai", nút "Sửa Tình Trạng Phòng", không lộ mã');
   ok((await pg.getAttribute('.zbtn', 'href')) === 'https://zalo.me/0900000002', 'nút Zalo khách mở https://zalo.me/<số>');
-  ok(/Chưa thanh toán/.test(rp) && (await pg.locator('button[data-act=pay-month]').count()) === 1, 'mục "Chưa thanh toán" liệt kê tháng chưa trả, có nút "Thanh toán tháng 10"');
+  ok(/Tiền phòng kỳ đầu chưa ghi nhận đã thu/.test(rp) && (await pg.locator('button[data-act=pay-month]').count()) === 1, 'kỳ đầu chưa ghi nhận thu: thẻ thông tin + nút ghi nhận đã thu (không báo "Chưa thanh toán")');
   await pg.click('button[data-act=pay-month]'); await pg.waitForSelector('form[data-form=pay]'); await pg.click('text=Trả đủ'); await pg.click('form[data-form=pay] button[type=submit]'); await pg.waitForSelector('text=Đã thanh toán đủ các tháng'); ok(true, 'bấm "ĐÃ NHẬN TIỀN": tháng đó hết khỏi danh sách chưa thanh toán');
   await pg.goto(H + '#/dashboard'); ok(!(await pg.innerText('.notices')).includes('PHÒNG 2'), 'thông báo của phòng 2 biến mất trên Tổng quan');
   // xóa phòng

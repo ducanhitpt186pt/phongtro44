@@ -2,7 +2,7 @@ import { html, raw, vnd, dmy, field, openModal, closeModal, toast, $, GENDER, IN
 import { D, DV, save, api, apiUrl, room, tenant, invD, latestInvOf } from '../api.js';
 import { acts, forms, live, rerender, go } from '../ui.js';
 import { idBox, resetImages, getBlob, uploadImage } from '../images.js';
-import { personFields, collectPerson, occFields, collectOccupant, zaloBtn } from './room.js';
+import { personFields, collectPerson, occFields, collectOccupant, contactRow } from './room.js';
 import { icon } from '../icons.js';
 
 function statusOf(t) {
@@ -31,7 +31,7 @@ export function tenantView(id) {
   const img = (side, label) => idCard(t, 'tenant', side, label);
   return html`<a class="back" href="#/tenants">← Khách thuê</a>
     <div class="page-head"><h2>${t.fullName}</h2>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`}${t.purgedAt ? html`<span class="badge">Hồ sơ đã xóa ${dmy(t.purgedAt)}</span>` : html`<button class="btn sm" data-act="edit-tenant" data-id="${id}">Sửa thông tin</button>${!s.act ? html`<button class="btn sm danger" data-act="del-tenant" data-id="${id}">${icon('trash', '1em')} Xóa hồ sơ</button>` : ''}`}</div>
-    <section class="card"><div class="zalo-row">${zaloBtn(t.fullName, t.zalo || t.phone)}${occ.map((o) => zaloBtn(o.fullName, o.zalo || o.phone))}</div><dl class="kv"><dt>Ngày sinh</dt><dd>${dmy(t.dob)}</dd><dt>Giới tính</dt><dd>${GENDER[t.gender]}</dd><dt>Điện thoại</dt><dd>${t.phone}</dd><dt>Số CCCD</dt><dd>${t.cccd}</dd><dt>Ngày cấp / Nơi cấp</dt><dd>${dmy(t.cccdIssueDate)} · ${t.cccdIssuePlace}</dd><dt>Địa chỉ thường trú</dt><dd>${t.address}</dd><dt>Công nợ hiện tại</dt><dd class="${s.debt ? 'owe' : 'okc'}">${vnd(s.debt)}</dd></dl></section>
+    <section class="card">${contactRow(t, occ)}<dl class="kv"><dt>Ngày sinh</dt><dd>${dmy(t.dob)}</dd><dt>Giới tính</dt><dd>${GENDER[t.gender]}</dd><dt>Điện thoại</dt><dd>${t.phone}</dd><dt>Số CCCD</dt><dd>${t.cccd}</dd><dt>Ngày cấp / Nơi cấp</dt><dd>${dmy(t.cccdIssueDate)} · ${t.cccdIssuePlace}</dd><dt>Địa chỉ thường trú</dt><dd>${t.address}</dd><dt>Công nợ hiện tại</dt><dd class="${s.debt ? 'owe' : 'okc'}">${vnd(s.debt)}</dd></dl></section>
     <h2 class="sec">Ảnh CCCD</h2><div class="idgrid">${img('front', 'mặt trước')}${img('back', 'mặt sau')}</div>
     <div class="row" style="margin:22px 0 10px"><h2 class="sec" style="margin:0" >Người ở cùng (${occ.length})</h2><span class="sp"></span>${s.act && !t.purgedAt ? html`<button class="btn red sm" data-act="add-occupant" data-tid="${id}">${raw(icon('plus', '1.1em'))} Thêm người ở cùng</button>` : ''}</div>
     <div class="list">${occ.length ? occ.map((o) => html`<section class="card"><div class="row"><div class="sp"><b>${o.fullName}</b> · ${dmy(o.dob)} · ${GENDER[o.gender] || ''}<br><span class="muted small">${[o.phone, o.noId ? 'Chưa có CCCD (trẻ em)' : `CCCD ${o.cccd}`, o.address, o.note].filter(Boolean).join(' · ')}</span></div>
@@ -44,10 +44,10 @@ export function tenantView(id) {
 function idCard(owner, kind, side, label) {
   const m = owner.idImages?.[side];
   return html`<div class="card"><b>CCCD ${label}</b>
-    <div class="idprev" id="show-${owner.id}-${side}" style="margin:8px 0">${m ? html`<button class="btn" data-act="show-id" data-key="${owner.id}-${side}" data-id="${m.id}">Xem ảnh</button>` : html`<span>Chưa có ảnh</span>`}</div>
+    <div class="idprev" id="show-${owner.id}-${side}" style="margin:8px 0">${m ? html`<img class="idimg" alt="Ảnh CCCD ${label}" loading="lazy" data-act="zoom-id" data-id="${m.id}" src="${apiUrl(`storage/${m.id}`)}"><div class="idfail small" hidden>Không tải được ảnh. Kiểm tra kết nối kho ảnh (BLOB_READ_WRITE_TOKEN), hoặc bấm "Tải về".</div>` : html`<span class="muted">Chưa có ảnh</span>`}</div>
     <div class="row">${m ? html`<a class="btn sm" href="${apiUrl(`storage/${m.id}?download=1`)}" download>Tải về</a>` : ''}<button class="btn sm" data-act="id-replace" data-owner="${owner.id}" data-side="${side}">${m ? 'Thay ảnh' : 'Thêm ảnh'}</button>${m ? html`<button class="btn sm danger" data-act="id-delete" data-id="${m.id}">Xóa ảnh</button>` : ''}</div>${m ? html`<div class="muted small" style="margin-top:6px">Tải lên ${dmy(m.uploadedAt.slice(0, 10))}</div>` : ''}</div>`;
 }
-acts['show-id'] = (el) => { $(`#show-${el.dataset.key}`).innerHTML = html`<img alt="CCCD" src="${apiUrl(`storage/${el.dataset.id}?t=${Date.now()}`)}">`.s; };
+acts['zoom-id'] = (el) => openModal('Ảnh CCCD', html`<img alt="CCCD" class="idzoom" src="${apiUrl(`storage/${el.dataset.id}`)}">`);
 acts['id-replace'] = (el) => { resetImages(); const side = el.dataset.side; openModal(`Ảnh CCCD ${side === 'front' ? 'mặt trước' : 'mặt sau'}`, html`<form data-form="id-upload" data-owner="${el.dataset.owner}" data-side="${side}">${idBox(`rep-${side}`)}<div class="err-inline"></div><button class="btn primary block" type="submit">LƯU ẢNH</button></form>`); };
 forms['id-upload'] = async (f) => { const side = f.dataset.side; if (!getBlob(`rep-${side}`)) throw new Error('Chưa có ảnh. Hãy chụp hoặc chọn ảnh.'); try { await uploadImage(f.dataset.owner, `rep-${side}`, side); } catch (e) { toast(e.message, 'err'); throw e; } resetImages(); closeModal(); toast('Đã lưu ảnh (ảnh cũ đã được xóa khỏi kho)'); rerender(); };
 acts['id-delete'] = async (el) => { if (!confirm('Xóa ảnh CCCD này khỏi kho lưu trữ? Không thể hoàn tác.')) return; await save('DELETE', `storage/${el.dataset.id}`, undefined, 'Đã xóa ảnh'); rerender(); };

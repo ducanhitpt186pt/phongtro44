@@ -10,6 +10,7 @@ acts['modal-close'] = () => closeModal(); // nút ✕ của hộp thoại
 const MONEY = /^(amount|rent|elecPrice|waterPrice|manualDebt|newRent|newElecPrice|newWaterPrice|openingDebt|otherAmount|extraAmount|x\da)$/;
 const fmtMoney = (el) => { const pos = el.selectionStart ?? el.value.length; const digitsBefore = el.value.slice(0, pos).replace(/\D/g, '').length; const out = el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); if (out === el.value) return; el.value = out; let c = 0, i = 0; for (; i < out.length && c < digitsBefore; i++) if (/\d/.test(out[i])) c++; try { el.setSelectionRange(i, i); } catch { /* một số kiểu ô nhập không hỗ trợ */ } };
 export function initMoney() {
+  document.addEventListener('error', (e) => { const el = e.target; if (el instanceof HTMLImageElement && el.classList.contains('idimg')) { el.hidden = true; const m = el.nextElementSibling; if (m && m.classList.contains('idfail')) m.hidden = false; } }, true);
   document.addEventListener('input', (e) => { const el = e.target; if (el instanceof HTMLInputElement && MONEY.test(el.name || '')) fmtMoney(el); }, true);
   new MutationObserver(() => document.querySelectorAll('input').forEach((el) => { if (MONEY.test(el.name || '') && /^\d{4,}$/.test(el.value)) fmtMoney(el); })).observe(document.body, { childList: true, subtree: true });
 }

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { addMonthsClamp, periodIndexOf, periodStart, todayVN } from '../lib/dates.js';
 import { emptyDb, validateDb } from '../lib/schema.js';
 import * as B from '../lib/billing.js';
-import { buildReminders, publicReminders } from '../lib/reminders.js';
+import { buildReminders, buildSummary, publicReminders } from '../lib/reminders.js';
 import { purgeOld, storageInfo } from '../lib/cleanup.js';
 import { buildSystem } from '../lib/health.js';
 import { solarToLunar, lunarToSolar } from '../public/js/lunar.js';
@@ -149,21 +149,17 @@ t('chuyển phòng giữ chu kỳ, nợ liên kết đúng, lịch sử phòng c
 });
 
 console.log('THÔNG BÁO');
-t('chu trình thông báo: chưa ghi điện nước → chưa thanh toán → một phần → đủ → sắp tới kỳ', () => {
+t('chu trình thông báo: kỳ đầu (chưa ghi điện nước) chưa tính là nợ → ghi điện nước → chưa thanh toán → một phần → quá hạn → đủ', () => {
   const { db, rental } = setup('2026-11-10', '2026-11-10');
-  assert.equal(buildReminders(db, '2026-11-10')[0].type, 'unpaid');
-  B.addPayment(db, { invoiceId: db.invoices[0].id, amount: 800000 }, '2026-11-10');
-  assert.equal(buildReminders(db, '2026-11-10')[0].type, 'partial');
-  assert.equal(buildReminders(db, '2026-11-10')[0].remaining, 400000);
-  assert.equal(buildReminders(db, '2026-11-10').length, 1);
-  assert.equal(buildReminders(db, '2026-11-11')[0].type, 'overdue'); // qua ngày đến hạn mà còn nợ
-  B.addPayment(db, { invoiceId: db.invoices[0].id, amount: 400000 }, '2026-11-11');
-  assert.equal(buildReminders(db, '2026-11-12').length, 0);
-  assert.equal(buildReminders(db, '2026-12-05')[0].type, 'upcoming');
-  assert.equal(buildReminders(db, '2026-12-10')[0].type, 'need_readings');
+  assert.equal(buildReminders(db, '2026-11-10').length, 0, 'vào ở 10/11, chưa nhập điện nước: chưa có nợ, chưa có thông báo');
+  assert.equal(buildReminders(db, '2026-11-25').length, 0, 'giữa tháng vẫn chưa tính là nợ (kể cả khi chưa nhận tiền phòng đầu kỳ)'); assert.equal(buildSummary(db, buildReminders(db, '2026-11-25')).totalRemaining, 0, 'tổng cần thu = 0 vì chưa tới kỳ ghi điện nước');
+  assert.equal(buildReminders(db, '2026-12-05')[0].type, 'upcoming'); assert.equal(buildReminders(db, '2026-12-10')[0].type, 'need_readings');
   B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 1, elecNew: 120, waterNew: 11 }, '2026-12-10');
-  assert.equal(buildReminders(db, '2026-12-10')[0].type, 'unpaid'); // thông báo "chưa ghi điện nước" biến mất
-  assert.equal(buildReminders(db, '2026-12-11')[0].type, 'overdue');
+  const un = buildReminders(db, '2026-12-10')[0]; assert.equal(un.type, 'overdue', 'tiền phòng kỳ đầu chưa nhận, nay đã ghi điện nước kỳ sau → phát sinh nợ, đã quá hạn từ 11/11'); assert.equal(un.months.length, 2); assert.ok(buildSummary(db, buildReminders(db, '2026-12-10')).totalRemaining > 0, 'đã ghi điện nước → mới phát sinh nợ');
+  B.addPayment(db, { invoiceId: db.invoices[0].id, amount: B.monthStates(db, rental.chainId)[0].outstanding }, '2026-12-10'); assert.equal(buildReminders(db, '2026-12-10')[0].type, 'unpaid', 'đã trả tháng 11: còn tháng 12 chưa trả, chưa tới hạn → Chưa thanh toán');
+  assert.equal(buildReminders(db, '2026-12-11')[0].type, 'overdue', 'quá hạn chỉ từ sau ngày đến hạn của kỳ đã ghi điện nước (đến hạn 10/12 → quá hạn từ 11/12)');
+  const inv2 = B.latestInvoice(db, rental.chainId); B.addPayment(db, { invoiceId: inv2.id, amount: 800000 }, '2026-12-11'); assert.equal(buildReminders(db, '2026-12-11')[0].type, 'overdue', 'trả một phần vẫn còn quá hạn');
+  B.addPayment(db, { invoiceId: inv2.id, amount: B.remainingOf(db, inv2) }, '2026-12-11'); assert.equal(buildReminders(db, '2026-12-12').length, 0, 'thanh toán đủ: hết thông báo');
 });
 t('quá hạn ưu tiên cao hơn; phòng trống/không khách không có thông báo; trả phòng không sinh kỳ mới', () => {
   const { db, rental } = setup('2026-11-10', '2026-11-10');
@@ -179,7 +175,7 @@ t('API công khai: KHÔNG BAO GIỜ có SĐT/CCCD/ngày sinh/địa chỉ/tên n
   db.monthlyNotes.push({ id: 'n1', roomId: 'room-1', ym: '2026-11', text: 'mượn 500', updatedAt: '' });
   const on = publicReminders(db, '2026-11-12'); const s = JSON.stringify(on);
   for (const secret of ['0901234567', '001090000001', 'Hà Nội', '1990-05-20', 'Cục CS', 'tenantId', 'rentalId', 'Người Ở Cùng X', '0999999999', '001099000009', 'bí mật']) assert.ok(!s.includes(secret), 'Lộ: ' + secret);
-  const r1 = on.roster.find((x) => x.roomName === 'Phòng 1'); assert.equal(r1.tenantName, 'Nguyễn Văn A'); assert.equal(r1.people, 2); assert.equal(r1.note, 'mượn 500'); assert.equal(r1.debt, 1200000); assert.equal(on.roster.find((x) => x.roomName === 'Phòng 2').status, 'empty');
+  const r1 = on.roster.find((x) => x.roomName === 'Phòng 1'); assert.equal(r1.tenantName, 'Nguyễn Văn A'); assert.equal(r1.people, 2); assert.equal(r1.note, 'mượn 500'); assert.equal(r1.debt, 0, 'kỳ đầu chưa ghi điện nước: chưa tính là nợ'); assert.equal(on.roster.find((x) => x.roomName === 'Phòng 2').status, 'empty');
   db.meta.publicShowTenant = false; const off = JSON.stringify(publicReminders(db, '2026-11-12')); assert.ok(!off.includes('Nguyễn Văn A') && !off.includes('mượn 500'), 'tắt thì không được lộ tên/ghi chú');
 });
 t('kiểm tra toàn vẹn dữ liệu bắt lỗi', () => { const db = emptyDb(); db.rooms[0].status = 'xxx'; throwsCode(() => validateDb(db), 'INVALID_DB'); });
@@ -369,14 +365,14 @@ t('PHÁT SINH khi bấm nhận tiền: cộng vào hóa đơn mới nhất kèm 
   B.addPayment(db, { invoiceId: inv.id, amount: B.remainingOf(db, inv) }, '2026-02-10'); assert.equal(B.remainingOf(db, inv), 0);
   const { db: d2, rental: r2 } = setup('2026-11-01', '2026-11-01'); const b = B.baseline(d2, r2); const co = B.confirmCheckout(d2, { rentalId: r2.id, date: '2026-11-11', elecFinal: b.elec + 10, waterFinal: b.water + 1, extras: [] }, '2026-11-11'); if (co.invoice.total > 0) throwsCode(() => B.addPayment(d2, { invoiceId: co.invoice.id, amount: 1, extraAmount: 1000 }, '2026-11-11'), 'LOCKED');
 });
-t('XÓA hóa đơn: chỉ hóa đơn MỚI NHẤT (không phải đầu tiên / trả phòng); xóa kèm thu tiền + chỉ số; nợ kỳ trước trở lại như cũ', () => {
+t('XÓA hóa đơn từ một tháng trở đi (không phải hóa đơn đầu / trả phòng); xóa kèm thu tiền + chỉ số; nợ kỳ trước trở lại như cũ', () => {
   const { db, rental } = setup('2026-01-10', '2026-01-10'); const first = db.invoices[0]; B.addPayment(db, { invoiceId: first.id, amount: first.total - 300000 }, '2026-01-10');
   const remBefore = B.remainingOf(db, first); const nRead = db.readings.length; const i2 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 1, elecNew: 150, waterNew: 12 }, '2026-02-10'); B.addPayment(db, { invoiceId: i2.id, amount: 100000 }, '2026-02-10');
   assert.ok(first.rolledOver); const res = B.deleteInvoice(db, i2.id); assert.equal(res.paymentsRemoved, 1); assert.equal(res.amountRemoved, 100000);
   assert.equal(db.invoices.length, 1); assert.equal(first.rolledOver, undefined, 'bỏ dấu chuyển nợ'); assert.equal(B.remainingOf(db, first), remBefore, 'nợ tháng trước trở lại như cũ'); assert.equal(db.readings.length, nRead, 'chỉ số điện nước kỳ đó cũng bị xóa'); validateDb(db);
   throwsCode(() => B.deleteInvoice(db, first.id), 'LOCKED'); // hóa đơn đầu tiên
   const j2 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 1, elecNew: 150, waterNew: 12 }, '2026-02-10'); const j3 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 2, elecNew: 160, waterNew: 13 }, '2026-03-10');
-  throwsCode(() => B.deleteInvoice(db, j2.id), 'LOCKED'); B.deleteInvoice(db, j3.id); B.deleteInvoice(db, j2.id); assert.equal(db.invoices.length, 1, 'xóa lùi dần từ tháng mới nhất');
+  const res2 = B.deleteInvoice(db, j2.id); assert.equal(res2.invoicesRemoved, 2, 'xóa tháng 2 thì xóa luôn các tháng sau nó (tháng 3)'); assert.equal(db.invoices.length, 1); assert.equal(first.rolledOver, undefined); validateDb(db);
 });
 
 t('LỜI NHẮC ĐIỆN THOẠI (.ics): 6h sáng, báo trước 3 ngày + 1 ngày + đúng ngày; sự kiện lặp tạo nhiều lần; ký tự đặc biệt được thoát; dòng ≤ 75 byte', () => {
@@ -386,6 +382,31 @@ t('LỜI NHẮC ĐIỆN THOẠI (.ics): 6h sáng, báo trước 3 ngày + 1 ngà
   for (const line of ics.split('\r\n')) assert.ok(new TextEncoder().encode(line).length <= 75, 'dòng quá dài: ' + line.slice(0, 40));
   assert.equal(EV.buildIcs(ev, { today: '2026-11-13', alarms: [1], time: '07:30' }).ics.includes('T073000'), true); assert.equal(EV.buildIcs([{ ...ev[0], repeat: false, year: 2020 }], { today: '2026-11-13' }).count, 0, 'sự kiện 1 lần đã qua không có lần nào để nhắc');
   const lun = EV.buildIcs([{ id: 'e2', name: 'Rằm', calendar: 'lunar', day: 15, month: 8, repeat: true }], { today: '2026-11-13' }); assert.ok(lun.ics.includes('DTSTART:20270914T060000') || lun.ics.includes('DTSTART:20270915T060000') || lun.count === 3, 'sự kiện âm lịch: mỗi năm một ngày dương khác nhau');
+});
+
+t('XÓA KHÁCH NHẬP NHẦM (chỉ có hóa đơn đầu): xóa khách, hóa đơn, thu tiền; phòng về Trống; đã có tháng sau thì chặn', () => {
+  const { db, rental } = setup('2026-11-10', '2026-11-10'); B.addPayment(db, { invoiceId: db.invoices[0].id, amount: 500000 }, '2026-11-10'); const tid = db.tenants[0].id;
+  const r2 = B.undoMoveIn(db, rental.id); assert.equal(db.invoices.length, 0); assert.equal(db.payments.length, 0); assert.equal(db.rentals.length, 0); assert.ok(!db.tenants.some((t) => t.id === tid)); assert.equal(db.rooms.find((x) => x.id === 'room-1').status, 'empty'); assert.equal(r2.tenantRemoved, true); validateDb(db);
+  const u = setup('2026-11-10', '2026-11-10'); B.createPeriodicInvoice(u.db, { rentalId: u.rental.id, periodIndex: 1, elecNew: 150, waterNew: 12 }, '2026-12-10'); throwsCode(() => B.undoMoveIn(u.db, u.rental.id), 'LOCKED');
+});
+t('SỬA NGÀY NHẬN PHÒNG: cập nhật mọi mốc của hóa đơn đầu; chặn khi đã có tháng sau hoặc ngày ở tương lai', () => {
+  const { db, rental } = setup('2026-11-10', '2026-11-12'); B.addPayment(db, { invoiceId: db.invoices[0].id, amount: 300000 }, '2026-11-12');
+  B.changeStartDate(db, rental.id, '2026-11-05', '2026-11-12'); const inv = db.invoices[0]; assert.equal(rental.startDate, '2026-11-05'); assert.equal(rental.anchorDate, '2026-11-05'); assert.equal(inv.dueDate, '2026-11-05'); assert.equal(inv.periodStart, '2026-11-05'); assert.equal(inv.periodEnd, '2026-12-04'); assert.equal(B.paidOf(db, inv.id), 300000, 'tiền đã thu giữ nguyên'); assert.equal(db.priceHistories[0].effectiveFrom, '2026-11-05'); validateDb(db);
+  throwsCode(() => B.changeStartDate(db, rental.id, '2026-11-13', '2026-11-12'), 'BAD_REQUEST'); throwsCode(() => B.changeStartDate(db, rental.id, 'abc', '2026-11-12'), 'BAD_REQUEST');
+  B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 1, elecNew: 150, waterNew: 12 }, '2026-12-05'); throwsCode(() => B.changeStartDate(db, rental.id, '2026-11-01', '2026-12-05'), 'LOCKED');
+});
+t('CHUYỂN PHÒNG: chỉ chuyển vào phòng ĐANG TRỐNG (phòng đang ở / sửa chữa / chưa sẵn sàng / Chủ Nhà bị từ chối)', () => {
+  const { db, rental } = setup('2026-11-10', '2026-11-12'); const b = B.baseline(db, rental); const inp = (room) => ({ rentalId: rental.id, date: '2026-11-12', elecFinal: b.elec, waterFinal: b.water, newRoomId: room, newInitElec: 0, newInitWater: 0, newRent: 1000000, newElecPrice: 3000, newWaterPrice: 10000, extras: [] });
+  for (const st of ['occupied', 'repair', 'notready']) { db.rooms.find((x) => x.id === 'room-2').status = st; assert.throws(() => B.transferRoom(db, inp('room-2'), '2026-11-12'), /Trống/, st); }
+  assert.throws(() => B.transferRoom(db, inp('room-owner'), '2026-11-12'), /Trống/);
+});
+
+t('NHẬN KHÁCH MỚI + "đã thu tiền phòng kỳ đầu": ghi nhận thu luôn; không có thông báo nợ T11; T12 chỉ phát sinh nợ khi nhập điện nước', () => {
+  const db = emptyDb('2026-01-01'); const m = B.moveIn(db, { roomId: 'room-1', startDate: '2026-11-01', rent: 1200000, elecPrice: 3000, waterPrice: 10000, initElec: 100, initWater: 10, paidAlready: true, tenant: { ...person } }, '2026-11-01');
+  assert.equal(B.remainingOf(db, m.invoice), 0); assert.equal(db.payments.length, 1); assert.equal(db.payments[0].date, '2026-11-01'); assert.equal(db.payments[0].amount, 1200000); validateDb(db);
+  assert.equal(buildReminders(db, '2026-11-20').length, 0, 'đã thu đầu tháng: không có thông báo chưa thanh toán T11'); assert.equal(B.unpaidMonths(db, m.rental.chainId).length, 0);
+  const t12 = B.createPeriodicInvoice(db, { rentalId: m.rental.id, periodIndex: 1, elecNew: 150, waterNew: 15 }, '2026-12-01'); assert.equal(t12.oldDebt, 0, 'Nợ cũ = 0'); const um = B.unpaidMonths(db, m.rental.chainId); assert.deepEqual(um.map((x) => x.ym), ['2026-12'], 'chỉ nợ T12'); assert.equal(buildReminders(db, '2026-12-01')[0].type, 'unpaid'); assert.equal(buildReminders(db, '2026-12-02')[0].type, 'overdue');
+  const u = emptyDb('2026-01-01'); const m2 = B.moveIn(u, { roomId: 'room-1', startDate: '2026-11-01', rent: 1200000, elecPrice: 3000, waterPrice: 10000, initElec: 100, initWater: 10, tenant: { ...person } }, '2026-11-01'); assert.equal(B.remainingOf(u, m2.invoice), 1200000, 'không tick thì vẫn chưa thu (cách cũ)');
 });
 
 console.log(`\nKết quả: ${pass} đạt, ${fail} lỗi`);
