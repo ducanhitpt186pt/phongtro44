@@ -63,8 +63,8 @@ Muốn xóa sạch dữ liệu thử: **Sao lưu** → khôi phục một file `
 - **Phiên đăng nhập 5 phút:** hết hạn sau 5 phút KHÔNG thao tác; đang dùng (bấm, gõ, cuộn) thì tự gia hạn nên không phải nhập lại mật khẩu. Tối đa 12 giờ liên tục. Đổi số phút bằng biến `SESSION_IDLE_MINUTES` trên Vercel.
 - **Người ở cùng:** vào phòng → **Thêm người ở cùng** (nút đỏ), phải có ảnh CCCD 2 mặt (trẻ em tick "Chưa có CCCD"). Số người tự đếm, không cần nhập.
 - **Chuyển phòng:** vào phòng → **Chuyển phòng** (từ phòng A sang phòng B trống).
-- **Trang ngoài:** danh sách phòng (ngày vào, họ tên khách, số người, nợ, ghi chú), điện nước so với tháng trước + cảnh báo rò rỉ khi tăng > 30% so với trung bình. Bật/tắt hiện họ tên + ghi chú ở **Sao lưu → Hiển thị trên trang ngoài**.
-- **Phòng Chủ Nhà:** thẻ riêng trong danh sách phòng; nhập chỉ số đồng hồ tổng đều đặn; hệ thống tính điện nước Chủ Nhà dùng = tổng − các phòng và cảnh báo khi tăng > 30%.
+- **Trang ngoài:** danh sách phòng (ngày vào, họ tên khách, số người, nợ, ghi chú), điện nước so với tháng trước + cảnh báo rò rỉ khi tăng > 20% so với trung bình. Bật/tắt hiện họ tên + ghi chú ở **Sao lưu → Hiển thị trên trang ngoài**.
+- **Phòng Chủ Nhà:** thẻ riêng trong danh sách phòng; nhập chỉ số đồng hồ tổng đều đặn; hệ thống tính điện nước Chủ Nhà dùng = tổng − các phòng và cảnh báo khi tăng > 20%.
 
 ## Dọn dữ liệu cũ & dung lượng
 - Dòng dưới tiêu đề luôn hiện **% lưu trữ ảnh**. Từ 90% chuyển đỏ "sắp đầy" kèm nút **Dọn dữ liệu**.

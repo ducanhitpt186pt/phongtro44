@@ -35,8 +35,8 @@
 2. Nếu bản mới nhất ghi **Preview** thay vì **Production**: bấm dấu **⋯** ở dòng đó → **Promote to Production** → xác nhận.
 
 ## Phần 4. Kiểm tra
-1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-23-a`.
-2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-23-a".
+1. Mở `https://<tên-web-của-bạn>/kiemtra.html` → tất cả dòng ✅ và "phiên bản giao diện" là `2026-11-25-a`.
+2. Mở trang chủ web (nên bấm Ctrl+F5 hoặc đóng hẳn tab rồi mở lại). Cuối trang có dòng "Phiên bản giao diện: 2026-11-25-a".
 3. Bấm **Ghi Điện & Nước - Tính Tiền Phòng**, đăng nhập: các phòng, khách, hóa đơn của bạn còn nguyên; trong danh sách phòng có thêm thẻ **Chủ Nhà**.
 
 ## Phần 5. Việc cần làm 1 lần sau khi cập nhật
@@ -47,7 +47,7 @@
 4. **Mỗi tháng** (ví dụ ngày có hóa đơn điện nước nhà nước), vào thẻ **Chủ Nhà**, nhập số đồng hồ tổng mới → hệ thống hiện công thức:
    - Tổng cả dãy + nhà = số mới − số cũ.
    - Tổng các phòng đã dùng = cộng điện nước của từng phòng trong cùng khoảng ngày (phòng nào kỳ tính tiền lệch ngày thì hệ thống chia đều theo ngày).
-   - **Chủ Nhà dùng = Tổng − Các phòng.** Tăng quá 30% so với trung bình các tháng trước thì có cảnh báo rò rỉ.
+   - **Chủ Nhà dùng = Tổng − Các phòng.** Tăng quá 20% so với trung bình các tháng trước thì có cảnh báo rò rỉ.
 5. Nhập nhầm: ở mục "Lịch sử ghi đồng hồ tổng" bấm **Xóa (nhập nhầm)** (chỉ xóa được lần ghi mới nhất).
 
 ### 5.2. Người ở cùng đã nhập từ phiên bản cũ
@@ -58,7 +58,7 @@ Vào phòng → bấm tháng có hóa đơn (hoặc hóa đơn vừa lập) → 
 
 ### 5.3b. Điện nước: ngày chốt số và cảnh báo Chủ Nhà
 - Khi **Ghi điện nước & lập hóa đơn** có ô **Ngày chốt số**: mặc định hôm nay; nếu bạn đọc đồng hồ từ vài ngày trước, chọn đúng ngày đó.
-- Cảnh báo rò rỉ của **từng phòng** hiện ngay khi bạn lập hóa đơn của phòng đó (tăng > 30% so với trung bình).
+- Cảnh báo rò rỉ của **từng phòng** hiện ngay khi bạn lập hóa đơn của phòng đó (tăng > 20% so với trung bình).
 - Cảnh báo **Chủ Nhà** chỉ chốt vào ngày **phòng tính tiền trễ nhất** ghi xong điện nước (ví dụ các phòng chốt ngày 1, 5, 10, 15, 20 → chốt ngày 20). Trước đó thẻ Chủ Nhà ghi "Đang chờ chốt" và liệt kê phòng còn thiếu.
 
 ### 5.3c. Thông tin nhận tiền trên hóa đơn
@@ -140,6 +140,22 @@ Vercel → dự án → **Settings** → **Deployment Protection** → **Vercel 
 - **Ảnh QR ngân hàng:** thẻ thông tin ngân hàng có **Tải ảnh QR lên / Thay ảnh QR / Xóa ảnh QR**. QR chỉ hiện trên hóa đơn (màn hình và ảnh JPG) khi đã tải ảnh lên.
 - **Lịch:** ngày dương in đậm, ngày âm không in đậm.
 - **Thông báo cần xử lý:** có nút **Xem hóa đơn** để gửi khách. Hóa đơn của khách còn nợ hiện số điện nước cũ/mới, tiền phòng, **Đã thanh toán trước** và **Còn nợ** (màu đỏ).
+
+### 5.3m. Bản 2026-11-24
+- **Xem hóa đơn trước khi thanh toán:** bấm **Thanh toán / Thanh toán tháng N / Ghi nhận đã thu** → trong hộp thoại có nút **Xem hóa đơn** (bấm để hiện hóa đơn ngay trong hộp thoại), xem xong nhấn **ĐÃ NHẬN TIỀN** bên dưới. Mỗi tháng chưa thanh toán ở trang chi tiết phòng cũng có nút **Xem hóa đơn** riêng.
+- **Dòng "Còn nợ" trên hóa đơn** to và đỏ hơn (cả màn hình lẫn ảnh JPG).
+- **Nợ cộng dồn, ghi rõ từng tháng:** tháng nào chưa trả hết thì tháng sau cộng dồn; dòng **Nợ cũ** liệt kê "Còn nợ tháng 2: …, tháng 3: …". Trả riêng tháng nào thì chỉ còn các tháng kia.
+- **Đồng hồ tổng Chủ Nhà tính theo THÁNG:** mỗi tháng có 1 số tổng MỚI, **ghi vào ngày nào trong tháng cũng được** (kể cả cùng ngày với số cũ). Quy tắc duy nhất: số mới **không nhỏ hơn** số cũ đã lưu. Tháng đó: **(số mới − số cũ) − tổng điện/nước các phòng đã ghi trong tháng = Chủ Nhà dùng**. Tháng được **chốt khi phòng cuối cùng đã ghi chỉ số** (ngày chốt = ngày phòng đó, hoặc ngày ghi số tổng nếu muộn hơn). Trước khi chốt hiện "Đang chờ: Phòng X".
+- **Ảnh tải lên được nén nhỏ** (tối đa 1280px, thường dưới 450 KB) nên tải lên và hiển thị nhanh hơn; ảnh CCCD vẫn đọc rõ chữ.
+
+### 5.3n. Bản 2026-11-25
+- **Phòng đang khóa:** thẻ nền **xám nhạt** kèm **icon khóa lớn** phía dưới nền (phân biệt rõ với phòng sửa chữa màu đỏ), ở cả trang chủ quản trị và trang ngoài.
+- **Trang ngoài:**
+  - Bấm phòng còn nợ trong "Tổng quan cần xử lý" sẽ hỏi **đăng nhập để thanh toán**, đăng nhập xong vào thẳng phòng đó.
+  - **Icon chuông + số thông báo** hiện ở đầu trang (cạnh nút Đăng nhập); bấm chuông cuộn tới phần thông báo.
+- **Điện – nước các phòng so với tháng trước** luôn có thẻ **Chủ Nhà** (chưa có số đồng hồ tổng thì ghi hướng dẫn nhập).
+- **Cảnh báo rò rỉ** khi mức dùng mới nhất tăng quá **20%** (trước là 30%), áp dụng cho từng phòng và Chủ Nhà.
+- **Nhật ký thao tác gần đây** (tab Sao lưu) chỉ hiện **10 dòng mới nhất**; nút **Xem thêm (còn … dòng)** hiện thêm, **Thu gọn** về 10 dòng.
 
 ### 5.4. Lịch & sự kiện (mới)
 Tab **Lịch** (thanh dưới cùng): lịch tháng dương + âm, ngày lễ, thêm/sửa/xóa sự kiện. Trang chủ phía dưới nút "Ghi Điện & Nước - Tính Tiền Phòng" cũng có lịch (xem được, không sửa được khi chưa đăng nhập). Bật/tắt hiện sự kiện ở trang ngoài tại **Sao lưu → Hiển thị trên trang ngoài**.
