@@ -42,7 +42,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   ok(/hop-dong-phong-2/.test(dl.suggestedFilename()) && fs.statSync(fpath).size > 5000, 'tải file Word: ' + dl.suggestedFilename() + ' (' + fs.statSync(fpath).size + ' byte)');
   await pg.click('button[data-act=contract-pdf]'); await pg.waitForSelector('iframe[aria-hidden]', { state: 'attached' }); ok(true, 'nút In / Lưu PDF tạo bản in (iframe)');
   const html = await pg.evaluate(() => fetch('/api/contract/' + document.querySelector('button[data-act=contract-docx]').closest('form').dataset.rental + '?format=html').then((r) => r.text())); fs.writeFileSync(OUT + '/hop-dong.html', html);
-  for (const must of ['Phạm Văn Chủ', 'Nguyễn Văn An', 'Xã Đông Hưng, Thái Bình', 'Hai triệu đồng', '9.000.000 đồng/quý', 'Rác 30.000đ/tháng', 'Trần Thị Mai', 'Số: <b class="f">07</b>']) ok(html.includes(must), 'hợp đồng có: ' + must);
+  for (const must of ['Phạm Văn Chủ', 'Nguyễn Văn An', 'Xã Đông Hưng, Thái Bình', 'Hai triệu không trăm ngàn đồng', '9.000.000 đồng/quý', 'Rác 30.000đ/tháng', 'Trần Thị Mai', 'Số: <b class="f">07</b>']) ok(html.includes(must), 'hợp đồng có: ' + must);
   // ---- trả phòng: trừ cọc ----
   d = await data(); const rid = d.db.rentals.find((x) => x.roomId === 'room-2' && x.status === 'active').id; const today = d.today;
   let pv = await call('POST', 'checkout/preview', { rentalId: rid, date: today, elecFinal: 100, waterFinal: 10, extras: [] }); ok(pv.preview && pv.preview.deposit === 2000000, 'xem trước quyết toán có cọc ' + (pv.preview && pv.preview.deposit) + ', tổng ' + (pv.preview && pv.preview.total));

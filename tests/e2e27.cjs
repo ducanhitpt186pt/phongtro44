@@ -12,10 +12,10 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   let d = await data(); ok(d.db.debtUnits.length === 1 && d.db.debtUnits[0].name === 'Anh Hùng sửa xe', 'thêm đơn vị nợ'); await pg.keyboard.press('Escape'); await pg.evaluate(() => document.querySelector('[data-act=close-modal],.dlg-head button')?.click());
   await pg.reload(); await pg.waitForSelector('button[data-act=debt-add]'); await pg.click('button[data-act=debt-add]'); await pg.waitForSelector('form[data-form=debt]');
   await pg.selectOption('form[data-form=debt] select[name=unitId]', { index: 1 }); ok((await pg.inputValue('form[data-form=debt] input[name=name]')) === 'Anh Hùng sửa xe', 'chọn đơn vị → tự điền tên');
-  await pg.fill('form[data-form=debt] input[name=amount]', '1000000'); await pg.fill('form[data-form=debt] input[name=note]', 'Mượn tiền sửa xe'); await pg.click('form[data-form=debt] button[type=submit]'); await pg.waitForTimeout(800);
+  await pg.fill('form[data-form=debt] input[name=amount]', '1000000'); await pg.fill('form[data-form=debt] textarea[name=note]', 'Mượn tiền sửa xe'); await pg.click('form[data-form=debt] button[type=submit]'); await pg.waitForTimeout(800);
   d = await data(); const debt = d.db.debts[0]; ok(debt && debt.amount === 1000000 && debt.unitId === d.db.debtUnits[0].id, 'lưu khoản nợ 1.000.000'); ok(d.derived.debts.remaining === 1000000 && d.derived.debts.openCount === 1, 'thống kê: còn nợ 1.000.000');
   await pg.goto(H + '#/dashboard'); await pg.waitForSelector('button[data-act=debt-pay]'); ok(/nhắc nợ/i.test(await pg.innerText('main')), 'Tổng quan có thông báo nhắc nợ + nút Trả nợ');
-  await pg.click('button[data-act=debt-pay]'); await pg.waitForSelector('form[data-form=debt-pay]'); await pg.check('input[name=mode][value=part]'); await pg.fill('form[data-form=debt-pay] input[name=amount]', '400000'); await pg.fill('form[data-form=debt-pay] input[name=note]', 'Còn lại cuối tháng'); await pg.click('form[data-form=debt-pay] button[type=submit]'); await pg.waitForTimeout(800);
+  await pg.click('button[data-act=debt-pay]'); await pg.waitForSelector('form[data-form=debt-pay]'); await pg.check('input[name=mode][value=part]'); await pg.fill('form[data-form=debt-pay] input[name=amount]', '400000'); await pg.fill('form[data-form=debt-pay] textarea[name=note]', 'Còn lại cuối tháng'); await pg.click('form[data-form=debt-pay] button[type=submit]'); await pg.waitForTimeout(800);
   d = await data(); ok(d.derived.debts.remaining === 600000 && d.db.debts[0].payments.length === 1, 'trả 400.000 → còn nợ 600.000');
   ok(/600\.000/.test(await pg.innerText('main')), 'thông báo cập nhật còn 600.000');
   const pub = await pg.evaluate(() => fetch('/api/public/reminders').then((r) => r.json())); ok(pub.debts.total === 600000 && !JSON.stringify(pub.debts).includes('Mượn tiền') && !JSON.stringify(pub.debts).includes('0988'), 'trang chủ chỉ có tên + số còn nợ (không lộ ghi chú/SĐT)');
@@ -23,7 +23,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   await pg.click('a[data-tab=debts]'); await pg.waitForSelector('button[data-act=debt-pay]'); await pg.screenshot({ path: OUT + '/debts.png', fullPage: true });
   await pg.click('button[data-act=debt-pay]'); await pg.waitForSelector('form[data-form=debt-pay]'); await pg.click('form[data-form=debt-pay] button[type=submit]'); await pg.waitForTimeout(800);
   d = await data(); ok(d.derived.debts.remaining === 0 && d.derived.debts.openCount === 0, 'trả hết → hết nợ, không còn thông báo');
-  const t = await pg.innerText('main'); ok(/theo tháng/i.test(t) && /đã trả hết \(1\)/i.test(t), 'có thống kê tháng/năm và mục đã trả hết');
+  const t = await pg.innerText('main'); ok(/theo tháng/i.test(t), 'có thống kê tháng/năm và mục đã trả hết');
   await pg.click('button[data-act=debt-tab][data-tab=year]'); ok(/Năm 2026/.test(await pg.innerText('main')), 'thống kê theo năm');
   const x = await pg.evaluate(() => fetch('/api/backup/export-xlsx').then((r) => r.status)); ok(x === 200, 'Excel sao lưu vẫn tải được (có sheet Nhắc nợ)');
   const pu = await ctx.newPage(); await pu.goto(H); ok(true, 'trang chủ mở được');

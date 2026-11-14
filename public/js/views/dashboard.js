@@ -27,12 +27,12 @@ export function dashboardView() {
     ${debtNotices(openDebtItems(today()), { actions: true })}
     ${eventsAheadList(S.snap.db.events, today())}
     <h2 class="sec">Tổng quan</h2>
-    <div class="cards7"><div class="stat"><b>${rooms.length}</b><span>Tổng số phòng</span><span class="sub">Phòng đang khóa: <b class="inl">${rooms.filter((r) => r.status === 'notready').length}</b></span></div>${stat(toCollect, 'Phòng cần thu tiền', 'redtxt')}${stat(vnd(debt), 'Tổng công nợ', 'debt')}</div>
-    ${usagePanel(DV().usage)}
+    <div class="cards7"><div class="stat roomstat"><b>${rooms.length}</b><span>Tổng số phòng</span><span class="sub blk">Phòng đang khóa: <b class="inl">${rooms.filter((r) => r.status === 'notready').length}</b></span></div>${stat(toCollect, 'Phòng cần thu tiền', 'redtxt')}${stat(vnd(debt), 'Tổng công nợ', 'debt')}</div>
     ${readingsBanner(DV().readings)}
     <div class="section-head"><h2 class="sec">Các phòng</h2><span class="sp"></span><button class="btn primary sm" data-act="add-room">${icon('plus', '1.1em')} Thêm phòng</button></div>
     <div class="grid">${rooms.map((r) => roomCard(r))}${ownerRoom ? ownerCard(ownerRoom) : ''}</div>
-    <div class="dash-cal">${calendarPanel({ editable: true })}</div>`;
+    <div class="dash-cal">${calendarPanel({ editable: true })}</div>
+    ${usagePanel(DV().usage)}`;
 }
 function roomCard(r) {
   const m = roomMoney(r.id); const tone = ROOM_TONE[r.status];

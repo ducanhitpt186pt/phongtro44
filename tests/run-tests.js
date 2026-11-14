@@ -454,14 +454,14 @@ t('chuyển phòng giữ nguyên tiền cọc và hình thức thanh toán', () 
   const nr = db.rentals.find((x) => x.transferredFrom === rental.id); assert.equal(nr.deposit, 2000000); assert.equal(nr.payCycle, 'quarter'); assert.ok(r);
 });
 t('đọc số tiền thành chữ', () => {
-  assert.equal(moneyWords(0), 'Không đồng'); assert.equal(moneyWords(3000000), 'Ba triệu đồng'); assert.equal(moneyWords(2500000), 'Hai triệu năm trăm nghìn đồng');
-  assert.equal(moneyWords(1205000), 'Một triệu hai trăm linh năm nghìn đồng'); assert.equal(moneyWords(15000), 'Mười lăm nghìn đồng'); assert.equal(moneyWords(36000000), 'Ba mươi sáu triệu đồng'); assert.equal(moneyWords(21000), 'Hai mươi mốt nghìn đồng');
+  assert.equal(moneyWords(0), 'Không đồng'); assert.equal(moneyWords(3000000), 'Ba triệu không trăm ngàn đồng'); assert.equal(moneyWords(2500000), 'Hai triệu năm trăm ngàn đồng');
+  assert.equal(moneyWords(1205000), 'Một triệu hai trăm linh năm ngàn đồng'); assert.equal(moneyWords(15000), 'Mười lăm ngàn đồng'); assert.equal(moneyWords(36000000), 'Ba mươi sáu triệu không trăm ngàn đồng'); assert.equal(moneyWords(21000), 'Hai mươi mốt ngàn đồng');
 });
 t('hợp đồng: điền đúng dữ liệu (Bên A, Bên B, quê quán, người ở cùng, cọc bằng chữ, hình thức thanh toán)', () => {
   const db = emptyDb('2026-01-01'); db.meta.landlord = { fullName: 'Phạm Chủ', cccd: '001075000111', houseAddress: '44 Lê Văn Phấn' };
   const r = B.moveIn(db, { roomId: 'room-1', startDate: '2026-11-01', rent: 3000000, elecPrice: 3500, waterPrice: 15000, initElec: 1, initWater: 1, deposit: 3000000, payCycle: 'year', tenant: { ...person, hometown: 'Thái Bình' }, occupants: [{ fullName: 'Mai', dob: '1992-01-01', gender: 'female', cccd: '001192000456', address: 'HN', stayMode: 'range', stayFrom: '2026-11-01', stayTo: '2027-01-31' }] }, '2026-11-14');
   const blocks = buildContract(contractData(db, r.rental, { signDate: '2026-11-14', today: '2026-11-14' })); const html = contractHtml(blocks);
-  for (const must of ['Phạm Chủ', 'Nguyễn Văn A', 'Thái Bình', '3.000.000', 'Ba triệu đồng', '36.000.000 đồng/năm', 'năm / lần', 'Từ ngày 01/11/2026 đến ngày 31/01/2027', 'ĐIỀU 10. CAM KẾT CHUNG', '3.500', '15.000', '44 Lê Văn Phấn']) assert.ok(html.includes(must), 'thiếu: ' + must);
+  for (const must of ['Phạm Chủ', 'Nguyễn Văn A', 'Thái Bình', '3.000.000', 'Ba triệu không trăm ngàn đồng', '36.000.000 đồng/năm', 'năm / lần', 'Từ ngày 01/11/2026 đến ngày 31/01/2027', 'ĐIỀU 10. CAM KẾT CHUNG', '3.500', '15.000', '44 Lê Văn Phấn']) assert.ok(html.includes(must), 'thiếu: ' + must);
   assert.ok(html.includes('☒ </b>') || html.includes('☒'), 'có đánh dấu hình thức thanh toán'); const buf = contractDocx(blocks); assert.equal(buf.slice(0, 2).toString(), 'PK'); assert.ok(buf.length > 5000);
 });
 

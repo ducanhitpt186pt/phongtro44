@@ -11,10 +11,10 @@ let year = null;
 // Chỉ xóa được hóa đơn MỚI NHẤT của khách đang thuê (không phải hóa đơn đầu tiên, không phải trả phòng/chuyển phòng)
 const canDel = (i) => { const chain = D().invoices.filter((x) => x.chainId === i.chainId); const idx = chain.findIndex((x) => x.id === i.id); const active = D().rentals.some((r) => r.chainId === i.chainId && r.status === 'active'); return active ? chain.slice(idx).every((x) => x.kind === 'periodic') : true; }; // khách đang thuê: xóa từ tháng đó trở đi; khách đã trả phòng: xóa dòng bất kỳ
 const zaloUrl = (n) => `https://zalo.me/${String(n || '').replace(/[^\d]/g, '').replace(/^0/, '0')}`;
-export const zaloBtn = (name, num_, label = name) => (num_ ? html`<a class="zbtn" href="${zaloUrl(num_)}" target="_blank" rel="noopener" title="Mở Zalo của ${name}"><img class="zi" src="/zalo.png" alt="Zalo" width="26" height="26"><span>${label}</span></a>` : html`<span class="zbtn off" title="Chưa nhập số Zalo"><img class="zi" src="/zalo.png" alt="Zalo" width="26" height="26"><span>${label} (chưa có số)</span></span>`);
+export const zaloBtn = (name, num_, label = name) => (num_ ? html`<a class="zbtn" href="${zaloUrl(num_)}" target="_blank" rel="noopener" title="Mở Zalo của ${name}"><span class="zi" aria-hidden="true">Z</span><span>${label}</span></a>` : html`<span class="zbtn off" title="Chưa nhập số Zalo"><span class="zi" aria-hidden="true">Z</span><span>${label} (chưa có số)</span></span>`);
 const telUrl = (n) => `tel:${String(n || '').replace(/[^\d+]/g, '')}`;
 const phoneShow = (n) => String(n || '').replace(/^(\d{4})(\d{3})(\d{3,4})$/, '$1 $2 $3');
-export const callBtn = (name, phone) => (phone ? html`<a class="cbtn" href="${telUrl(phone)}" title="Gọi điện cho ${name}"><img class="ci" src="/phone.png" alt="Gọi" width="26" height="26"><span>Gọi ${phoneShow(phone)}</span></a>` : '');
+export const callBtn = (name, phone) => (phone ? html`<a class="cbtn" href="${telUrl(phone)}" title="Gọi điện cho ${name}"><span class="ci" aria-hidden="true">${icon('phone', '1.05em')}</span><span>Gọi ${phoneShow(phone)}</span></a>` : '');
 // Mỗi người một hàng: tên + nút Zalo + nút Gọi (nếu không muốn nhắn Zalo)
 export const contactRow = (t, occs = []) => html`<div class="zalo-row contacts">${[t, ...occs].map((p) => html`<div class="crow"><b class="cname">${p.fullName}</b>${zaloBtn(p.fullName, p.zalo || p.phone, 'Zalo')}${callBtn(p.fullName, p.phone)}</div>`)}</div>`;
 
@@ -65,9 +65,9 @@ export function roomView(id) {
 }
 function occupantsCard(t, occs, roomId) {
   return html`<section class="card" style="margin-top:12px"><div class="row"><h3 class="sp">${icon('users', '1.2em')} Người ở cùng (${occs.length})</h3><button class="btn red sm" data-act="add-occupant" data-tid="${t.id}">${icon('plus', '1.1em')} Thêm người ở cùng</button></div>
-    <div class="row" style="margin-top:8px"><button class="btn sm" data-act="ct01" data-room="${roomId}">${icon('sheet', '1.1em')} Bản Khai CT01 - Lưu Trú</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn sm" data-act="edit-tenant" data-id="${t.id}">${icon('edit', '1.1em')} Sửa thông tin người đăng ký</button><button class="btn amber sm" data-act="ct01" data-room="${roomId}">${icon('sheet', '1.1em')} Bản Khai CT01 - Lưu Trú</button></div>
     <p class="muted small" style="margin:6px 0 0">Thêm người ở cùng không tính thêm tiền. Số người trong phòng tự đếm = khách chính + người ở cùng.</p>
-    <div class="list" style="margin-top:10px">${occs.length ? occs.map((o) => html`<div class="li"><span><b>${o.fullName}</b> · ${dmy(o.dob)} · ${GENDER[o.gender] || ''}<br><span class="muted small">${o.noId ? 'Chưa có CCCD (trẻ em)' : `CCCD ${o.cccd}`} · ${o.idImages?.front && o.idImages?.back ? 'đã có 2 mặt ảnh' : o.noId ? 'không cần ảnh' : 'chưa có ảnh CCCD (thêm sau được)'}</span></span><a class="btn sm" href="#/tenant/${t.id}">Hồ sơ & ảnh</a></div>`) : html`<div class="empty-state" style="padding:14px">Chưa có người ở cùng.</div>`}</div></section>`;
+    <div class="list" style="margin-top:10px">${occs.length ? occs.map((o) => html`<div class="li"><span><b>${o.fullName}</b> · ${dmy(o.dob)} · ${GENDER[o.gender] || ''}<br><span class="muted small">${o.noId ? 'Chưa có CCCD (trẻ em)' : `CCCD ${o.cccd}`} · ${o.idImages?.front && o.idImages?.back ? 'đã có 2 mặt ảnh' : o.noId ? 'không cần ảnh' : 'chưa có ảnh CCCD (thêm sau được)'}</span></span><span class="row"><button class="btn sm" data-act="edit-occupant" data-id="${o.id}">${icon('edit', '1em')} Sửa</button><a class="btn sm" href="#/tenant/${t.id}">Hồ sơ & ảnh</a></span></div>`) : html`<div class="empty-state" style="padding:14px">Chưa có người ở cùng.</div>`}</div></section>`;
 }
 acts['open-invoice'] = (el) => go(`#/invoice/${el.dataset.id}`);
 changes.year = (el) => { year = Number(el.value); rerender(); };
@@ -93,7 +93,8 @@ export const occFields = (o = {}, slot) => html`
   <div class="two">${field('Họ tên *', html`<input name="o_name" required value="${o.fullName || ''}">`)}${field('Ngày sinh *', html`<input type="date" name="o_dob" max="${todayLocal()}" required value="${o.dob || ''}">`)}</div>
   <div class="radios" role="radiogroup"><span>Giới tính:</span>${['male', 'female', 'other'].map((g, i) => html`<label><input type="radio" name="o_gender_${slot || 'e'}" value="${g}" ${(o.gender ? o.gender === g : i === 0) ? raw('checked') : ''}>${GENDER[g]}</label>`)}</div>
   <div class="two">${field('Số điện thoại', html`<input name="o_phone" inputmode="tel" value="${o.phone || ''}">`)}${field('Số Zalo (trống = dùng SĐT)', html`<input name="o_zalo" inputmode="tel" value="${o.zalo || ''}">`)}</div>
-  <div class="two">${field('Số CCCD *', html`<input name="o_cccd" inputmode="numeric" value="${o.cccd || ''}">`)}${field('Địa chỉ thường trú *', html`<input name="o_address" value="${o.address || ''}">`)}</div>
+  <div class="two">${field('Số CCCD *', html`<input name="o_cccd" inputmode="numeric" value="${o.cccd || ''}">`)}${field('Ngày cấp', html`<input type="date" name="o_issue_date" max="${todayLocal()}" value="${o.cccdIssueDate || ''}">`)}</div>
+  ${issueField('o_issue_place', o.cccdIssuePlace, 'Nơi cấp', false)}${field('Địa chỉ thường trú *', html`<input name="o_address" value="${o.address || ''}">`)}
   <label class="radios"><input type="checkbox" name="o_noid" data-change="occ-noid" ${o.noId ? raw('checked') : ''}>Chưa có CCCD (trẻ em) – không cần CCCD, địa chỉ, ảnh</label>
   ${field('Quê quán', html`<input name="o_hometown" value="${o.hometown || ''}">`)}
   <div class="radios" role="radiogroup"><span>Thời gian ở:</span>${[['from', 'Kể từ ngày'], ['range', 'Từ ngày … đến ngày …']].map(([k, l]) => html`<label><input type="radio" name="o_stay_${slot || 'e'}" value="${k}" data-change="occ-stay" ${(o.stayMode || 'from') === k ? raw('checked') : ''}>${l}</label>`)}</div>
@@ -113,7 +114,7 @@ export const personFields = (t = {}) => html`
   ${issueField('cccdIssuePlace', t.cccdIssuePlace)}${field('Địa chỉ thường trú *', html`<input name="address" required value="${t.address || ''}">`)}${field('Quê quán', html`<input name="hometown" value="${t.hometown || ''}" placeholder="Xã/phường, huyện/quận, tỉnh/thành phố">`)}`;
 acts['fill-issue'] = (el) => { const i = el.closest('label').querySelector('input[name]'); i.value = ISSUE_PLACE; i.dispatchEvent(new Event('input', { bubbles: true })); };
 export function collectPerson(fd) { return { fullName: fd.get('fullName'), dob: fd.get('dob'), gender: fd.get('gender'), phone: fd.get('phone'), zalo: fd.get('zalo'), cccd: fd.get('cccd'), cccdIssueDate: fd.get('cccdIssueDate'), cccdIssuePlace: fd.get('cccdIssuePlace'), address: fd.get('address'), hometown: fd.get('hometown') }; }
-export function collectOccupant(b) { const g = (n) => b.querySelector(`[name=${n}]`).value; return { fullName: g('o_name'), dob: g('o_dob'), gender: b.querySelector('input[name^=o_gender_]:checked')?.value, phone: g('o_phone'), zalo: g('o_zalo'), cccd: g('o_cccd'), address: g('o_address'), hometown: g('o_hometown'), note: g('o_note'), noId: b.querySelector('[name=o_noid]').checked, stayMode: b.querySelector('input[name^=o_stay_]:checked')?.value || 'from', stayFrom: g('o_from'), stayTo: g('o_to') }; }
+export function collectOccupant(b) { const g = (n) => b.querySelector(`[name=${n}]`).value; return { fullName: g('o_name'), dob: g('o_dob'), gender: b.querySelector('input[name^=o_gender_]:checked')?.value, phone: g('o_phone'), zalo: g('o_zalo'), cccd: g('o_cccd'), address: g('o_address'), hometown: g('o_hometown'), cccdIssueDate: g('o_issue_date'), cccdIssuePlace: g('o_issue_place'), note: g('o_note'), noId: b.querySelector('[name=o_noid]').checked, stayMode: b.querySelector('input[name^=o_stay_]:checked')?.value || 'from', stayFrom: g('o_from'), stayTo: g('o_to') }; }
 export const collectOccupants = (f) => [...f.querySelectorAll('.occ')].map(collectOccupant);
 acts.movein = (el) => {
   const rm = room(el.dataset.id); resetImages(); occSeq = 0;
@@ -296,14 +297,16 @@ acts.contract = (el) => {
     <p class="muted small" style="margin-top:0">Hợp đồng tự điền từ dữ liệu của phòng, khách thuê, người ở cùng và thông tin Bên A. Kiểm tra các ô dưới đây rồi chọn kiểu xuất.</p>
     <div class="two">${field('Ngày ký hợp đồng', html`<input type="date" name="signDate" value="${todayLocal()}">`)}${field('Số hợp đồng', html`<input name="contractNo" maxlength="40" value="${r.contractNo || ''}" placeholder="Ví dụ: 01">`)}</div>
     <div class="radios" role="radiogroup"><b>Thời hạn thuê (áp dụng thống nhất trong hợp đồng)</b>
-      <label><input type="radio" name="termMode" value="from" ${r.termMode !== 'range' ? raw('checked') : ''}>Kể từ ngày ${dmy(r.startDate)}</label>
-      <label><input type="radio" name="termMode" value="range" ${r.termMode === 'range' ? raw('checked') : ''}>Từ ngày ${dmy(r.startDate)} đến ngày <input type="date" name="termTo" min="${r.startDate}" value="${r.termTo || ''}" style="width:auto"></label></div>
+      <label><input type="radio" name="termMode" value="from" ${r.termMode !== 'range' ? raw('checked') : ''}>Kể từ ngày <input type="date" name="termFrom1" data-pickmode="from" value="${r.termFrom || r.startDate}" style="width:auto"></label>
+      <label><input type="radio" name="termMode" value="range" ${r.termMode === 'range' ? raw('checked') : ''}>Từ ngày <input type="date" name="termFrom2" data-pickmode="range" value="${r.termFrom || r.startDate}" style="width:auto"> đến ngày <input type="date" name="termTo" data-pickmode="range" value="${r.termTo || ''}" style="width:auto"></label></div>
     <div class="two">${field('Số Tiền Đặt Cọc (đ)', html`<input name="deposit" inputmode="numeric" value="${r.deposit || 0}">`)}${field('Phí dịch vụ khác (nếu có)', html`<input name="serviceFee" maxlength="200" value="${r.serviceFee || ''}" placeholder="Ví dụ: Rác 30.000đ/tháng">`)}</div>
     <div class="radios" role="radiogroup"><b>Hình thức thanh toán tiền thuê</b>${[['month', 'Theo tháng'], ['quarter', 'Theo quý'], ['year', 'Theo năm']].map(([k, l]) => html`<label><input type="radio" name="payCycle" value="${k}" ${(r.payCycle || 'month') === k ? raw('checked') : ''}>${l}</label>`)}</div>
     <div class="row" style="margin-top:14px"><button type="button" class="btn primary" data-act="contract-docx">${icon('sheet', '1.1em')} Tải file Word (.docx)</button><button type="button" class="btn" data-act="contract-pdf">${icon('photo', '1.1em')} In / Lưu PDF</button></div>
     <p class="muted small">Muốn có PDF: bấm "In / Lưu PDF" rồi chọn máy in "Lưu dưới dạng PDF" (hoặc mở file Word rồi Lưu thành PDF).</p></form>`, { wide: true });
 };
 acts['close-modal'] = () => closeModal();
+// chọn ngày ở dòng nào thì tự tích dòng đó
+document.addEventListener('change', (e) => { const el = e.target; if (el instanceof HTMLInputElement && el.dataset.pickmode) { const r = el.form?.querySelector(`input[name=termMode][value=${el.dataset.pickmode}]`); if (r) r.checked = true; } });
 acts.ct01 = async (el) => {
   const L = S.snap.settings?.landlord || {};
   if (!L.police && !confirm('Chưa nhập "Công An Quản Lý" ở phòng Chủ Nhà nên mục "Kính gửi" và nơi ký sẽ để trống. Vẫn tải bản khai?')) return;
@@ -313,7 +316,7 @@ acts.ct01 = async (el) => {
 };
 async function contractSave(el) {
   const f = el.closest('form'); const fd = new FormData(f); const id = f.dataset.rental;
-  await save('PUT', `rentals/${id}/contract`, { deposit: toInt(fd.get('deposit')) || 0, payCycle: fd.get('payCycle'), termMode: fd.get('termMode'), termTo: fd.get('termTo') || '', contractNo: fd.get('contractNo'), serviceFee: fd.get('serviceFee') }, null);
+  await save('PUT', `rentals/${id}/contract`, { deposit: toInt(fd.get('deposit')) || 0, payCycle: fd.get('payCycle'), termMode: fd.get('termMode'), termFrom: fd.get(fd.get('termMode') === 'range' ? 'termFrom2' : 'termFrom1') || '', termTo: fd.get('termMode') === 'range' ? fd.get('termTo') || '' : '', contractNo: fd.get('contractNo'), serviceFee: fd.get('serviceFee') }, null);
   return { id, date: fd.get('signDate') || today() };
 }
 acts['contract-docx'] = async (el) => {
