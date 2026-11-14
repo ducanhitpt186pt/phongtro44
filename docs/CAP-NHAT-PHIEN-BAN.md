@@ -1,3 +1,13 @@
+# Phiên bản 2026-11-30-b
+- **Nhắc Nợ**: hai ô lớn **Cần Thu** (xanh) / **Cần Trả** (đỏ) hiện "Cần Thu (n khoản)" và số tiền; bấm ô nào chỉ hiện danh sách và thống kê của loại đó. Khoản đã trả xong không hiện ở danh sách nữa. Ô Ghi chú là khung nhiều dòng.
+- Nút **Bản Khai CT01 - Lưu Trú** màu cam. Trang phòng có thêm nút **Sửa thông tin người đăng ký** và **Sửa** cho từng người ở cùng.
+- Người ở cùng có thêm **Ngày cấp** và **Nơi cấp** CCCD (sửa được); ngày bắt đầu ở mặc định là hôm nay.
+- **Xuất hợp đồng**: chọn thẳng "Kể từ ngày [ngày]" hoặc "Từ ngày [ngày] đến ngày [ngày]"; chọn ngày ở dòng nào thì dòng đó tự được tích.
+- Số tiền đặt cọc tự ngăn cách 1.000.000. Tiền bằng chữ đọc kiểu hợp đồng: "Một triệu không trăm ngàn đồng".
+- Nút Zalo / Gọi đổi sang kiểu nút bo tròn có màu chuyển sắc xanh dương / xanh lá.
+- Tab **Báo cáo** đổi thành **Báo Cáo Tiền Trọ**; thứ tự: Tổng quan, Khách thuê, Báo Cáo Tiền Trọ, Nhắc Nợ (Riêng), Thu Chi (Riêng), Sao lưu.
+- Tổng quan: khối "Điện – nước các phòng so với tháng trước" nằm dưới lịch; "Phòng đang khóa" chữ đen, "Tổng số phòng" màu xanh.
+
 # Phiên bản 2026-11-30-a
 - **CT01**: ô "Ý KIẾN CỦA CHỦ SỞ HỮU CHỖ Ở HỢP PHÁP" để trống phần tên (chỉ còn tên ở chủ hộ và người kê khai = khách thuê); dòng ngày tháng cuối tờ khai chỉ còn "ngày … tháng … năm …", không ghi tên phường. Ô "Kính gửi" vẫn lấy từ Công An Quản Lý.
 - **Nhắc Nợ** chia hai mục: **Cần Thu** (người khác mượn/thiếu mình) và **Cần Trả** (mình nợ người khác). Mỗi mục có thống kê riêng; Tổng quan nhắc cả hai (nút "Thu nợ" / "Trả nợ"); trang chủ công khai chỉ hiện Cần Thu. Khoản nợ cũ tự tính là Cần Thu.
