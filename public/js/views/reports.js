@@ -39,14 +39,15 @@ acts['rep-json'] = () => download(`bao-cao-${last.from}-${last.to}.json`, JSON.s
 export function backupView() {
   const allLogs = D().activityLogs.slice().reverse(); const logs = allLogs.slice(0, logLimit);
   return html`<div class="page-head"><h2>Sao lưu & khôi phục</h2></div>
-    <section class="card"><h3>Sao lưu dữ liệu</h3><p class="muted">Tải toàn bộ dữ liệu (không gồm ảnh CCCD) về máy. Nên làm mỗi tháng và cất ở nơi khác (Google Drive, email…). Hệ thống cũng tự lưu bản sao mỗi tháng trong kho dữ liệu riêng tư trên GitHub.</p>
-      <a class="btn primary" href="${apiUrl('backup/export')}" download>⬇ Tải database.json</a></section>
+    <section class="card"><h3>Sao lưu dữ liệu</h3><p class="muted">Tải toàn bộ dữ liệu (không gồm ảnh CCCD) về máy. Nên làm mỗi tháng và cất ở nơi khác (Google Drive, email…). Hệ thống cũng tự lưu bản sao mỗi tháng ngay trong cơ sở dữ liệu Upstash (cùng nhà cung cấp, nên không thay được bản bạn tự tải).</p>
+      <div class="row"><a class="btn primary" href="${apiUrl('backup/export')}" download>⬇ Tải database.json (để khôi phục)</a><a class="btn" href="${apiUrl('backup/export-xlsx')}" download>⬇ Tải file Excel (để xem, dạng bảng)</a></div><p class="muted small" style="margin:8px 0 0">File Excel có các sheet: Phòng, Hóa đơn, Thanh toán, Khách thuê, Người ở cùng, Lượt thuê, Đồng hồ tổng, Sự kiện. Chỉ để xem và lưu trữ; muốn khôi phục phải dùng file database.json. Hai file chứa thông tin cá nhân khách, hãy cất ở nơi riêng tư.</p></section>
     <section class="card" style="margin-top:12px"><h3>Khôi phục từ file JSON</h3><p class="warn-box">⚠ Khôi phục sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Hệ thống tự lưu một bản an toàn của dữ liệu hiện tại trước khi ghi đè.</p>
       <form data-form="restore"><input type="file" name="file" accept="application/json,.json" required style="margin-bottom:12px"><div id="rsum" class="calc" hidden></div>${field('Gõ chính xác: GHI DE để xác nhận', html`<input name="confirm" autocomplete="off" placeholder="GHI DE">`)}<div class="err-inline"></div><button class="btn danger" type="submit">KIỂM TRA & KHÔI PHỤC</button></form></section>
     ${sheetCard()}
     ${settingsCard()}
     ${cleanupCard()}
     <section class="card" style="margin-top:12px"><h3>Ảnh CCCD</h3><p class="muted">Ảnh nằm trong kho Vercel Blob riêng tư, không nằm trong file JSON. Tải từng ảnh ở trang hồ sơ khách (nút "Tải về") khi cần bản dự phòng.</p></section>
+    <section class="card" style="margin-top:12px"><h3>Kiểm tra tất cả kết nối</h3><p class="muted small" style="margin:6px 0">Thử đọc cơ sở dữ liệu, ghi/xóa một file thử trong kho ảnh và hỏi Google Sheet.</p><button class="btn primary sm" data-act="sys-check">Kiểm tra tất cả kết nối</button><div id="syscheck" style="margin-top:10px"></div></section>
     <h2 class="sec">Nhật ký thao tác gần đây</h2><div class="list" id="loglist">${logs.map((l) => html`<div class="li"><span><b>${l.action}</b> <span class="muted">${l.detail}</span></span><span class="muted small">${l.at.slice(0, 16).replace('T', ' ')}</span></div>`)}</div>
     <div class="row" style="margin-top:10px">${allLogs.length > logLimit ? html`<button class="btn" data-act="logs-more">Xem thêm (còn ${allLogs.length - logLimit} dòng)</button>` : ''}${logLimit > 10 ? html`<button class="btn" data-act="logs-less">Thu gọn (10 dòng mới nhất)</button>` : ''}</div>`;
 }
@@ -134,3 +135,11 @@ acts['show-rows'] = () => { setHidden(new Set()); loadReport(); };
 
 acts['logs-more'] = () => { logLimit += 20; rerender(); };
 acts['logs-less'] = () => { logLimit = 10; rerender(); };
+
+acts['sys-check'] = async (el) => {
+  const out = $('#syscheck'); el.disabled = true; out.textContent = 'Đang kiểm tra…';
+  try {
+    const r = await api('POST', 'system/check', {});
+    out.innerHTML = r.items.map((i) => `<div class="li"><span>${i.ok ? '✅' : '❌'} <b>${i.name}</b> <span class="muted small">${String(i.detail).replace(/[<>&]/g, '')}</span></span></div>`).join('') + `<p style="margin-top:10px;font-weight:600;color:var(${r.allOk ? '--green-t' : '--red-t'})">${r.summary}</p>`;
+  } catch (e) { out.textContent = 'Không kiểm tra được: ' + e.message; } finally { el.disabled = false; }
+};
