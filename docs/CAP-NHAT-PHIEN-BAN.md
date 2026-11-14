@@ -1,3 +1,22 @@
+# Phiên bản 2026-11-30-a
+- **CT01**: ô "Ý KIẾN CỦA CHỦ SỞ HỮU CHỖ Ở HỢP PHÁP" để trống phần tên (chỉ còn tên ở chủ hộ và người kê khai = khách thuê); dòng ngày tháng cuối tờ khai chỉ còn "ngày … tháng … năm …", không ghi tên phường. Ô "Kính gửi" vẫn lấy từ Công An Quản Lý.
+- **Nhắc Nợ** chia hai mục: **Cần Thu** (người khác mượn/thiếu mình) và **Cần Trả** (mình nợ người khác). Mỗi mục có thống kê riêng; Tổng quan nhắc cả hai (nút "Thu nợ" / "Trả nợ"); trang chủ công khai chỉ hiện Cần Thu. Khoản nợ cũ tự tính là Cần Thu.
+- Tab mới **Thu Chi** (Quản Lý Thu Chi): thêm/sửa/xóa khoản thu, chi; thống kê theo ngày (chọn tháng), theo tháng (chọn năm), theo năm; **Xóa theo năm** có cảnh báo và phải gõ lại đúng năm. Sổ riêng, không hiện ra ngoài, không tạo thông báo; có trong Excel sao lưu.
+
+# Phiên bản 2026-11-29-a
+- **Bản Khai CT01 - Lưu Trú**: nút trong "Người ở cùng" (trang phòng và Hồ sơ khách) → tải PDF A4 đúng mẫu CT01 (Thông tư 116/2026/TT-BCA). Mục 1–6 lấy từ khách thuê, 7–10 từ chủ nhà (Email, mối quan hệ để trống; nội dung đề nghị mặc định "Cho thuê phòng trọ"), mục 11 là những người ở cùng (luôn có dòng trống). "Kính gửi" và nơi ký lấy từ ô **Công An Quản Lý** trong phòng Chủ Nhà (ví dụ "Công An Phường Phú Thủy" → "Phú Thủy, ngày … tháng … năm …").
+- **Thời gian thống nhất trong hợp đồng**: chọn "Kể từ ngày …" (mặc định) hoặc "Từ ngày … đến ngày …" (bắt buộc chọn ngày); hợp đồng chỉ in đúng lựa chọn này. Người ở cùng mặc định bắt đầu ở từ ngày nhập liệu (đổi được).
+- **Nhắc Nợ** (tab mới): sổ nợ riêng không gắn phòng; danh sách đơn vị nợ; thông báo nợ ở Tổng quan (có nút **Trả nợ**: trả hết hoặc một phần, phần còn lại tiếp tục được nhắc) và ở trang chủ (chỉ tên + số còn nợ); thống kê theo đơn vị, theo tháng, theo năm; có trong file Excel sao lưu.
+
+# Phiên bản 2026-11-28-a
+- **Số Tiền Đặt Cọc** (mặc định 0) khi thêm khách; khi trả phòng, cọc được trừ vào hóa đơn quyết toán, phần dư hoàn lại cho khách (ghi rõ trong hóa đơn). Cọc và hình thức thanh toán giữ nguyên khi chuyển phòng.
+- **Hình thức thanh toán tiền thuê**: Theo tháng (mặc định) / Theo quý / Theo năm – lưu và in vào hợp đồng (Điều 4). Hóa đơn trong phần mềm vẫn lập theo tháng.
+- **Quê quán** của khách thuê (và người ở cùng); có trong hồ sơ và trong ảnh hồ sơ A4.
+- Ô **Nơi cấp** có gợi ý "CỤC TRƯỞNG CỤC CẢNH SÁT QUẢN LÝ HÀNH CHÍNH VỀ TRẬT TỰ XÃ HỘI" (bấm nút xanh bên dưới ô để điền nhanh).
+- Người ở cùng: chọn **Kể từ ngày** hoặc **Từ ngày … đến ngày …**.
+- Phòng **Chủ Nhà**: thẻ "Thông tin Bên A" (họ tên, ngày sinh, CCCD, ngày cấp, nơi cấp, địa chỉ thường trú, số điện thoại, địa chỉ nhà trọ).
+- Trong phòng có khách: nút **Xuất Hợp Đồng** → file Word (.docx) hoặc In / Lưu PDF, tự điền đủ 10 điều; số tiền đặt cọc và giá thuê có "Bằng chữ".
+
 # Phiên bản 2026-11-27-a
 - Thêm nút **Tải Ảnh Hồ Sơ Khách Theo Phòng** (trong trang phòng và trong Hồ sơ khách): ảnh JPG khổ A4 dọc gồm ngày sinh, giới tính, điện thoại, số CCCD, ngày cấp / nơi cấp, ngày vào ở, địa chỉ thường trú và ảnh căn cước 2 mặt của mọi người trong phòng. Mỗi trang tối đa 2 người; phòng đông hơn thì tải thêm trang.
 - Thẻ phòng: khi đã thanh toán đủ kỳ hiện tại thì ẩn "Tổng cần thu" và "Đã thanh toán"; ghi điện nước kỳ mới thì hiện lại.
