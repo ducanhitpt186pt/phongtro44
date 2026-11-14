@@ -1,3 +1,6 @@
+# Phiên bản 2026-11-30-d
+- **Nhắc nợ ở trang chủ (chưa đăng nhập)**: bấm vào thẻ nhắc nợ → hộp "Đăng nhập để xem khoản nợ" → bấm **Đăng nhập**, nhập mật khẩu → tự chuyển vào Tổng quan và **mở luôn chi tiết đúng khoản nợ đó**. Trang chủ vẫn chỉ hiện tên + số còn nợ (không lộ ghi chú/SĐT).
+
 # Phiên bản 2026-11-30-c
 - **Nhắc nợ (Tổng quan)**: bấm vào một thẻ nhắc nợ → hiện hộp **Chi tiết khoản nợ** (loại Cần Thu/Cần Trả, số điện thoại đơn vị nợ nếu có, ngày nợ, số tiền nợ, đã thu/đã trả, còn nợ, ghi chú, lịch sử các lần thu/trả) kèm nút **Thu nợ / Trả nợ** và **Sửa**. Nút **Thu nợ** trên thẻ vẫn giữ nguyên như cũ.
 - Trang chủ (trang ngoài, không cần đăng nhập): khối **"Điện – nước các phòng so với tháng trước"** chuyển xuống **ngay sau phần Lịch**. Trang Tổng quan (sau khi đăng nhập) vẫn giữ khối này dưới lịch như cũ.
