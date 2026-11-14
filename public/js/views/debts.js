@@ -13,7 +13,7 @@ const ym = (s) => `Tháng ${Number(s.slice(5))}/${s.slice(0, 4)}`;
 // Thẻ thông báo nợ – dùng ở Tổng quan (có nút Trả nợ) và trang chủ công khai (chỉ xem)
 export function debtNotices(items, { actions = false } = {}) {
   if (!items?.length) return html``;
-  return html`<h2 class="sec">Nhắc nợ (${items.length})</h2><div class="notices" style="margin-top:0">${items.map((d) => html`<article class="note ${d.kind === 'payable' ? 'red' : 'orange'}${actions ? ' link' : ''}" ${actions ? raw(`data-act="debt-detail" data-id="${d.id}" title="Bấm để xem chi tiết khoản nợ"`) : ''}><h3>${String(d.name).toUpperCase()} <span class="badge ${d.kind === 'payable' ? 'red' : 'orange'}">${KL[d.kind || 'receivable']}</span></h3>
+  return html`<h2 class="sec">Nhắc nợ (${items.length})</h2><div class="notices" style="margin-top:0">${items.map((d) => html`<article class="note ${d.kind === 'payable' ? 'red' : 'orange'}${actions || d.id ? ' link' : ''}" ${actions ? raw(`data-act="debt-detail" data-id="${d.id}" title="Bấm để xem chi tiết khoản nợ"`) : d.id ? html`data-act="pub-debt" data-id="${d.id}" data-name="${d.name}" title="Đăng nhập để xem chi tiết khoản nợ"` : ''}><h3>${String(d.name).toUpperCase()} <span class="badge ${d.kind === 'payable' ? 'red' : 'orange'}">${KL[d.kind || 'receivable']}</span></h3>
     <dl><dt>Ngày nợ</dt><dd>${dmy(d.date)} <span class="muted small">(${d.days} ngày)</span></dd><dt>Còn nợ</dt><dd><span class="money">${vnd(d.remaining)}</span></dd></dl>
     ${actions ? html`<div class="nact"><button class="btn green sm" data-act="debt-pay" data-id="${d.id}">${icon('check', '1.1em')} ${d.kind === 'payable' ? 'Trả nợ' : 'Thu nợ'}</button></div>` : ''}</article>`)}</div>`;
 }

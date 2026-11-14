@@ -21,5 +21,12 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   await pg.click('article[data-act=debt-detail] button[data-act=debt-pay]'); await pg.waitForSelector('form[data-form=debt-pay]');
   ok(!(await pg.innerText('#modal')).includes('Chi tiết khoản nợ'), 'nút Thu nợ trên thẻ vẫn mở thẳng form thu nợ như cũ');
   await pg.screenshot({ path: OUT + '/pay.png' });
+  // Chưa đăng nhập: bấm thẻ Nhắc nợ ở trang chủ → đăng nhập → tự mở chi tiết
+  const p2 = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); p2.on('pageerror', (e) => errs.push(e.message));
+  await p2.goto(H); await p2.waitForSelector('article[data-act=pub-debt]'); await p2.click('article[data-act=pub-debt] h3');
+  await p2.waitForSelector('#modal button[data-act=pub-login]'); ok((await p2.innerText('#modal')).includes('Anh Tư'), 'trang chủ (chưa đăng nhập): bấm thẻ Nhắc nợ → hỏi đăng nhập');
+  await p2.click('#modal button[data-act=pub-login]'); await p2.waitForSelector('input[name=password]'); await p2.fill('input[name=password]', '20101963'); await p2.click('button:has-text("ĐĂNG NHẬP")');
+  await p2.waitForSelector('#modal :text("Chi tiết khoản nợ")', { timeout: 10000 }); const t2 = await p2.innerText('#modal'); await p2.screenshot({ path: OUT + '/pub-after-login.png' });
+  ok(t2.includes('Anh Tư') && t2.includes('1.500.000'), 'đăng nhập xong tự mở đúng chi tiết khoản nợ đã bấm');
   ok(!errs.length, 'không có lỗi JavaScript ' + errs.join(' | ')); await b.close();
 })();
