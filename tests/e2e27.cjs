@@ -1,0 +1,31 @@
+// Nhắc Nợ: đơn vị nợ, thêm nợ, thông báo, trả một phần / hết, thống kê, trang chủ.
+const fs = require('fs');
+const { chromium } = require(require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
+(async () => {
+  const OUT = '/tmp/claude-0/e2e27'; fs.mkdirSync(OUT, { recursive: true });
+  const b = await chromium.launch({ args: ['--no-sandbox'] }); const ctx = await b.newContext({ viewport: { width: 1100, height: 1000 } }); const pg = await ctx.newPage(); const errs = []; pg.on('pageerror', (e) => errs.push(e.message)); pg.on('dialog', (d) => d.accept());
+  const ok = (c, m) => { console.log(c ? '  ✓' : '  ✗ FAIL', m); if (!c) process.exitCode = 1; }; const H = 'http://localhost:4173/';
+  const data = () => pg.evaluate(() => fetch('/api/data').then((x) => x.json()));
+  await pg.goto(H + '#/login'); await pg.fill('input[name=password]', '20101963'); await pg.click('button:has-text("ĐĂNG NHẬP")'); await pg.waitForSelector('.room-card');
+  await pg.click('a[data-tab=debts]'); await pg.waitForSelector('button[data-act=debt-add]'); ok(true, 'có tab Nhắc Nợ');
+  await pg.click('button[data-act=unit-list]'); await pg.waitForSelector('form[data-form=unit]'); await pg.fill('form[data-form=unit] input[name=name]', 'Anh Hùng sửa xe'); await pg.fill('form[data-form=unit] input[name=phone]', '0988111222'); await pg.click('form[data-form=unit] button[type=submit]'); await pg.waitForTimeout(700);
+  let d = await data(); ok(d.db.debtUnits.length === 1 && d.db.debtUnits[0].name === 'Anh Hùng sửa xe', 'thêm đơn vị nợ'); await pg.keyboard.press('Escape'); await pg.evaluate(() => document.querySelector('[data-act=close-modal],.dlg-head button')?.click());
+  await pg.reload(); await pg.waitForSelector('button[data-act=debt-add]'); await pg.click('button[data-act=debt-add]'); await pg.waitForSelector('form[data-form=debt]');
+  await pg.selectOption('form[data-form=debt] select[name=unitId]', { index: 1 }); ok((await pg.inputValue('form[data-form=debt] input[name=name]')) === 'Anh Hùng sửa xe', 'chọn đơn vị → tự điền tên');
+  await pg.fill('form[data-form=debt] input[name=amount]', '1000000'); await pg.fill('form[data-form=debt] input[name=note]', 'Mượn tiền sửa xe'); await pg.click('form[data-form=debt] button[type=submit]'); await pg.waitForTimeout(800);
+  d = await data(); const debt = d.db.debts[0]; ok(debt && debt.amount === 1000000 && debt.unitId === d.db.debtUnits[0].id, 'lưu khoản nợ 1.000.000'); ok(d.derived.debts.remaining === 1000000 && d.derived.debts.openCount === 1, 'thống kê: còn nợ 1.000.000');
+  await pg.goto(H + '#/dashboard'); await pg.waitForSelector('button[data-act=debt-pay]'); ok(/nhắc nợ/i.test(await pg.innerText('main')), 'Tổng quan có thông báo nhắc nợ + nút Trả nợ');
+  await pg.click('button[data-act=debt-pay]'); await pg.waitForSelector('form[data-form=debt-pay]'); await pg.check('input[name=mode][value=part]'); await pg.fill('form[data-form=debt-pay] input[name=amount]', '400000'); await pg.fill('form[data-form=debt-pay] input[name=note]', 'Còn lại cuối tháng'); await pg.click('form[data-form=debt-pay] button[type=submit]'); await pg.waitForTimeout(800);
+  d = await data(); ok(d.derived.debts.remaining === 600000 && d.db.debts[0].payments.length === 1, 'trả 400.000 → còn nợ 600.000');
+  ok(/600\.000/.test(await pg.innerText('main')), 'thông báo cập nhật còn 600.000');
+  const pub = await pg.evaluate(() => fetch('/api/public/reminders').then((r) => r.json())); ok(pub.debts.total === 600000 && !JSON.stringify(pub.debts).includes('Mượn tiền') && !JSON.stringify(pub.debts).includes('0988'), 'trang chủ chỉ có tên + số còn nợ (không lộ ghi chú/SĐT)');
+  const over = await pg.evaluate(async () => { const c = (await fetch('/api/auth/session').then((r) => r.json())).csrf; const id = (await fetch('/api/data').then((r) => r.json())).db.debts[0].id; const r = await fetch('/api/debts/' + id + '/pay', { method: 'POST', headers: { 'content-type': 'application/json', 'x-csrf-token': c }, body: JSON.stringify({ amount: 700000 }) }); return r.status; }); ok(over === 400, 'không cho trả quá số còn nợ (HTTP ' + over + ')');
+  await pg.click('a[data-tab=debts]'); await pg.waitForSelector('button[data-act=debt-pay]'); await pg.screenshot({ path: OUT + '/debts.png', fullPage: true });
+  await pg.click('button[data-act=debt-pay]'); await pg.waitForSelector('form[data-form=debt-pay]'); await pg.click('form[data-form=debt-pay] button[type=submit]'); await pg.waitForTimeout(800);
+  d = await data(); ok(d.derived.debts.remaining === 0 && d.derived.debts.openCount === 0, 'trả hết → hết nợ, không còn thông báo');
+  const t = await pg.innerText('main'); ok(/theo tháng/i.test(t) && /đã trả hết \(1\)/i.test(t), 'có thống kê tháng/năm và mục đã trả hết');
+  await pg.click('button[data-act=debt-tab][data-tab=year]'); ok(/Năm 2026/.test(await pg.innerText('main')), 'thống kê theo năm');
+  const x = await pg.evaluate(() => fetch('/api/backup/export-xlsx').then((r) => r.status)); ok(x === 200, 'Excel sao lưu vẫn tải được (có sheet Nhắc nợ)');
+  const pu = await ctx.newPage(); await pu.goto(H); ok(true, 'trang chủ mở được');
+  ok(errs.length === 0, 'không lỗi JS: ' + errs.join('|')); await b.close();
+})();

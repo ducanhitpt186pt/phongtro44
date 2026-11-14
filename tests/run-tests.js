@@ -8,6 +8,8 @@ import { purgeOld, storageInfo } from '../lib/cleanup.js';
 import { buildSystem } from '../lib/health.js';
 import { solarToLunar, lunarToSolar } from '../public/js/lunar.js';
 import * as EV from '../public/js/events-core.js';
+import { moneyWords } from '../lib/vnwords.js';
+import { contractData, buildContract, contractHtml, contractDocx } from '../lib/contract.js';
 import { analyze, roomSeries, usageOverview, ownerSeries } from '../lib/usage.js';
 
 let pass = 0, fail = 0;
@@ -430,6 +432,37 @@ t('NỢ CỘNG DỒN: tháng nào chưa trả thì tháng sau cộng dồn, ghi 
   const i2 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 2, elecNew: 200, waterNew: 14 }, '2026-03-10'); const own2 = i2.total - i2.oldDebt; assert.equal(i2.oldDebt, own1, 'tháng 2 chưa trả → cộng sang tháng 3'); assert.deepEqual(i2.oldDebtMonths, [{ ym: '2026-02', amount: own1 }]);
   const i3 = B.createPeriodicInvoice(db, { rentalId: rental.id, periodIndex: 3, elecNew: 260, waterNew: 16 }, '2026-04-10'); const own3 = i3.total - i3.oldDebt; assert.equal(i3.oldDebt, own1 + own2, 'tháng 3 và 4 chưa trả → cộng dồn cả hai'); assert.deepEqual(i3.oldDebtMonths, [{ ym: '2026-02', amount: own1 }, { ym: '2026-03', amount: own2 }], 'ghi rõ tiền nợ từng tháng');
   assert.equal(B.remainingOf(db, i3), own1 + own2 + own3); B.addPayment(db, { invoiceId: i2.id, amount: own2 }, '2026-04-10'); assert.deepEqual(B.unpaidMonths(db, rental.chainId).map((m) => m.ym), ['2026-02', '2026-04'], 'trả riêng tháng 3 thì chỉ còn nợ tháng 2 và tháng 4'); assert.equal(B.remainingOf(db, i3), own1 + own3);
+});
+
+console.log('\nĐẶT CỌC, HỢP ĐỒNG');
+t('trả phòng có đặt cọc: cọc được trừ vào hóa đơn, phần dư hoàn lại; mặc định cọc 0 không đổi kết quả', () => {
+  const { db, rental } = scenario(true); rental.deposit = 1000000;
+  const c = B.computeCheckout(db, { rentalId: rental.id, date: '2026-12-15', elecFinal: 200, waterFinal: 14 }, '2026-12-15');
+  assert.equal(c.deposit, 1000000); assert.equal(c.total, -1870000); assert.equal(c.direction, 'refund');
+  const r = B.confirmCheckout(db, { rentalId: rental.id, date: '2026-12-15', elecFinal: 200, waterFinal: 14 }, '2026-12-15');
+  assert.equal(r.invoice.depositApplied, 1000000); assert.equal(r.invoice.total, -1870000); assert.equal(r.record.deposit, 1000000); validateDb(db);
+});
+t('cọc lớn hơn khoản phải trả → hoàn phần dư; cọc nhỏ hơn nợ → khách trả phần thiếu', () => {
+  const a = setup('2026-11-10', '2026-11-10', { paidAlready: false, deposit: 100000 }); // chưa thu tiền phòng kỳ đầu 1.2M
+  const c = B.computeCheckout(a.db, { rentalId: a.rental.id, date: '2026-11-20', elecFinal: 100, waterFinal: 10 }, '2026-11-20');
+  assert.ok(c.total > 0, 'còn nợ sau khi trừ cọc'); assert.equal(c.direction, 'owe');
+  assert.equal(c.total, 300000); // 1.200.000 nợ − 800.000 phòng chưa ở − cọc 100.000
+});
+t('chuyển phòng giữ nguyên tiền cọc và hình thức thanh toán', () => {
+  const { db, rental } = scenario(true); rental.deposit = 2000000; rental.payCycle = 'quarter';
+  const r = B.transferRoom(db, { rentalId: rental.id, date: '2026-12-20', elecFinal: 180, waterFinal: 13, newRoomId: 'room-2', newInitElec: 0, newInitWater: 0 }, '2026-12-20');
+  const nr = db.rentals.find((x) => x.transferredFrom === rental.id); assert.equal(nr.deposit, 2000000); assert.equal(nr.payCycle, 'quarter'); assert.ok(r);
+});
+t('đọc số tiền thành chữ', () => {
+  assert.equal(moneyWords(0), 'Không đồng'); assert.equal(moneyWords(3000000), 'Ba triệu đồng'); assert.equal(moneyWords(2500000), 'Hai triệu năm trăm nghìn đồng');
+  assert.equal(moneyWords(1205000), 'Một triệu hai trăm linh năm nghìn đồng'); assert.equal(moneyWords(15000), 'Mười lăm nghìn đồng'); assert.equal(moneyWords(36000000), 'Ba mươi sáu triệu đồng'); assert.equal(moneyWords(21000), 'Hai mươi mốt nghìn đồng');
+});
+t('hợp đồng: điền đúng dữ liệu (Bên A, Bên B, quê quán, người ở cùng, cọc bằng chữ, hình thức thanh toán)', () => {
+  const db = emptyDb('2026-01-01'); db.meta.landlord = { fullName: 'Phạm Chủ', cccd: '001075000111', houseAddress: '44 Lê Văn Phấn' };
+  const r = B.moveIn(db, { roomId: 'room-1', startDate: '2026-11-01', rent: 3000000, elecPrice: 3500, waterPrice: 15000, initElec: 1, initWater: 1, deposit: 3000000, payCycle: 'year', tenant: { ...person, hometown: 'Thái Bình' }, occupants: [{ fullName: 'Mai', dob: '1992-01-01', gender: 'female', cccd: '001192000456', address: 'HN', stayMode: 'range', stayFrom: '2026-11-01', stayTo: '2027-01-31' }] }, '2026-11-14');
+  const blocks = buildContract(contractData(db, r.rental, { signDate: '2026-11-14', today: '2026-11-14' })); const html = contractHtml(blocks);
+  for (const must of ['Phạm Chủ', 'Nguyễn Văn A', 'Thái Bình', '3.000.000', 'Ba triệu đồng', '36.000.000 đồng/năm', 'năm / lần', 'Từ ngày 01/11/2026 đến ngày 31/01/2027', 'ĐIỀU 10. CAM KẾT CHUNG', '3.500', '15.000', '44 Lê Văn Phấn']) assert.ok(html.includes(must), 'thiếu: ' + must);
+  assert.ok(html.includes('☒ </b>') || html.includes('☒'), 'có đánh dấu hình thức thanh toán'); const buf = contractDocx(blocks); assert.equal(buf.slice(0, 2).toString(), 'PK'); assert.ok(buf.length > 5000);
 });
 
 console.log(`\nKết quả: ${pass} đạt, ${fail} lỗi`);

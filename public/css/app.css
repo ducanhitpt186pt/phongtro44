@@ -410,3 +410,4 @@ fieldset legend{font-weight:800}fieldset:nth-of-type(1){border-color:rgb(9 128 2
 /* chuông ở trang chủ */
 .hero-right{display:flex;align-items:center;gap:8px}.hero .bell{display:inline-flex;align-items:center;text-decoration:none}
 .stat .sub{display:block;margin-top:2px}.stat b.inl{display:inline;font-size:inherit;color:inherit}
+.chipbtn{display:block;margin-top:6px;padding:7px 10px;border:1px solid var(--line,#d9dee5);border-radius:8px;background:#eef3fb;color:#0a5bd6;font-size:.82rem;font-weight:600;text-align:left;cursor:pointer;width:100%;white-space:normal;line-height:1.3}

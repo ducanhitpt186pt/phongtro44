@@ -1,0 +1,54 @@
+// Đặt cọc, hình thức thanh toán, quê quán, gợi ý nơi cấp, thời gian ở người ở cùng, Bên A, Xuất Hợp Đồng, trả phòng trừ cọc.
+const fs = require('fs');
+const { chromium } = require(require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
+(async () => {
+  const OUT = process.env.OUT || '/tmp/claude-0/e2e25'; fs.mkdirSync(OUT, { recursive: true });
+  const b = await chromium.launch({ args: ['--no-sandbox'] });
+  const ctx = await b.newContext({ viewport: { width: 1280, height: 1000 }, acceptDownloads: true }); const pg = await ctx.newPage(); const errs = []; pg.on('pageerror', (e) => errs.push(e.message)); pg.on('dialog', (d) => d.accept());
+  const ok = (c, m) => { console.log(c ? '  ✓' : '  ✗ FAIL', m); if (!c) process.exitCode = 1; }; const H = 'http://localhost:4173/';
+  const call = async (m, p, body) => { const c = await pg.evaluate(() => fetch('/api/auth/session').then((r) => r.json()).then((j) => j.csrf)); return pg.evaluate(([m, p, body, c]) => fetch('/api/' + p, { method: m, headers: { 'content-type': 'application/json', 'x-csrf-token': c }, body: body ? JSON.stringify(body) : undefined }).then((r) => r.json()), [m, p, body, c]); };
+  const data = () => pg.evaluate(() => fetch('/api/data').then((x) => x.json()));
+  await pg.goto(H + '#/login'); await pg.fill('input[name=password]', '20101963'); await pg.click('button:has-text("ĐĂNG NHẬP")'); await pg.waitForSelector('.room-card');
+  // ---- Bên A (phòng Chủ Nhà) ----
+  let d = await data(); const ow = d.db.rooms.find((r) => r.kind === 'owner');
+  await pg.goto(H + '#/room/' + ow.id); await pg.waitForSelector('form[data-form=landlord]');
+  await pg.fill('form[data-form=landlord] input[name=fullName]', 'Phạm Văn Chủ'); await pg.fill('form[data-form=landlord] input[name=dob]', '1975-03-04'); await pg.fill('form[data-form=landlord] input[name=phone]', '0900111222'); await pg.fill('form[data-form=landlord] input[name=cccd]', '001075000111'); await pg.fill('form[data-form=landlord] input[name=cccdIssueDate]', '2021-05-06');
+  await pg.click('form[data-form=landlord] .chipbtn'); const lp = await pg.inputValue('form[data-form=landlord] input[name=cccdIssuePlace]'); ok(/CỤC TRƯỞNG CỤC CẢNH SÁT QUẢN LÝ HÀNH CHÍNH VỀ TRẬT TỰ XÃ HỘI/.test(lp), 'gợi ý nơi cấp: bấm chọn điền đúng "' + lp + '"');
+  await pg.fill('form[data-form=landlord] input[name=address]', 'Số 1 Lê Văn Phấn, Hà Nội'); await pg.fill('form[data-form=landlord] input[name=houseAddress]', '44 Lê Văn Phấn, Hà Nội'); await pg.click('form[data-form=landlord] button[type=submit]'); await pg.waitForTimeout(800);
+  d = await data(); ok(d.settings.landlord?.fullName === 'Phạm Văn Chủ' && d.settings.landlord.houseAddress === '44 Lê Văn Phấn, Hà Nội', 'lưu thông tin Bên A trong phòng Chủ Nhà');
+  // ---- thêm khách: cọc, hình thức thanh toán, quê quán, người ở cùng có thời gian ở ----
+  await pg.goto(H + '#/room/room-2'); await pg.waitForSelector('button[data-act=movein]'); await pg.click('button[data-act=movein]'); await pg.waitForSelector('form[data-form=movein]');
+  const F = 'form[data-form=movein] ';
+  ok((await pg.inputValue(F + 'input[name=deposit]')) === '0', 'ô "Số Tiền Đặt Cọc" mặc định 0');
+  ok(await pg.isChecked(F + 'input[name=payCycle][value=month]'), 'hình thức thanh toán mặc định "Theo tháng"');
+  await pg.fill(F + 'input[name=fullName]', 'Nguyễn Văn An'); await pg.fill(F + 'input[name=dob]', '1990-05-12'); await pg.fill(F + 'input[name=phone]', '0912345678'); await pg.check(F + 'input[name=gender][value=male]');
+  await pg.fill(F + 'input[name=cccd]', '001090000123'); await pg.fill(F + 'input[name=cccdIssueDate]', '2021-04-10'); await pg.click(F + '.chipbtn'); await pg.fill(F + 'input[name=address]', 'Số 12 ngõ 45 Lê Văn Phấn, Hà Nội'); await pg.fill(F + 'input[name=hometown]', 'Xã Đông Hưng, Thái Bình');
+  const start = new Date(Date.now() + 7 * 3600e3 - 5 * 86400000).toISOString().slice(0, 10); await pg.fill(F + 'input[name=startDate]', start);
+  await pg.fill(F + 'input[name=rent]', '3000000'); await pg.fill(F + 'input[name=elecPrice]', '3500'); await pg.fill(F + 'input[name=waterPrice]', '15000'); await pg.fill(F + 'input[name=deposit]', '2000000'); await pg.check(F + 'input[name=payCycle][value=quarter]'); await pg.fill(F + 'input[name=initElec]', '100'); await pg.fill(F + 'input[name=initWater]', '10');
+  await pg.click(F + '[data-act=add-occ]'); await pg.fill(F + 'input[name=o_name]', 'Trần Thị Mai'); await pg.fill(F + 'input[name=o_dob]', '1992-08-20'); await pg.fill(F + 'input[name=o_cccd]', '001192000456'); await pg.fill(F + 'input[name=o_address]', 'Hà Nội');
+  ok(await pg.locator(F + '.occ-to').isHidden(), 'ô "Đến ngày" ẩn khi chọn "Kể từ ngày"'); await pg.check(F + 'input[name^=o_stay_][value=range]'); ok(await pg.locator(F + '.occ-to').isVisible(), 'chọn "Từ ngày … đến ngày …" → hiện ô Đến ngày');
+  await pg.fill(F + 'input[name=o_from]', start); await pg.fill(F + 'input[name=o_to]', '2027-12-31'); await pg.fill(F + 'input[name=o_hometown]', 'Nam Định');
+  await pg.click(F + 'button[type=submit]'); await pg.waitForTimeout(1200);
+  d = await data(); const t = d.db.tenants.find((x) => x.fullName === 'Nguyễn Văn An'); const r2 = d.db.rentals.find((x) => x.roomId === 'room-2' && x.status === 'active'); const oc = d.db.occupants.find((x) => x.tenantId === t.id);
+  ok(r2 && r2.deposit === 2000000 && r2.payCycle === 'quarter', 'lưu đặt cọc 2.000.000 + theo quý: ' + (r2 && r2.deposit + '/' + r2.payCycle));
+  ok(t.hometown === 'Xã Đông Hưng, Thái Bình' && /CỤC TRƯỞNG/.test(t.cccdIssuePlace), 'lưu quê quán + nơi cấp');
+  ok(oc && oc.stayMode === 'range' && oc.stayFrom === start && oc.stayTo === '2027-12-31' && oc.hometown === 'Nam Định' && oc.gender === 'male', 'người ở cùng: từ ngày … đến ngày …, quê quán, giới tính ' + JSON.stringify(oc && [oc.stayMode, oc.stayFrom, oc.stayTo, oc.gender]));
+  // ---- trang phòng hiển thị cọc ----
+  await pg.goto(H + '#/room/room-2'); await pg.waitForSelector('button[data-act=contract]'); const rt = await pg.innerText('main, #app, body');
+  ok(/Tiền đặt cọc/.test(rt) && /2\.000\.000/.test(rt) && /Theo quý/.test(rt), 'trang phòng hiện Tiền đặt cọc 2.000.000 + Theo quý');
+  // ---- Xuất hợp đồng ----
+  await pg.click('button[data-act=contract]'); await pg.waitForSelector('button[data-act=contract-docx]'); await pg.fill('#modal input[name=contractNo]', '07'); await pg.fill('#modal input[name=serviceFee]', 'Rác 30.000đ/tháng');
+  const [dl] = await Promise.all([pg.waitForEvent('download'), pg.click('button[data-act=contract-docx]')]); const fpath = OUT + '/' + dl.suggestedFilename(); await dl.saveAs(fpath);
+  ok(/hop-dong-phong-2/.test(dl.suggestedFilename()) && fs.statSync(fpath).size > 5000, 'tải file Word: ' + dl.suggestedFilename() + ' (' + fs.statSync(fpath).size + ' byte)');
+  await pg.click('button[data-act=contract-pdf]'); await pg.waitForSelector('iframe[aria-hidden]', { state: 'attached' }); ok(true, 'nút In / Lưu PDF tạo bản in (iframe)');
+  const html = await pg.evaluate(() => fetch('/api/contract/' + document.querySelector('button[data-act=contract-docx]').closest('form').dataset.rental + '?format=html').then((r) => r.text())); fs.writeFileSync(OUT + '/hop-dong.html', html);
+  for (const must of ['Phạm Văn Chủ', 'Nguyễn Văn An', 'Xã Đông Hưng, Thái Bình', 'Hai triệu đồng', '9.000.000 đồng/quý', 'Rác 30.000đ/tháng', 'Trần Thị Mai', 'Số: <b class="f">07</b>']) ok(html.includes(must), 'hợp đồng có: ' + must);
+  // ---- trả phòng: trừ cọc ----
+  d = await data(); const rid = d.db.rentals.find((x) => x.roomId === 'room-2' && x.status === 'active').id; const today = d.today;
+  let pv = await call('POST', 'checkout/preview', { rentalId: rid, date: today, elecFinal: 100, waterFinal: 10, extras: [] }); ok(pv.preview && pv.preview.deposit === 2000000, 'xem trước quyết toán có cọc ' + (pv.preview && pv.preview.deposit) + ', tổng ' + (pv.preview && pv.preview.total));
+  await pg.reload(); await pg.waitForSelector('button[data-act=checkout]'); await pg.click('button[data-act=checkout]'); await pg.waitForSelector('#modal input[name=elecFinal]'); await pg.fill('#modal input[name=elecFinal]', '100'); await pg.fill('#modal input[name=waterFinal]', '10'); await pg.click('#modal button[type=submit]');
+  await pg.waitForSelector('button[data-act=checkout-confirm]'); const modal = await pg.innerText('#modal'); ok(/Trừ: tiền đặt cọc đã nhận/.test(modal) && /Phần còn dư là số chủ nhà hoàn lại/.test(modal), 'bảng quyết toán hiện dòng trừ tiền đặt cọc + ghi chú');
+  await pg.click('button[data-act=checkout-confirm]'); await pg.waitForTimeout(1200); const inv = await pg.innerText('body'); ok(/đặt cọc/i.test(inv) && /hoàn/i.test(inv), 'hóa đơn trả phòng ghi rõ tiền đặt cọc và hoàn lại');
+  await pg.screenshot({ path: OUT + '/invoice.png', fullPage: true });
+  ok(errs.length === 0, 'không lỗi JS ' + errs.join(';')); await b.close();
+})();

@@ -27,6 +27,9 @@ export function openModal(title, body, { wide = false } = {}) {
 }
 export function closeModal() { $('#modal').innerHTML = ''; document.body.classList.remove('noscroll'); }
 export const field = (label, input, hint = '') => html`<label class="fld"><span>${label}</span>${input}${hint ? html`<small>${hint}</small>` : ''}</label>`;
+export const ISSUE_PLACE = 'CỤC TRƯỞNG CỤC CẢNH SÁT QUẢN LÝ HÀNH CHÍNH VỀ TRẬT TỰ XÃ HỘI';
+// Ô "Nơi cấp" có gợi ý: gõ để chọn trong danh sách, hoặc bấm nút bên dưới để điền nhanh
+export const issueField = (name, value = '', label = 'Nơi cấp *', required = true) => field(label, html`<input name="${name}" ${required ? raw('required') : ''} list="issuePlaces" autocomplete="off" value="${value || ''}"><datalist id="issuePlaces"><option value="${ISSUE_PLACE}"></option></datalist><button type="button" class="chipbtn" data-act="fill-issue">✔ Chọn: ${ISSUE_PLACE}</button>`);
 export const todayLocal = () => { const d = new Date(Date.now() + 7 * 3600e3); return d.toISOString().slice(0, 10); };
 export function download(name, text, type = 'application/json') {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);

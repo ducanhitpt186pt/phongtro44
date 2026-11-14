@@ -21,7 +21,7 @@ const fields = (p, main, start) => ({
   dob: p.dob ? dmy(p.dob) : '—', gender: GENDER[p.gender] || '—', phone: p.phone || '—',
   cccd: p.noId ? 'Chưa có (trẻ em)' : p.cccd || '—',
   issue: main ? [p.cccdIssueDate ? dmy(p.cccdIssueDate) : '', p.cccdIssuePlace].filter(Boolean).join(' · ') || '—' : '—',
-  start: dmy(start), address: p.address || '—',
+  start: dmy(start), address: p.address || '—', hometown: p.hometown || '—',
 });
 async function loadImg(meta) {
   if (!meta?.id) return null;
@@ -39,30 +39,32 @@ function drawId(c, img, x, y, w, h, caption, noId) {
     c.save(); c.beginPath(); c.roundRect ? c.roundRect(dx, dy, dw, dh, 10) : c.rect(dx, dy, dw, dh); c.clip(); c.drawImage(img, dx, dy, dw, dh); c.restore();
   } else { c.textAlign = 'center'; c.fillStyle = '#9aa0a8'; c.font = `500 28px ${FONT}`; c.fillText(noId ? 'Không có căn cước' : 'Chưa có ảnh', x + w / 2, by + h / 2 + 10); }
 }
-// Vẽ 1 thẻ người; trả về chiều cao đã dùng
-function drawPerson(c, o, x, y, w, stacked) {
-  const pad = 44, iw = w - pad * 2; const f = o.f;
-  // đo địa chỉ để biết số dòng
-  c.font = `600 30px ${FONT}`; const addrLines = wrap(c, f.address, iw - 270).slice(0, 3);
-  const infoH = 4 * 56 + Math.max(1, addrLines.length) * 40 + 16;
-  let imgW, imgH, imgsH;
-  if (stacked) { imgW = Math.min(iw, 860); imgH = Math.round(imgW / ratio); imgsH = (imgH + 40 + 22) * 2; }
-  else { imgW = Math.floor((iw - 40) / 2); imgH = Math.round(imgW / ratio); imgsH = imgH + 40; }
-  const total = pad + 70 + infoH + 26 + imgsH + pad - 6;
+// Đo thẻ người: số dòng địa chỉ / quê quán và phần chiều cao cố định (chưa tính ảnh căn cước)
+const PAD = 44;
+function measure(c, o, w) {
+  const iw = w - PAD * 2; c.font = `600 30px ${FONT}`;
+  const addr = wrap(c, o.f.address, iw - 270).slice(0, 3); const home = wrap(c, o.f.hometown, iw - 270).slice(0, 2);
+  const infoH = 4 * 56 + Math.max(1, addr.length) * 40 + 12 + Math.max(1, home.length) * 40 + 12;
+  return { iw, addr, home, infoH, fixed: PAD + 70 + infoH + 26 + PAD - 6 };
+}
+// Vẽ 1 thẻ người với ảnh căn cước rộng imgW (cao imgH); trả về chiều cao đã dùng
+function drawPerson(c, o, x, y, w, stacked, imgW, imgH, m) {
+  const f = o.f; const { iw, addr, home } = m;
+  const imgsH = stacked ? (imgH + 40 + 22) * 2 : imgH + 40; const total = m.fixed + imgsH;
   rr(c, x, y, w, total, 30, '#ffffff', '#e1e5eb');
-  // tên + vai trò
-  let cy = y + pad; c.textAlign = 'left'; c.fillStyle = '#1c1c1e'; c.font = `700 44px ${FONT}`; let nm = o.name; while (c.measureText(nm).width > iw - 260 && nm.length > 6) nm = nm.slice(0, -2); if (nm !== o.name) nm += '…'; c.fillText(nm, x + pad, cy + 44);
-  const tag = o.main ? 'Chủ hợp đồng' : 'Người ở cùng'; c.font = `600 24px ${FONT}`; const tw = c.measureText(tag).width + 36; rr(c, x + w - pad - tw, cy + 8, tw, 44, 22, o.main ? '#e4effc' : '#eef1f5'); c.fillStyle = o.main ? '#0a5bd6' : '#475569'; c.textAlign = 'center'; c.fillText(tag, x + w - pad - tw / 2, cy + 38);
-  cy += 70; c.strokeStyle = '#e8ebf0'; c.lineWidth = 2; c.beginPath(); c.moveTo(x + pad, cy - 8); c.lineTo(x + w - pad, cy - 8); c.stroke();
-  const colW = iw / 2; const kv = (k, v, col, row, full = false) => { const px = x + pad + col * colW, py = cy + row * 56; const lw = full || col === 0 ? 270 : 190; c.textAlign = 'left'; c.fillStyle = '#8a8f98'; c.font = `400 26px ${FONT}`; c.fillText(k, px, py + 34); c.fillStyle = '#1c1c1e'; c.font = `600 30px ${FONT}`; let vv = v; const maxW = (full ? iw : colW - 30) - lw; while (c.measureText(vv).width > maxW && vv.length > 6) vv = vv.slice(0, -2); c.fillText(vv === v ? v : vv + '…', px + lw, py + 34); };
+  let cy = y + PAD; c.textAlign = 'left'; c.fillStyle = '#1c1c1e'; c.font = `700 44px ${FONT}`; let nm = o.name; while (c.measureText(nm).width > iw - 260 && nm.length > 6) nm = nm.slice(0, -2); if (nm !== o.name) nm += '…'; c.fillText(nm, x + PAD, cy + 44);
+  const tag = o.main ? 'Chủ hợp đồng' : 'Người ở cùng'; c.font = `600 24px ${FONT}`; const tw = c.measureText(tag).width + 36; rr(c, x + w - PAD - tw, cy + 8, tw, 44, 22, o.main ? '#e4effc' : '#eef1f5'); c.fillStyle = o.main ? '#0a5bd6' : '#475569'; c.textAlign = 'center'; c.fillText(tag, x + w - PAD - tw / 2, cy + 38);
+  cy += 70; c.strokeStyle = '#e8ebf0'; c.lineWidth = 2; c.beginPath(); c.moveTo(x + PAD, cy - 8); c.lineTo(x + w - PAD, cy - 8); c.stroke();
+  const colW = iw / 2; const kv = (k, v, col, row, full = false) => { const px = x + PAD + col * colW, py = cy + row * 56; const lw = full || col === 0 ? 270 : 190; c.textAlign = 'left'; c.fillStyle = '#8a8f98'; c.font = `400 26px ${FONT}`; c.fillText(k, px, py + 34); c.fillStyle = '#1c1c1e'; c.font = `600 30px ${FONT}`; let vv = v; const maxW = (full ? iw : colW - 30) - lw; while (c.measureText(vv).width > maxW && vv.length > 6) vv = vv.slice(0, -2); c.fillText(vv === v ? v : vv + '…', px + lw, py + 34); };
   kv('Ngày sinh', f.dob, 0, 0); kv('Giới tính', f.gender, 1, 0);
   kv('Điện thoại', f.phone, 0, 1); kv('Ngày vào ở', f.start, 1, 1);
   kv('Số CCCD', f.cccd, 0, 2, true); kv('Ngày cấp / Nơi cấp', f.issue, 0, 3, true);
-  const ay = cy + 4 * 56; c.textAlign = 'left'; c.fillStyle = '#8a8f98'; c.font = `400 26px ${FONT}`; c.fillText('Địa chỉ thường trú', x + pad, ay + 34); c.fillStyle = '#1c1c1e'; c.font = `600 30px ${FONT}`;
-  addrLines.forEach((l, k) => c.fillText(k === 2 && wrap(c, f.address, iw - 270).length > 3 ? l + '…' : l, x + pad + 270, ay + 34 + k * 40));
-  cy += infoH + 26;
+  const block = (label, lines, top) => { c.textAlign = 'left'; c.fillStyle = '#8a8f98'; c.font = `400 26px ${FONT}`; c.fillText(label, x + PAD, top + 34); c.fillStyle = '#1c1c1e'; c.font = `600 30px ${FONT}`; lines.forEach((l, k) => c.fillText(l, x + PAD + 270, top + 34 + k * 40)); };
+  const ay = cy + 4 * 56; block('Địa chỉ thường trú', addr, ay);
+  const hy = ay + Math.max(1, addr.length) * 40 + 12; block('Quê quán', home, hy);
+  cy += m.infoH + 26;
   if (stacked) { const ix = x + (w - imgW) / 2; drawId(c, o.front, ix, cy, imgW, imgH, 'CĂN CƯỚC – MẶT TRƯỚC', o.noId); drawId(c, o.back, ix, cy + imgH + 40 + 22, imgW, imgH, 'CĂN CƯỚC – MẶT SAU', o.noId); }
-  else { drawId(c, o.front, x + pad, cy, imgW, imgH, 'CĂN CƯỚC – MẶT TRƯỚC', o.noId); drawId(c, o.back, x + pad + imgW + 40, cy, imgW, imgH, 'CĂN CƯỚC – MẶT SAU', o.noId); }
+  else { const gap = iw - imgW * 2; drawId(c, o.front, x + PAD, cy, imgW, imgH, 'CĂN CƯỚC – MẶT TRƯỚC', o.noId); drawId(c, o.back, x + PAD + imgW + gap, cy, imgW, imgH, 'CĂN CƯỚC – MẶT SAU', o.noId); }
   return total;
 }
 async function renderPage(info, items, pageNo, pages) {
@@ -73,8 +75,13 @@ async function renderPage(info, items, pageNo, pages) {
   c.fillStyle = '#6c6c70'; c.font = `400 30px ${FONT}`; c.fillText(`Nhà trọ 44 Lê Văn Phấn · Ngày xuất ${dmy(today())}${pages > 1 ? ` · Trang ${pageNo}/${pages}` : ''}`, M, M + 108);
   c.font = `700 46px ${FONT}`; const rt = info.room.name; const rw = c.measureText(rt).width + 80; rr(c, W - M - rw, M + 6, rw, 84, 42, '#007aff'); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(rt, W - M - rw / 2, M + 64);
   c.strokeStyle = '#d3d9e1'; c.lineWidth = 2; c.beginPath(); c.moveTo(M, M + 142); c.lineTo(W - M, M + 142); c.stroke();
-  let y = M + 176; const stacked = items.length === 1;
-  for (const o of items) { y += drawPerson(c, o, M, y, W - M * 2, stacked) + 34; }
+  const y0 = M + 176; const stacked = items.length === 1; const cw = W - M * 2; const GAP = 34;
+  const ms = items.map((o) => measure(c, o, cw)); const avail = H - 110 - y0 - GAP * (items.length - 1);
+  const room = avail - ms.reduce((a, m) => a + m.fixed, 0);
+  let imgH; const maxW = stacked ? 860 : Math.floor((cw - PAD * 2 - 40) / 2);
+  if (stacked) imgH = Math.min(Math.round(maxW / ratio), Math.floor(room / 2) - 62); else imgH = Math.min(Math.round(maxW / ratio), Math.floor(room / items.length) - 40);
+  imgH = Math.max(imgH, 180); const imgW = Math.round(imgH * ratio);
+  let y = y0; for (let i = 0; i < items.length; i++) y += drawPerson(c, items[i], M, y, cw, stacked, imgW, imgH, ms[i]) + GAP;
   c.textAlign = 'center'; c.fillStyle = '#9aa0a8'; c.font = `400 24px ${FONT}`; c.fillText('Tài liệu chứa thông tin cá nhân – chỉ dùng cho quản lý nhà trọ, không chia sẻ công khai.', W / 2, H - 56);
   return new Promise((ok, no) => cv.toBlob((b) => (b ? ok(b) : no(new Error('Không tạo được ảnh'))), 'image/jpeg', 0.93));
 }

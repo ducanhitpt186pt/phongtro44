@@ -1,6 +1,7 @@
 import { html, raw, vnd, dmy, ROOM_STATUS } from '../util.js';
 import { D, DV, S, today, activeRental, latestInvOf, tenant, invD } from '../api.js';
 import { noticeCard, readingsBanner } from './public.js';
+import { debtNotices, openDebtItems } from './debts.js';
 import { usagePanel } from './usage.js';
 import { calendarPanel, eventsAheadList } from './calendar.js';
 import { icon, ROOM_ICON, ROOM_TONE } from '../icons.js';
@@ -23,6 +24,7 @@ export function dashboardView() {
   return html`
     <h2 class="sec sumrow" style="margin-top:4px"><span>Thông báo cần xử lý (${rem.length})</span>${rem.length ? '' : html`<span class="okpill">${icon('check', '1.1em')} Không có việc cần xử lý</span>`}</h2>
     ${rem.length ? html`<div class="notices" style="margin-top:0">${rem.map((i) => noticeCard({ ...i, period: i.periodLabel }, { link: true, actions: true, tenantName: i.tenantId ? tenant(i.tenantId)?.fullName : '' }))}</div>` : ''}
+    ${debtNotices(openDebtItems(today()), { actions: true })}
     ${eventsAheadList(S.snap.db.events, today())}
     <h2 class="sec">Tổng quan</h2>
     <div class="cards7"><div class="stat"><b>${rooms.length}</b><span>Tổng số phòng</span><span class="sub">Phòng đang khóa: <b class="inl">${rooms.filter((r) => r.status === 'notready').length}</b></span></div>${stat(toCollect, 'Phòng cần thu tiền', 'redtxt')}${stat(vnd(debt), 'Tổng công nợ', 'debt')}</div>

@@ -6,6 +6,7 @@ import { acts, forms, go } from '../ui.js';
 import { usageBar, alertsHtml, footStrip, refreshStatus } from './strip.js';
 import { a2hsButton, a2hsChip } from '../a2hs.js';
 import { usagePanel } from './usage.js';
+import { debtNotices } from './debts.js';
 import { calendarPanel, eventBanner, eventsAheadList } from './calendar.js';
 import { icon, ROOM_ICON, ROOM_TONE } from '../icons.js';
 import { ROOM_STATUS } from '../util.js';
@@ -63,6 +64,7 @@ function paint(res, note = '') {
       <div class="stat wide redtxt"><b>${vnd(s.totalRemaining)}</b><span>tổng tiền còn cần thu</span></div>
     </div>
     ${items.length ? html`<div class="notices">${items.map((i) => noticeCard(i, { pub: true }))}</div>` : ''}
+    ${debtNotices(res.debts?.items.map((d) => ({ ...d })) || [], { actions: false })}
     ${eventsAheadList(res.events, res.today)}
     ${usagePanel(res.usage)}
     ${readingsBanner(res.readings)}

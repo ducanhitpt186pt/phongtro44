@@ -14,6 +14,8 @@ import { tenantsView, tenantView } from './views/tenants.js';
 import { invoiceView } from './views/invoice.js';
 import { reportsView, backupView } from './views/reports.js';
 import { eventBanner, eventsAhead } from './views/calendar.js';
+import { debtsView } from './views/debts.js';
+import { ledgerView } from './views/ledger.js';
 import { blockedDialog } from './views/room.js';
 import { ROOM_ICON } from './icons.js';
 
@@ -21,9 +23,9 @@ const app = () => $('#app');
 let timer = null;
 
 function shell(active, inner) {
-  const n = DV().reminders.length + DV().usage.alerts.length;
+  const n = DV().reminders.length + DV().usage.alerts.length + DV().debts.openAll;
   const t = today();
-  const nav = [['dashboard', 'Tổng quan', 'home'], ['tenants', 'Khách thuê', 'users'], ['reports', 'Báo cáo', 'chart'], ['backup', 'Sao lưu', 'shield']];
+  const nav = [['dashboard', 'Tổng quan', 'home'], ['tenants', 'Khách thuê', 'users'], ['debts', 'Nhắc Nợ', 'money'], ['ledger', 'Thu Chi', 'card'], ['reports', 'Báo cáo', 'chart'], ['backup', 'Sao lưu', 'shield']];
   const ahead = eventsAhead(S.snap.db.events, t).slice(0, 4);
   return html`<div class="top"><div class="in"><div class="tl"><h1>NHÀ TRỌ 44 LÊ VĂN PHẤN<span class="credit">ducanhitpt186</span></h1><div id="ubar">${usageBar(S.snap.system)}</div><div id="alerts">${alertsHtml(S.snap.system)}</div>
     <div class="dt">${weekday(t)}, ${dmy(t)}<br>Âm lịch: ${lunarText(t)}</div>${ahead.length ? html`<div class="hdr-events">${ahead.map((u) => html`<span>${icon('star', '1em')} ${u.ev.name} – ${dmy(u.date).slice(0, 5)} (${u.left === 0 ? 'hôm nay' : `còn ${u.left} ngày`})</span>`)}</div>` : ''}</div>
@@ -49,7 +51,7 @@ async function render() {
   const views = {
     '': ['dashboard', () => dashboardView()], dashboard: ['dashboard', () => dashboardView()],
     room: ['dashboard', () => roomView(id)], calendar: ['dashboard', () => { setTimeout(() => go('#/dashboard'), 0); return html`<p class="boot">Đang chuyển…</p>`; }], tenants: ['tenants', () => tenantsView()], tenant: ['tenants', () => tenantView(id)],
-    invoice: ['dashboard', () => invoiceView(id)], reports: ['reports', () => reportsView()], backup: ['backup', () => backupView()],
+    invoice: ['dashboard', () => invoiceView(id)], debts: ['debts', () => debtsView()], ledger: ['ledger', () => ledgerView()], reports: ['reports', () => reportsView()], backup: ['backup', () => backupView()],
   };
   const v = views[name] || views.dashboard;
   const out = v[1]();

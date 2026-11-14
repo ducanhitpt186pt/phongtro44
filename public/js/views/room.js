@@ -1,9 +1,10 @@
-import { html, raw, vnd, num, dmy, monthLabel, todayLocal, toInt, toDec, field, openModal, closeModal, toast, $, ROOM_STATUS, INV_STATUS, INV_COLOR, GENDER } from '../util.js';
-import { S, D, DV, save, api, room, tenant, activeRental, latestInvOf, invD, today } from '../api.js';
+import { html, raw, vnd, num, dmy, monthLabel, todayLocal, issueField, ISSUE_PLACE, toInt, toDec, field, openModal, closeModal, toast, $, ROOM_STATUS, INV_STATUS, INV_COLOR, GENDER } from '../util.js';
+import { S, D, DV, save, api, apiUrl, room, tenant, activeRental, latestInvOf, invD, today } from '../api.js';
 import { acts, forms, live, changes, go, rerender } from '../ui.js';
 import { idBox, resetImages, getBlob, uploadImage } from '../images.js';
 import { icon, ROOM_ICON, ROOM_TONE } from '../icons.js';
 import { ownerView } from './owner.js';
+import { downloadCt01 } from '../ct01.js';
 import { billArticle } from './bill.js';
 
 let year = null;
@@ -50,20 +51,21 @@ export function roomView(id) {
   return html`<a class="back" href="#/dashboard">← Tổng quan</a>
     <div class="page-head"><span class="rbadge ${tone}">${icon(ROOM_ICON[rm.status], '1.5em')}</span><h2>${rm.name}${t ? ` – ${t.fullName}` : ''}</h2><span class="stx ${tone}">${ROOM_STATUS[rm.status]}</span><button class="btn sm" data-act="edit-room" data-id="${id}">${icon('edit', '1.1em')} Sửa Tình Trạng Phòng</button></div>
     ${r ? contactRow(t, occs) : ''}
-    ${r ? html`<section class="card"><div class="row"><div class="sp"><b>${t.fullName}</b> · ${t.phone}<br><span class="muted small">Vào ở <b>${dmy(r.startDate)}</b> <button class="btn sm" data-act="edit-start" data-id="${r.id}" style="padding:2px 8px;min-height:28px">${icon('edit', '1em')} Sửa ngày</button> · <b>${1 + occs.length} người</b> · kỳ tiếp theo đến hạn ${dmy(rd.nextDue)}</span></div><a class="btn sm" href="#/tenant/${t.id}">${icon('card', '1.1em')} Hồ sơ khách</a><button class="btn sm primary" data-act="profile-img" data-room="${id}">${icon('photo', '1.1em')} Tải Ảnh Hồ Sơ Khách Theo Phòng</button></div>
-      <dl class="kv"><dt>Giá thuê / điện / nước</dt><dd>${vnd(rd.price.rent)} · ${num(rd.price.elecPrice)}đ/số · ${num(rd.price.waterPrice)}đ/khối</dd><dt>Hóa đơn mới nhất</dt><dd>${inv.code} · ${vnd(inv.total)}</dd>${inv.elec || r.status !== 'active' ? html`<dt>Tổng còn nợ</dt><dd class="${d.remaining ? 'owe' : 'okc'}">${vnd(d.remaining)}</dd>` : d.remaining > 0 ? html`<dt>Tiền phòng đầu kỳ chưa nhận</dt><dd class="okc">${vnd(d.remaining)}</dd>` : html`<dt>Tiền phòng đầu kỳ đã nhận</dt><dd class="okc">${vnd(d.paid)}</dd>`}</dl>
+    ${r ? html`<section class="card"><div class="row"><div class="sp"><b>${t.fullName}</b> · ${t.phone}<br><span class="muted small">Vào ở <b>${dmy(r.startDate)}</b> <button class="btn sm" data-act="edit-start" data-id="${r.id}" style="padding:2px 8px;min-height:28px">${icon('edit', '1em')} Sửa ngày</button> · <b>${1 + occs.length} người</b> · kỳ tiếp theo đến hạn ${dmy(rd.nextDue)}</span></div><a class="btn sm" href="#/tenant/${t.id}">${icon('card', '1.1em')} Hồ sơ khách</a><button class="btn sm primary" data-act="profile-img" data-room="${id}">${icon('photo', '1.1em')} Tải Ảnh Hồ Sơ Khách Theo Phòng</button><button class="btn sm primary" data-act="contract" data-id="${r.id}">${icon('sheet', '1.1em')} Xuất Hợp Đồng</button></div>
+      <dl class="kv"><dt>Giá thuê / điện / nước</dt><dd>${vnd(rd.price.rent)} · ${num(rd.price.elecPrice)}đ/số · ${num(rd.price.waterPrice)}đ/khối</dd><dt>Tiền đặt cọc</dt><dd>${vnd(r.deposit || 0)}${r.deposit ? html` <span class="muted small">· hoàn lại khi trả phòng</span>` : ''}</dd><dt>Hình thức thanh toán</dt><dd>${{ month: 'Theo tháng', quarter: 'Theo quý', year: 'Theo năm' }[r.payCycle || 'month']}</dd><dt>Hóa đơn mới nhất</dt><dd>${inv.code} · ${vnd(inv.total)}</dd>${inv.elec || r.status !== 'active' ? html`<dt>Tổng còn nợ</dt><dd class="${d.remaining ? 'owe' : 'okc'}">${vnd(d.remaining)}</dd>` : d.remaining > 0 ? html`<dt>Tiền phòng đầu kỳ chưa nhận</dt><dd class="okc">${vnd(d.remaining)}</dd>` : html`<dt>Tiền phòng đầu kỳ đã nhận</dt><dd class="okc">${vnd(d.paid)}</dd>`}</dl>
       <div class="row" style="margin-top:12px"><button class="btn red" data-act="readings" data-id="${r.id}">${icon('bolt', '1.15em')} Tính tiền (ghi điện nước)</button>${d.remaining > 0 ? html`<button class="btn green" data-act="pay" data-id="${inv.id}">${icon('money', '1.15em')} Thanh toán</button>` : ''}<button class="btn" data-act="price" data-id="${r.id}">${icon('money', '1.1em')} Thay đổi giá phòng</button><button class="btn" data-act="transfer" data-id="${r.id}">${icon('swap', '1.1em')} Chuyển phòng</button><button class="btn danger" data-act="checkout" data-id="${r.id}">Trả phòng</button></div></section>
       ${!counted && d.remaining > 0 ? html`<section class="card" style="margin-top:12px"><h3>${icon('info', '1.2em')} Tiền phòng kỳ đầu chưa ghi nhận đã thu</h3><p class="muted" style="margin:6px 0 10px">Chưa tới kỳ ghi điện nước nên chưa tính là nợ. Nếu bạn đã nhận tiền phòng khi khách vào, hãy ghi nhận để hệ thống không tính là nợ cũ.</p><div class="row"><button class="btn" data-act="open-invoice" data-id="${inv.id}">Xem hóa đơn</button><button class="btn green" data-act="pay-month" data-id="${inv.id}">${icon('check', '1.1em')} Ghi nhận đã thu tiền phòng đầu kỳ (${vnd(d.remaining)})</button></div></section>` : html`<section class="card" style="margin-top:12px"><h3>${unpaid.length ? icon('alert', '1.2em') : icon('check', '1.2em')} ${unpaid.length ? 'Chưa thanh toán' : 'Đã thanh toán đủ các tháng'}</h3>
         ${unpaid.length ? html`<div class="month-pay">${unpaid.map((m) => html`<div class="mp"><b>${t.fullName} – Tháng ${Number(m.ym.slice(5))}/${m.ym.slice(0, 4)}</b><span class="sp muted">đến hạn ${dmy(m.dueDate)} · còn <b class="owe">${vnd(m.outstanding)}</b></span><button class="btn sm" data-act="open-invoice" data-id="${m.invoiceId}">Xem hóa đơn</button><button class="btn red sm" data-act="pay-month" data-id="${m.invoiceId}">Thanh toán tháng ${Number(m.ym.slice(5))}</button></div>`)}</div><p class="muted small" style="margin:8px 0 0">Bấm vào từng tháng để thu tiền đúng tháng đó. Sau khi bấm <b>ĐÃ NHẬN TIỀN</b>, thông báo của tháng đó sẽ ẩn.</p>` : ''}</section>`}`
     : html`<section class="card">${rm.status === 'empty' ? html`<p style="margin-top:0">Phòng đang trống.</p><button class="btn primary" data-act="movein" data-id="${id}">${icon('plus', '1.1em')} Thêm khách thuê</button>` : html`<p style="margin:0">${rm.note || ROOM_STATUS[rm.status]}</p>`}</section>`}
-    ${r ? occupantsCard(t, occs) : ''}
+    ${r ? occupantsCard(t, occs, r.roomId) : ''}
     <div class="page-head" style="margin-top:22px"><h2 style="font-size:1.1rem">Hóa đơn theo tháng</h2><select data-change="year" style="width:auto;min-height:40px">${[...new Set([year, Number(today().slice(0, 4)), ...D().invoices.map((i) => Number(i.dueDate.slice(0, 4)))])].sort((a, b) => b - a).map((y) => html`<option ${y === year ? raw('selected') : ''}>${y}</option>`)}</select></div>
     <table class="tbl stack"><thead><tr><th>Tháng</th><th class="r">Tiền phòng</th><th class="r">Tiền điện</th><th class="r">Tiền nước</th><th class="r">Nợ cũ</th><th class="r">Tổng tiền tháng</th><th class="r">Đã thanh toán</th><th class="r">Còn nợ</th><th>Trạng thái</th><th>Ghi chú</th><th></th></tr></thead><tbody>${rows}</tbody></table>
     <h2 class="sec">Lịch sử thuê của phòng</h2>
     <div class="list">${hist.length ? hist.map((x) => html`<div class="li"><span><b>${tenant(x.tenantId)?.fullName}</b> · ${dmy(x.startDate)} → ${x.endDate ? dmy(x.endDate) : 'nay'}</span><span class="badge ${x.status === 'active' ? 'blue' : ''}">${{ active: 'Đang thuê', ended: 'Đã trả phòng', transferred: 'Đã chuyển phòng' }[x.status]}</span></div>`) : html`<div class="empty-state">Chưa có lịch sử thuê.</div>`}</div>`;
 }
-function occupantsCard(t, occs) {
+function occupantsCard(t, occs, roomId) {
   return html`<section class="card" style="margin-top:12px"><div class="row"><h3 class="sp">${icon('users', '1.2em')} Người ở cùng (${occs.length})</h3><button class="btn red sm" data-act="add-occupant" data-tid="${t.id}">${icon('plus', '1.1em')} Thêm người ở cùng</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn sm" data-act="ct01" data-room="${roomId}">${icon('sheet', '1.1em')} Bản Khai CT01 - Lưu Trú</button></div>
     <p class="muted small" style="margin:6px 0 0">Thêm người ở cùng không tính thêm tiền. Số người trong phòng tự đếm = khách chính + người ở cùng.</p>
     <div class="list" style="margin-top:10px">${occs.length ? occs.map((o) => html`<div class="li"><span><b>${o.fullName}</b> · ${dmy(o.dob)} · ${GENDER[o.gender] || ''}<br><span class="muted small">${o.noId ? 'Chưa có CCCD (trẻ em)' : `CCCD ${o.cccd}`} · ${o.idImages?.front && o.idImages?.back ? 'đã có 2 mặt ảnh' : o.noId ? 'không cần ảnh' : 'chưa có ảnh CCCD (thêm sau được)'}</span></span><a class="btn sm" href="#/tenant/${t.id}">Hồ sơ & ảnh</a></div>`) : html`<div class="empty-state" style="padding:14px">Chưa có người ở cùng.</div>`}</div></section>`;
 }
@@ -93,8 +95,12 @@ export const occFields = (o = {}, slot) => html`
   <div class="two">${field('Số điện thoại', html`<input name="o_phone" inputmode="tel" value="${o.phone || ''}">`)}${field('Số Zalo (trống = dùng SĐT)', html`<input name="o_zalo" inputmode="tel" value="${o.zalo || ''}">`)}</div>
   <div class="two">${field('Số CCCD *', html`<input name="o_cccd" inputmode="numeric" value="${o.cccd || ''}">`)}${field('Địa chỉ thường trú *', html`<input name="o_address" value="${o.address || ''}">`)}</div>
   <label class="radios"><input type="checkbox" name="o_noid" data-change="occ-noid" ${o.noId ? raw('checked') : ''}>Chưa có CCCD (trẻ em) – không cần CCCD, địa chỉ, ảnh</label>
+  ${field('Quê quán', html`<input name="o_hometown" value="${o.hometown || ''}">`)}
+  <div class="radios" role="radiogroup"><span>Thời gian ở:</span>${[['from', 'Kể từ ngày'], ['range', 'Từ ngày … đến ngày …']].map(([k, l]) => html`<label><input type="radio" name="o_stay_${slot || 'e'}" value="${k}" data-change="occ-stay" ${(o.stayMode || 'from') === k ? raw('checked') : ''}>${l}</label>`)}</div>
+  <div class="two">${field('Ngày bắt đầu ở', html`<input type="date" name="o_from" value="${o.stayFrom || (o.fullName ? '' : todayLocal())}">`, 'Mặc định là ngày nhập liệu hôm nay, có thể đổi. Để trống = tính từ ngày khách chính vào ở')}<div class="occ-to" ${o.stayMode === 'range' ? '' : raw('hidden')}>${field('Đến ngày', html`<input type="date" name="o_to" value="${o.stayTo || ''}">`)}</div></div>
   ${field('Ghi chú', html`<input name="o_note" value="${o.note || ''}">`)}
   ${slot ? html`<div class="occ-img" ${o.noId ? raw('hidden') : ''}>${idBox(`${slot}-front`, { title: 'CCCD mặt trước (người ở cùng) – có thể thêm sau', required: false })}${idBox(`${slot}-back`, { title: 'CCCD mặt sau (người ở cùng) – có thể thêm sau', required: false })}</div>` : ''}`;
+changes['occ-stay'] = (el) => { const b = el.closest('.occ, form'); const to = b && b.querySelector('.occ-to'); if (to) to.hidden = el.value !== 'range'; };
 changes['occ-noid'] = (el) => { const box = el.closest('.occ, form')?.querySelector('.occ-img'); if (box) box.hidden = el.checked; };
 acts['add-occ'] = () => { const c = $('#occs'); const d = document.createElement('div'); d.innerHTML = occBlock().s; c.append(d.firstElementChild); };
 acts['del-occ'] = (el) => el.closest('.occ').remove();
@@ -104,9 +110,10 @@ export const personFields = (t = {}) => html`
   ${field('Số Zalo (để trống = dùng số điện thoại)', html`<input name="zalo" inputmode="tel" value="${t.zalo && t.zalo !== t.phone ? t.zalo : ''}">`)}
   <div class="radios" role="radiogroup" aria-label="Giới tính"><b>Giới tính *</b>${['male', 'female', 'other'].map((g) => html`<label><input type="radio" name="gender" value="${g}" required ${t.gender === g ? raw('checked') : ''}>${GENDER[g]}</label>`)}</div>
   <div class="two">${field('Số CCCD *', html`<input name="cccd" inputmode="numeric" required value="${t.cccd || ''}">`)}${field('Ngày cấp *', html`<input type="date" name="cccdIssueDate" required max="${todayLocal()}" value="${t.cccdIssueDate || ''}">`)}</div>
-  ${field('Nơi cấp *', html`<input name="cccdIssuePlace" required value="${t.cccdIssuePlace || ''}">`)}${field('Địa chỉ thường trú *', html`<input name="address" required value="${t.address || ''}">`)}`;
-export function collectPerson(fd) { return { fullName: fd.get('fullName'), dob: fd.get('dob'), gender: fd.get('gender'), phone: fd.get('phone'), zalo: fd.get('zalo'), cccd: fd.get('cccd'), cccdIssueDate: fd.get('cccdIssueDate'), cccdIssuePlace: fd.get('cccdIssuePlace'), address: fd.get('address') }; }
-export function collectOccupant(b) { const g = (n) => b.querySelector(`[name=${n}]`).value; return { fullName: g('o_name'), dob: g('o_dob'), gender: b.querySelector('input[type=radio]:checked')?.value, phone: g('o_phone'), zalo: g('o_zalo'), cccd: g('o_cccd'), address: g('o_address'), note: g('o_note'), noId: b.querySelector('[name=o_noid]').checked }; }
+  ${issueField('cccdIssuePlace', t.cccdIssuePlace)}${field('Địa chỉ thường trú *', html`<input name="address" required value="${t.address || ''}">`)}${field('Quê quán', html`<input name="hometown" value="${t.hometown || ''}" placeholder="Xã/phường, huyện/quận, tỉnh/thành phố">`)}`;
+acts['fill-issue'] = (el) => { const i = el.closest('label').querySelector('input[name]'); i.value = ISSUE_PLACE; i.dispatchEvent(new Event('input', { bubbles: true })); };
+export function collectPerson(fd) { return { fullName: fd.get('fullName'), dob: fd.get('dob'), gender: fd.get('gender'), phone: fd.get('phone'), zalo: fd.get('zalo'), cccd: fd.get('cccd'), cccdIssueDate: fd.get('cccdIssueDate'), cccdIssuePlace: fd.get('cccdIssuePlace'), address: fd.get('address'), hometown: fd.get('hometown') }; }
+export function collectOccupant(b) { const g = (n) => b.querySelector(`[name=${n}]`).value; return { fullName: g('o_name'), dob: g('o_dob'), gender: b.querySelector('input[name^=o_gender_]:checked')?.value, phone: g('o_phone'), zalo: g('o_zalo'), cccd: g('o_cccd'), address: g('o_address'), hometown: g('o_hometown'), note: g('o_note'), noId: b.querySelector('[name=o_noid]').checked, stayMode: b.querySelector('input[name^=o_stay_]:checked')?.value || 'from', stayFrom: g('o_from'), stayTo: g('o_to') }; }
 export const collectOccupants = (f) => [...f.querySelectorAll('.occ')].map(collectOccupant);
 acts.movein = (el) => {
   const rm = room(el.dataset.id); resetImages(); occSeq = 0;
@@ -117,7 +124,8 @@ acts.movein = (el) => {
       <label class="radios paidbox"><input type="checkbox" name="paidAlready" checked> <b>Đã thu đủ tiền phòng kỳ đầu</b> (nhận khi khách vào). Bỏ tích nếu chưa nhận.</label>
       <div id="existbox" hidden>${field('Nợ cũ còn lại (đ)', html`<input name="openingDebt" inputmode="numeric" value="0">`)}</div>
       <div class="two">${field('Giá thuê phòng / tháng (đ) *', html`<input name="rent" inputmode="numeric" required>`)}${field('Giá điện (đ/số) *', html`<input name="elecPrice" inputmode="numeric" required>`)}</div>
-      <div class="two">${field('Giá nước (đ/khối) *', html`<input name="waterPrice" inputmode="numeric" required>`)}<div></div></div>
+      <div class="two">${field('Giá nước (đ/khối) *', html`<input name="waterPrice" inputmode="numeric" required>`)}${field('Số Tiền Đặt Cọc (đ)', html`<input name="deposit" inputmode="numeric" value="0">`, 'Mặc định 0. Có nhập thì hoàn lại khi khách trả phòng, sau khi thanh toán hết tiền phòng, điện nước.')}</div>
+      <div class="radios" role="radiogroup"><b>Hình thức thanh toán tiền thuê</b>${[['month', 'Theo tháng'], ['quarter', 'Theo quý'], ['year', 'Theo năm']].map(([k, l]) => html`<label><input type="radio" name="payCycle" value="${k}" ${k === 'month' ? raw('checked') : ''}>${l}</label>`)}</div>
       <div class="two">${field('Chỉ số điện ban đầu *', html`<input name="initElec" inputmode="decimal" required>`)}${field('Chỉ số nước ban đầu *', html`<input name="initWater" inputmode="decimal" required>`)}</div>
       ${field('Ghi chú', html`<textarea name="note" maxlength="300"></textarea>`)}</fieldset>
     <fieldset><legend>Ảnh CCCD khách thuê (không bắt buộc – thêm sau được)</legend>${idBox('front', { required: false })}${idBox('back', { required: false })}</fieldset>
@@ -131,7 +139,7 @@ live.movein = (f) => {
 };
 forms.movein = async (f, fd) => {
   const blocks = [...f.querySelectorAll('.occ')]; const occupants = blocks.map(collectOccupant);
-  const body = { roomId: f.dataset.room, tenant: collectPerson(fd), occupants, startDate: fd.get('startDate'), openingDebt: toInt(fd.get('openingDebt')) || 0, paidAlready: fd.get('paidAlready') === 'on', rent: toInt(fd.get('rent')), elecPrice: toInt(fd.get('elecPrice')), waterPrice: toInt(fd.get('waterPrice')), initElec: toDec(fd.get('initElec')), initWater: toDec(fd.get('initWater')), note: fd.get('note') };
+  const body = { roomId: f.dataset.room, tenant: collectPerson(fd), occupants, startDate: fd.get('startDate'), openingDebt: toInt(fd.get('openingDebt')) || 0, paidAlready: fd.get('paidAlready') === 'on', rent: toInt(fd.get('rent')), deposit: toInt(fd.get('deposit')) || 0, payCycle: fd.get('payCycle') || 'month', elecPrice: toInt(fd.get('elecPrice')), waterPrice: toInt(fd.get('waterPrice')), initElec: toDec(fd.get('initElec')), initWater: toDec(fd.get('initWater')), note: fd.get('note') };
   const j = await save('POST', 'tenants', body, 'Đã lưu khách thuê'); const tid = j.result.tenant.id;
   const jobs = [[tid, 'front'], [tid, 'back'], ...blocks.flatMap((b, i) => (occupants[i].noId ? [] : [[j.result.occupantIds[i], `${b.dataset.slot}-front`, 'front'], [j.result.occupantIds[i], `${b.dataset.slot}-back`, 'back']]))].filter(([, slot]) => getBlob(slot));
   const pending = jobs.map(([owner, slot, side]) => ({ owner, slot, side, blob: getBlob(slot) })); closeModal(); go(`#/room/${body.roomId}`); rerender(); // đóng ngay, không bắt chờ tải ảnh
@@ -230,8 +238,8 @@ forms.checkout = async (f, fd) => {
   openModal('Xác nhận quyết toán', html`<p style="margin-top:0"><b>${p.tenantName}</b> · ${p.roomName}<br>Vào ở ${dmy(p.startDate)} · trả phòng ${dmy(body.date)}</p>
     <dl class="kv"><dt>Giá thuê tháng</dt><dd>${vnd(p.monthRent)}</dd><dt>Giá thuê mỗi ngày (÷30)</dt><dd>${vnd(p.rentPerDay)}</dd><dt>Số ngày thực tế đã ở (từ ${dmy(p.periodStartDate)})</dt><dd><b>${p.days} ngày</b></dd><dt>Tiền phòng thực tế</dt><dd>${vnd(p.actualRent)}</dd>
     <dt>Điện (${num(p.elec.old)} → ${num(p.elec.new)})</dt><dd>${vnd(p.elec.amount)}</dd><dt>Nước (${num(p.water.old)} → ${num(p.water.new)})</dt><dd>${vnd(p.water.amount)}</dd>
-    ${p.extras.map((e) => html`<dt>Chi phí khác: ${e.label || ''}</dt><dd>${vnd(e.amount)}</dd>`)}${(p.carry - (p.billed ? p.monthRent : 0)) > 0 ? html`<dt>Nợ cũ</dt><dd>${vnd(p.carry - (p.billed ? p.monthRent : 0))}</dd>` : ''}${(p.carry - (p.billed ? p.monthRent : 0)) < 0 ? html`<dt>Trừ: đã thu trước (tiền phòng đầu kỳ)</dt><dd>${vnd(p.carry - p.monthRent)}</dd>` : ''}</dl>
-    <div class="calc">Tiền phòng tính theo số ngày thực tế ở (giá thuê ÷ 30 ngày × số ngày). ${p.billed ? 'Khách đã đóng tiền phòng đầu kỳ nên khoản đó được trừ vào, phần dư là số chủ nhà hoàn lại.' : 'Kỳ này chưa lập hóa đơn nên tính tiền phòng theo số ngày ở.'}</div>${dir}
+    ${p.extras.map((e) => html`<dt>Chi phí khác: ${e.label || ''}</dt><dd>${vnd(e.amount)}</dd>`)}${(p.carry - (p.billed ? p.monthRent : 0)) > 0 ? html`<dt>Nợ cũ</dt><dd>${vnd(p.carry - (p.billed ? p.monthRent : 0))}</dd>` : ''}${(p.carry - (p.billed ? p.monthRent : 0)) < 0 ? html`<dt>Trừ: đã thu trước (tiền phòng đầu kỳ)</dt><dd>${vnd(p.carry - p.monthRent)}</dd>` : ''}${p.deposit > 0 ? html`<dt>Trừ: tiền đặt cọc đã nhận</dt><dd>${vnd(-p.deposit)}</dd>` : ''}</dl>
+    ${p.deposit > 0 ? html`<div class="calc">Tiền đặt cọc ${vnd(p.deposit)} được trừ vào các khoản khách phải trả. Phần còn dư là số chủ nhà hoàn lại cho khách; nếu còn thiếu, khách trả thêm.</div>` : ''}<div class="calc">Tiền phòng tính theo số ngày thực tế ở (giá thuê ÷ 30 ngày × số ngày). ${p.billed ? 'Khách đã đóng tiền phòng đầu kỳ nên khoản đó được trừ vào, phần dư là số chủ nhà hoàn lại.' : 'Kỳ này chưa lập hóa đơn nên tính tiền phòng theo số ngày ở.'}</div>${dir}
     <p class="muted small">Kiểm tra kỹ số ngày và chỉ số. Sau khi xác nhận: phòng chuyển sang Trống, lưu hóa đơn quyết toán và lịch sử thuê.</p>
     <div class="err-inline"></div><button class="btn primary block" data-act="checkout-confirm" data-body='${JSON.stringify(body)}'>XÁC NHẬN QUYẾT TOÁN & TRẢ PHÒNG</button>`);
 };
@@ -279,3 +287,46 @@ acts['del-movein-go'] = async (el) => { if (!$('#delok')?.checked) { toast('Hãy
 // ---- Sửa ngày nhận phòng ----
 acts['edit-start'] = (el) => { const r = D().rentals.find((x) => x.id === el.dataset.id); openModal('Sửa ngày nhận phòng', html`<form data-form="start" data-id="${r.id}">${field('Ngày nhận phòng *', html`<input type="date" name="startDate" value="${r.startDate}" max="${todayLocal()}" required>`, 'Ngày thu tiền hằng tháng tính theo ngày này. Chỉ sửa được khi khách mới có hóa đơn đầu tiên; đã có tháng sau thì xóa các hóa đơn tháng sau trước.')}<div class="err-inline"></div><button class="btn primary block" type="submit">LƯU NGÀY NHẬN PHÒNG</button></form>`); };
 forms.start = async (f, fd) => { await save('PUT', `rentals/${f.dataset.id}`, { startDate: fd.get('startDate') }, 'Đã sửa ngày nhận phòng'); closeModal(); rerender(); };
+
+// ---- Xuất hợp đồng (Word / in-PDF) ----
+acts.contract = (el) => {
+  const r = D().rentals.find((x) => x.id === el.dataset.id); const L = S.snap.settings?.landlord; const ow = D().rooms.find((x) => x.kind === 'owner');
+  openModal('Xuất hợp đồng thuê phòng trọ', html`<form data-form="noop" data-rental="${r.id}">
+    ${L && L.fullName ? '' : html`<p class="warn-box">Chưa nhập thông tin Bên A (chủ nhà) nên hợp đồng sẽ để trống phần này. Vào <a href="#/room/${ow ? ow.id : ''}" data-act="close-modal">phòng Chủ Nhà</a> → "Thông tin Bên A" để nhập một lần.</p>`}
+    <p class="muted small" style="margin-top:0">Hợp đồng tự điền từ dữ liệu của phòng, khách thuê, người ở cùng và thông tin Bên A. Kiểm tra các ô dưới đây rồi chọn kiểu xuất.</p>
+    <div class="two">${field('Ngày ký hợp đồng', html`<input type="date" name="signDate" value="${todayLocal()}">`)}${field('Số hợp đồng', html`<input name="contractNo" maxlength="40" value="${r.contractNo || ''}" placeholder="Ví dụ: 01">`)}</div>
+    <div class="radios" role="radiogroup"><b>Thời hạn thuê (áp dụng thống nhất trong hợp đồng)</b>
+      <label><input type="radio" name="termMode" value="from" ${r.termMode !== 'range' ? raw('checked') : ''}>Kể từ ngày ${dmy(r.startDate)}</label>
+      <label><input type="radio" name="termMode" value="range" ${r.termMode === 'range' ? raw('checked') : ''}>Từ ngày ${dmy(r.startDate)} đến ngày <input type="date" name="termTo" min="${r.startDate}" value="${r.termTo || ''}" style="width:auto"></label></div>
+    <div class="two">${field('Số Tiền Đặt Cọc (đ)', html`<input name="deposit" inputmode="numeric" value="${r.deposit || 0}">`)}${field('Phí dịch vụ khác (nếu có)', html`<input name="serviceFee" maxlength="200" value="${r.serviceFee || ''}" placeholder="Ví dụ: Rác 30.000đ/tháng">`)}</div>
+    <div class="radios" role="radiogroup"><b>Hình thức thanh toán tiền thuê</b>${[['month', 'Theo tháng'], ['quarter', 'Theo quý'], ['year', 'Theo năm']].map(([k, l]) => html`<label><input type="radio" name="payCycle" value="${k}" ${(r.payCycle || 'month') === k ? raw('checked') : ''}>${l}</label>`)}</div>
+    <div class="row" style="margin-top:14px"><button type="button" class="btn primary" data-act="contract-docx">${icon('sheet', '1.1em')} Tải file Word (.docx)</button><button type="button" class="btn" data-act="contract-pdf">${icon('photo', '1.1em')} In / Lưu PDF</button></div>
+    <p class="muted small">Muốn có PDF: bấm "In / Lưu PDF" rồi chọn máy in "Lưu dưới dạng PDF" (hoặc mở file Word rồi Lưu thành PDF).</p></form>`, { wide: true });
+};
+acts['close-modal'] = () => closeModal();
+acts.ct01 = async (el) => {
+  const L = S.snap.settings?.landlord || {};
+  if (!L.police && !confirm('Chưa nhập "Công An Quản Lý" ở phòng Chủ Nhà nên mục "Kính gửi" và nơi ký sẽ để trống. Vẫn tải bản khai?')) return;
+  el.disabled = true; const old = el.innerHTML; el.textContent = 'Đang tạo PDF…';
+  try { const r = await downloadCt01(el.dataset.room); toast(r.pages > 1 ? `Đã tải bản khai CT01 (${r.pages} trang)` : 'Đã tải bản khai CT01 - Lưu Trú (PDF)'); }
+  catch (e) { toast(e.message, 'err'); } finally { el.disabled = false; el.innerHTML = old; }
+};
+async function contractSave(el) {
+  const f = el.closest('form'); const fd = new FormData(f); const id = f.dataset.rental;
+  await save('PUT', `rentals/${id}/contract`, { deposit: toInt(fd.get('deposit')) || 0, payCycle: fd.get('payCycle'), termMode: fd.get('termMode'), termTo: fd.get('termTo') || '', contractNo: fd.get('contractNo'), serviceFee: fd.get('serviceFee') }, null);
+  return { id, date: fd.get('signDate') || today() };
+}
+acts['contract-docx'] = async (el) => {
+  el.disabled = true;
+  try { const { id, date } = await contractSave(el); const a = document.createElement('a'); a.href = apiUrl(`contract/${id}?format=docx&date=${date}`); a.download = ''; document.body.append(a); a.click(); a.remove(); toast('Đã tạo file hợp đồng Word (.docx)'); }
+  catch (e) { toast(e.message, 'err'); } finally { el.disabled = false; }
+};
+acts['contract-pdf'] = async (el) => {
+  el.disabled = true;
+  try {
+    const { id, date } = await contractSave(el); const res = await fetch(apiUrl(`contract/${id}?format=html&date=${date}`), { credentials: 'same-origin' }); if (!res.ok) throw new Error('Không tạo được hợp đồng');
+    const fr = document.createElement('iframe'); fr.setAttribute('aria-hidden', 'true'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'; fr.srcdoc = await res.text();
+    fr.onload = () => setTimeout(() => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch { toast('Trình duyệt không mở được hộp thoại in. Hãy dùng "Tải file Word".', 'err'); } }, 400);
+    document.body.append(fr); setTimeout(() => fr.remove(), 300000);
+  } catch (e) { toast(e.message, 'err'); } finally { el.disabled = false; }
+};
