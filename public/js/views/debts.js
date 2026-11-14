@@ -13,10 +13,23 @@ const ym = (s) => `Tháng ${Number(s.slice(5))}/${s.slice(0, 4)}`;
 // Thẻ thông báo nợ – dùng ở Tổng quan (có nút Trả nợ) và trang chủ công khai (chỉ xem)
 export function debtNotices(items, { actions = false } = {}) {
   if (!items?.length) return html``;
-  return html`<h2 class="sec">Nhắc nợ (${items.length})</h2><div class="notices" style="margin-top:0">${items.map((d) => html`<article class="note ${d.kind === 'payable' ? 'red' : 'orange'}"><h3>${String(d.name).toUpperCase()} <span class="badge ${d.kind === 'payable' ? 'red' : 'orange'}">${KL[d.kind || 'receivable']}</span></h3>
+  return html`<h2 class="sec">Nhắc nợ (${items.length})</h2><div class="notices" style="margin-top:0">${items.map((d) => html`<article class="note ${d.kind === 'payable' ? 'red' : 'orange'}${actions ? ' link' : ''}" ${actions ? raw(`data-act="debt-detail" data-id="${d.id}" title="Bấm để xem chi tiết khoản nợ"`) : ''}><h3>${String(d.name).toUpperCase()} <span class="badge ${d.kind === 'payable' ? 'red' : 'orange'}">${KL[d.kind || 'receivable']}</span></h3>
     <dl><dt>Ngày nợ</dt><dd>${dmy(d.date)} <span class="muted small">(${d.days} ngày)</span></dd><dt>Còn nợ</dt><dd><span class="money">${vnd(d.remaining)}</span></dd></dl>
     ${actions ? html`<div class="nact"><button class="btn green sm" data-act="debt-pay" data-id="${d.id}">${icon('check', '1.1em')} ${d.kind === 'payable' ? 'Trả nợ' : 'Thu nợ'}</button></div>` : ''}</article>`)}</div>`;
 }
+// Bấm vào thẻ Nhắc nợ ở Tổng quan → hộp chi tiết khoản nợ (nút Thu nợ/Trả nợ trên thẻ vẫn hoạt động như cũ)
+acts['debt-detail'] = (el) => {
+  const d = D().debts.find((x) => x.id === el.dataset.id); if (!d) return;
+  const k = kindOf(d), pay = k === 'payable', rem = remOf(d); const u = d.unitId ? D().debtUnits.find((x) => x.id === d.unitId) : null;
+  openModal('Chi tiết khoản nợ', html`<div class="row" style="margin-bottom:6px"><b class="sp" style="font-size:1.15rem">${d.name}</b><span class="badge ${pay ? 'red' : 'orange'}">${KL[k]}</span></div>
+    <dl class="kv"><dt>Loại</dt><dd>${KL[k]} ${pay ? '(mình nợ người khác)' : '(người khác nợ mình)'}</dd>${u?.phone ? html`<dt>Số điện thoại</dt><dd><a href="tel:${u.phone}">${u.phone}</a></dd>` : ''}
+      <dt>Ngày nợ</dt><dd>${dmy(d.date)}${rem > 0 ? html` <span class="muted small">(${DAYS(d.date, todayLocal())} ngày)</span>` : ''}</dd>
+      <dt>Số tiền nợ</dt><dd>${vnd(d.amount)}</dd><dt>${pay ? 'Đã trả' : 'Đã thu'}</dt><dd>${vnd(paidOf(d))}</dd><dt>Còn nợ</dt><dd class="big ${rem ? 'owe' : 'okc'}">${vnd(rem)}</dd>
+      ${d.note ? html`<dt>Ghi chú</dt><dd class="pre">${d.note}</dd>` : ''}</dl>
+    <h3 style="margin:14px 0 6px">Lịch sử ${pay ? 'trả' : 'thu'} nợ</h3>
+    ${(d.payments || []).length ? html`<div class="list">${d.payments.map((p) => html`<div class="li"><span class="sp">${dmy(p.date)}${p.note ? html`<br><span class="muted small pre">${p.note}</span>` : ''}</span><b class="okc">${vnd(p.amount)}</b></div>`)}</div>` : html`<div class="muted small">Chưa có lần ${pay ? 'trả' : 'thu'} nào.</div>`}
+    <div class="row" style="margin-top:14px;gap:8px;flex-wrap:wrap">${rem > 0 ? html`<button class="btn green" data-act="debt-pay" data-id="${d.id}">${icon('check', '1.1em')} ${pay ? 'Trả nợ' : 'Thu nợ'}</button>` : ''}<button class="btn" data-act="debt-edit" data-id="${d.id}">${icon('edit', '1em')} Sửa</button></div>`);
+};
 export function openDebtItems(today) {
   return D().debts.filter((d) => remOf(d) > 0).sort((a, b) => a.date.localeCompare(b.date)).map((d) => ({ id: d.id, kind: kindOf(d), name: d.name, date: d.date, remaining: remOf(d), days: DAYS(d.date, today) }));
 }

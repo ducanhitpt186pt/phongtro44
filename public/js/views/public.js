@@ -44,6 +44,7 @@ export async function publicView(app) {
   app.innerHTML = html`<header class="hero"><div class="hero-bar"><div id="a2hschip">${a2hsChip()}</div><div class="hero-right"><a class="bell zero" id="pubbell" href="#pubnotices" data-act="pub-bell" title="Thông báo cần xử lý">${icon('bell', '1.25em')}<span class="bn">0</span></a><a class="login-top" href="#/login"><span class="btn sm">${icon('login', '1.1em')} Đăng nhập</span></a></div></div><div class="hero-in"><h1>NHÀ TRỌ 44 LÊ VĂN PHẤN<span class="credit">ducanhitpt186</span></h1><div id="ubar">${usageBar(null)}</div><div id="alerts"></div><div id="pubdate"></div></div></header>
     <main class="wrap narrow"><div id="pubbanner"></div><div id="pubbody"><p class="boot">Đang tải thông báo…</p></div>
     <div id="pubcal" style="margin-top:20px"></div>
+    <div id="pubusage"></div>
     <div id="a2hs">${a2hsButton()}</div>
     <footer class="page-foot"><div id="footstrip"></div><div class="upd" id="upd"></div><div class="upd">Phiên bản giao diện: ${APP_VERSION}</div></footer></main>`.s;
   await loadPublic();
@@ -53,7 +54,7 @@ const readCache = () => { try { return JSON.parse(localStorage.getItem(CACHE)); 
 function paint(res, note = '') {
   const body = $('#pubbody'); if (!body) return;
   S.pub = res; const s = res.summary, items = res.items;
-  $('#pubbanner').innerHTML = eventBanner(res.events, res.today).s; $('#pubcal').innerHTML = calendarPanel().s;
+  $('#pubbanner').innerHTML = eventBanner(res.events, res.today).s; $('#pubcal').innerHTML = calendarPanel().s; $('#pubusage').innerHTML = usagePanel(res.usage).s || '';
   $('#pubdate').innerHTML = dateBlock(res.today).s; refreshStatus(res.system);
   const bn = $('#pubbell'); if (bn) { bn.querySelector('.bn').textContent = String(items.length); bn.classList.toggle('zero', !items.length); }
   body.innerHTML = html`<div class="sum-title sumrow" id="pubnotices"><span>TỔNG QUAN CẦN XỬ LÝ</span>${items.length ? '' : html`<span class="okpill">${icon('check', '1.1em')} Không có việc cần xử lý</span>`}</div>
@@ -66,7 +67,6 @@ function paint(res, note = '') {
     ${items.length ? html`<div class="notices">${items.map((i) => noticeCard(i, { pub: true }))}</div>` : ''}
     ${debtNotices(res.debts?.items.map((d) => ({ ...d })) || [], { actions: false })}
     ${eventsAheadList(res.events, res.today)}
-    ${usagePanel(res.usage)}
     ${readingsBanner(res.readings)}
     <div class="sum-title" style="margin-top:18px">DANH SÁCH PHÒNG</div>
     <div class="notices" style="margin-top:0">${(res.roster || []).map(rosterCard)}</div>`.s;
