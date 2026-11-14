@@ -1,3 +1,8 @@
+# Phiên bản 2026-11-27-a
+- Thêm nút **Tải Ảnh Hồ Sơ Khách Theo Phòng** (trong trang phòng và trong Hồ sơ khách): ảnh JPG khổ A4 dọc gồm ngày sinh, giới tính, điện thoại, số CCCD, ngày cấp / nơi cấp, ngày vào ở, địa chỉ thường trú và ảnh căn cước 2 mặt của mọi người trong phòng. Mỗi trang tối đa 2 người; phòng đông hơn thì tải thêm trang.
+- Thẻ phòng: khi đã thanh toán đủ kỳ hiện tại thì ẩn "Tổng cần thu" và "Đã thanh toán"; ghi điện nước kỳ mới thì hiện lại.
+- Tổng quan: bỏ ô "Tổng tiền cần thu (kỳ hiện hành)"; "Tổng số phòng" kèm dòng "Phòng đang khóa: N".
+
 # Phiên bản 2026-11-26-b
 - Trang **Sao lưu**: thêm nút **Tải file Excel (để xem, dạng bảng)** – file .xlsx nhiều sheet (Phòng, Hóa đơn, Thanh toán, Khách thuê, Người ở cùng, Lượt thuê, Đồng hồ tổng, Sự kiện). Chỉ để xem; khôi phục vẫn dùng database.json.
 
