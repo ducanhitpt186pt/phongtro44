@@ -1,3 +1,10 @@
+# Phiên bản 2026-11-26-b
+- Trang **Sao lưu**: thêm nút **Tải file Excel (để xem, dạng bảng)** – file .xlsx nhiều sheet (Phòng, Hóa đơn, Thanh toán, Khách thuê, Người ở cùng, Lượt thuê, Đồng hồ tổng, Sự kiện). Chỉ để xem; khôi phục vẫn dùng database.json.
+
+# Phiên bản 2026-11-26-a
+- Trang **Sao lưu**: thêm thẻ **Kiểm tra tất cả kết nối** ở cuối trang (cơ sở dữ liệu, kho ảnh, Google Sheet) kèm 1 câu kết luận.
+- Sửa mô tả sao lưu: bản tự động nằm trong Upstash, không phải kho GitHub.
+
 # Cập nhật phiên bản mới – KHÔNG mất dữ liệu (hướng dẫn từng bước)
 
 ## Điều quan trọng cần biết trước
