@@ -4,6 +4,7 @@ import { acts, forms, live, rerender, go } from '../ui.js';
 import { idBox, resetImages, getBlob, uploadImage } from '../images.js';
 import { personFields, collectPerson, occFields, collectOccupant, contactRow } from './room.js';
 import { icon } from '../icons.js';
+import { downloadRoomProfile } from '../profile-img.js';
 
 function statusOf(t) {
   const rs = D().rentals.filter((r) => r.tenantId === t.id); const act = rs.find((r) => r.status === 'active');
@@ -30,7 +31,7 @@ export function tenantView(id) {
   const pays = D().payments.filter((p) => chainIds.has(p.chainId)).slice().reverse();
   const img = (side, label) => idCard(t, 'tenant', side, label);
   return html`<a class="back" href="#/tenants">← Khách thuê</a>
-    <div class="page-head"><h2>${t.fullName}</h2>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`}${t.purgedAt ? html`<span class="badge">Hồ sơ đã xóa ${dmy(t.purgedAt)}</span>` : html`<button class="btn sm" data-act="edit-tenant" data-id="${id}">Sửa thông tin</button>${!s.act ? html`<button class="btn sm danger" data-act="del-tenant" data-id="${id}">${icon('trash', '1em')} Xóa hồ sơ</button>` : ''}`}</div>
+    <div class="page-head"><h2>${t.fullName}</h2>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`}${s.act && !t.purgedAt ? html`<button class="btn sm primary" data-act="profile-img" data-room="${s.act.roomId}">${icon('photo', '1.1em')} Tải Ảnh Hồ Sơ Khách Theo Phòng</button>` : ''}${t.purgedAt ? html`<span class="badge">Hồ sơ đã xóa ${dmy(t.purgedAt)}</span>` : html`<button class="btn sm" data-act="edit-tenant" data-id="${id}">Sửa thông tin</button>${!s.act ? html`<button class="btn sm danger" data-act="del-tenant" data-id="${id}">${icon('trash', '1em')} Xóa hồ sơ</button>` : ''}`}</div>
     <section class="card">${contactRow(t, occ)}<dl class="kv"><dt>Ngày sinh</dt><dd>${dmy(t.dob)}</dd><dt>Giới tính</dt><dd>${GENDER[t.gender]}</dd><dt>Điện thoại</dt><dd>${t.phone}</dd><dt>Số CCCD</dt><dd>${t.cccd}</dd><dt>Ngày cấp / Nơi cấp</dt><dd>${dmy(t.cccdIssueDate)} · ${t.cccdIssuePlace}</dd><dt>Địa chỉ thường trú</dt><dd>${t.address}</dd><dt>Công nợ hiện tại</dt><dd class="${s.debt ? 'owe' : 'okc'}">${vnd(s.debt)}</dd></dl></section>
     <h2 class="sec">Ảnh CCCD</h2><div class="idgrid">${img('front', 'mặt trước')}${img('back', 'mặt sau')}</div>
     <div class="row" style="margin:22px 0 10px"><h2 class="sec" style="margin:0" >Người ở cùng (${occ.length})</h2><span class="sp"></span>${s.act && !t.purgedAt ? html`<button class="btn red sm" data-act="add-occupant" data-tid="${id}">${raw(icon('plus', '1.1em'))} Thêm người ở cùng</button>` : ''}</div>
@@ -67,4 +68,10 @@ acts['del-occupant'] = async (el) => { if (!confirm('Xóa người ở cùng nà
 acts['del-tenant'] = async (el) => {
   const t = tenant(el.dataset.id); if (!confirm(`Xóa hồ sơ khách "${t.fullName}"?\n\nSẽ xóa họ tên, số điện thoại, CCCD, địa chỉ và ảnh. Số tiền trên các hóa đơn cũ vẫn được giữ để báo cáo không bị sai. Không hoàn tác được.`)) return;
   const j = await save('DELETE', `tenants/${el.dataset.id}`, undefined, 'Đã xóa hồ sơ khách'); go('#/tenants'); rerender();
+};
+
+acts['profile-img'] = async (el) => {
+  el.disabled = true; const old = el.innerHTML; el.textContent = 'Đang tạo ảnh…';
+  try { const n = await downloadRoomProfile(el.dataset.room); toast(n > 1 ? `Đã tải ${n} ảnh A4 (phòng có hơn 2 người nên chia nhiều trang)` : 'Đã tải ảnh hồ sơ khách (A4 dọc)'); }
+  catch (e) { toast(e.message, 'err'); } finally { el.disabled = false; el.innerHTML = old; }
 };

@@ -12,12 +12,11 @@ export function roomMoney(roomId) {
 }
 export function dashboardView() {
   const rooms = D().rooms.filter((r) => !r.kind), rem = DV().reminders; const ownerRoom = D().rooms.find((r) => r.kind === 'owner');
-  let need = 0, debt = 0, toCollect = 0;
+  let debt = 0, toCollect = 0;
   for (const c of new Set(D().rentals.map((r) => r.chainId))) {
     const inv = latestInvOf(c); const d = invD(inv.id); const rent = D().rentals.filter((r) => r.chainId === c).slice(-1)[0]; debt += d.remaining;
     const counted = rent.status !== 'active' || !!inv.elec; // chỉ tính khi kỳ đã nhập điện nước
     if (!counted) { debt -= d.remaining; continue; }
-    if (rent.status === 'active') { need += Math.max(inv.total, 0); }
     if (d.remaining > 0) toCollect++;
   }
   const stat = (n, l, cls = '') => html`<div class="stat ${cls}"><b>${n}</b><span>${l}</span></div>`;
@@ -26,7 +25,7 @@ export function dashboardView() {
     ${rem.length ? html`<div class="notices" style="margin-top:0">${rem.map((i) => noticeCard({ ...i, period: i.periodLabel }, { link: true, actions: true, tenantName: i.tenantId ? tenant(i.tenantId)?.fullName : '' }))}</div>` : ''}
     ${eventsAheadList(S.snap.db.events, today())}
     <h2 class="sec">Tổng quan</h2>
-    <div class="cards7">${stat(rooms.length, 'Tổng số phòng')}${stat(toCollect, 'Phòng cần thu tiền', 'redtxt')}${stat(vnd(need), 'Tổng tiền cần thu (kỳ hiện hành)', 'redtxt')}${stat(vnd(debt), 'Tổng công nợ', 'debt')}</div>
+    <div class="cards7"><div class="stat"><b>${rooms.length}</b><span>Tổng số phòng</span><span class="sub">Phòng đang khóa: <b class="inl">${rooms.filter((r) => r.status === 'notready').length}</b></span></div>${stat(toCollect, 'Phòng cần thu tiền', 'redtxt')}${stat(vnd(debt), 'Tổng công nợ', 'debt')}</div>
     ${usagePanel(DV().usage)}
     ${readingsBanner(DV().readings)}
     <div class="section-head"><h2 class="sec">Các phòng</h2><span class="sp"></span><button class="btn primary sm" data-act="add-room">${icon('plus', '1.1em')} Thêm phòng</button></div>
@@ -40,7 +39,7 @@ function roomCard(r) {
   return html`<article class="card click room-card st-${tone}" data-act="open-room" data-id="${r.id}">${r.status === 'notready' ? html`<span class="lockmark">${icon('lock', '100%')}</span>` : ''}
     <div class="rhead"><span class="rbadge ${tone}">${icon(ROOM_ICON[r.status], '1.6em')}</span><div class="sp"><h3>${r.name}</h3><span class="stx ${tone}">${ROOM_STATUS[r.status]}${m ? html` <span class="room-sub">· Vào ${dmy(m.r.startDate)}</span>` : ''}</span></div>${m ? html`<button class="btn red sm rbtn" data-act="readings" data-id="${m.r.id}">${icon('bolt', '1.1em')} Tính tiền</button>` : ''}</div>
     ${m ? html`<dl class="kv"><dt>Khách thuê</dt><dd class="big">${t?.fullName}</dd><dt>Số người</dt><dd>${people}</dd>
-      ${counted ? html`<dt>Tổng cần thu</dt><dd class="big money">${vnd(m.inv.total)}</dd><dt>Đã thanh toán</dt><dd>${vnd(m.d.paid)}</dd><dt>Còn nợ</dt><dd class="${m.d.remaining ? 'owe' : 'okc'}">${vnd(m.d.remaining)}</dd>`
+      ${counted ? html`${m.d.remaining > 0 ? html`<dt>Tổng cần thu</dt><dd class="big money">${vnd(m.inv.total)}</dd><dt>Đã thanh toán</dt><dd>${vnd(m.d.paid)}</dd>` : ''}<dt>Còn nợ</dt><dd class="${m.d.remaining ? 'owe' : 'okc'}">${vnd(m.d.remaining)}</dd>`
         : m.d.remaining > 0 ? html`<dt>Tiền phòng đầu kỳ chưa nhận</dt><dd class="big money">${vnd(m.d.remaining)}</dd>` : html`<dt>Tiền phòng đầu kỳ đã nhận</dt><dd class="big money okc">${vnd(m.d.paid)}</dd>`}</dl>
       ${months.length ? html`<div class="mchips">${months.map((x) => html`<span class="mchip ${x.status}">Chưa thanh toán T${Number(x.ym.slice(5))}/${x.ym.slice(0, 4)}</span>`)}</div>` : ''}`
       : (r.note ? html`<div class="rnote ${tone}">${r.note}</div>` : '')}
