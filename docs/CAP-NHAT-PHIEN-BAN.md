@@ -1,3 +1,7 @@
+# Phiên bản 2026-11-30-c
+- **Nhắc nợ (Tổng quan)**: bấm vào một thẻ nhắc nợ → hiện hộp **Chi tiết khoản nợ** (loại Cần Thu/Cần Trả, số điện thoại đơn vị nợ nếu có, ngày nợ, số tiền nợ, đã thu/đã trả, còn nợ, ghi chú, lịch sử các lần thu/trả) kèm nút **Thu nợ / Trả nợ** và **Sửa**. Nút **Thu nợ** trên thẻ vẫn giữ nguyên như cũ.
+- Trang chủ (trang ngoài, không cần đăng nhập): khối **"Điện – nước các phòng so với tháng trước"** chuyển xuống **ngay sau phần Lịch**. Trang Tổng quan (sau khi đăng nhập) vẫn giữ khối này dưới lịch như cũ.
+
 # Phiên bản 2026-11-30-b
 - **Nhắc Nợ**: hai ô lớn **Cần Thu** (xanh) / **Cần Trả** (đỏ) hiện "Cần Thu (n khoản)" và số tiền; bấm ô nào chỉ hiện danh sách và thống kê của loại đó. Khoản đã trả xong không hiện ở danh sách nữa. Ô Ghi chú là khung nhiều dòng.
 - Nút **Bản Khai CT01 - Lưu Trú** màu cam. Trang phòng có thêm nút **Sửa thông tin người đăng ký** và **Sửa** cho từng người ở cùng.
