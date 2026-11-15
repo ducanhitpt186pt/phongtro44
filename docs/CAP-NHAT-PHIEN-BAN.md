@@ -1,3 +1,22 @@
+# Phiên bản 2026-11-30-f
+- **Số thông báo thống nhất ở mọi nơi**: chuông trong app, chuông trang ngoài (chưa đăng nhập), số trên biểu tượng app và thông báo mỗi sáng dùng **một cách đếm duy nhất** do máy chủ tính (lib/todo.js). Số = việc của các phòng (chưa thu tiền, cần ghi điện nước, cần hoàn tiền) + cảnh báo điện nước + khoản Nhắc Nợ còn nợ + khách còn nợ cũ + số điện thoại cần cập nhật. **Làm xong hết việc → tất cả về 0**, biểu tượng app không còn số.
+- Thẻ **"Sắp đến ngày thu tiền"** chỉ là nhắc trước: vẫn hiện (mục riêng) nhưng **không tính vào số thông báo**.
+- **Cảnh báo nghi rò rỉ điện/nước** đưa lên đầu trang Tổng quan, có nút **Đã kiểm tra** để hết thông báo (tháng sau vẫn tăng bất thường sẽ báo lại).
+- Đầu trang Tổng quan và trang ngoài có dòng tổng **"N việc cần làm = …"** ghi rõ từng loại; trang ngoài ghi thêm số việc riêng cần đăng nhập mới xem. Hết việc hiện **"Đã xong hết việc"**.
+- Kiểm thử: tests/e2e32.cjs (đi từ 0 → 4 việc → làm xong từng việc → 0, so khớp 5 nơi ở mỗi bước).
+
+# Phiên bản 2026-11-30-e
+- **Thay đổi giá phòng**: hiện sẵn **Chỉ số điện ban đầu** và **Chỉ số nước ban đầu** của khách để sửa nếu nhập sai lúc vào ở (chỉ sửa được khi phòng chưa ghi điện nước lần nào; đã ghi rồi thì sửa ở hóa đơn mới nhất). Chỉ sửa chỉ số mà không đổi giá thì không tạo dòng lịch sử giá.
+- **Nút "Tải lại dữ liệu"** nằm cố định ở mép phải màn hình (kéo trang đến đâu cũng thấy): bấm để lấy dữ liệu mới nhất khi máy khác vừa nhập liệu. Mở lại ứng dụng sau khi chuyển sang app khác cũng tự tải lại (trừ khi đang mở hộp nhập liệu).
+- **Tên ngân hàng dài** không còn tràn trang: tự xuống dòng trên hóa đơn và trang Chủ Nhà; trên ảnh hóa đơn JPG chữ tự thu nhỏ.
+- **Báo Cáo Tiền Trọ** chi tiết: mỗi phòng mỗi tháng một dòng, tách **Thu khi vào ở (tháng đầu)**, **Tiền phòng**, **Điện**, **Nước**, **Khác**, **Tổng**, **Đã thu**, **Còn thiếu**, trạng thái **Đã thu đủ / Thu một phần / Chưa thu / Hoàn lại khách**. Xem **Theo tháng** hoặc **Theo phòng** (bấm để mở/thu gọn), bấm dòng để mở hóa đơn. File CSV xuất đủ các cột.
+- **Số thông báo trên biểu tượng ứng dụng** (màn hình chính): cập nhật mỗi khi mở ứng dụng.
+- **Thông báo mỗi sáng (thông báo đẩy)**: khoảng **7 giờ sáng** (Vercel Cron, file vercel.json → `/api/cron/push`), nếu còn việc cần xử lý thì máy chủ gửi 1 tin lên màn hình khóa và đổi **số trên biểu tượng app** dù app đang đóng; hết việc thì gửi 1 tin "Không còn việc" để xóa số rồi thôi. Bật ở tab **Sao lưu → Thông báo mỗi sáng → Bật thông báo trên máy này** (iPhone/iPad: iOS 16.4+, mở bằng biểu tượng trên màn hình chính). Có nút **Gửi thử ngay** và **Tắt trên máy này**. Khóa VAPID tự tạo, lưu trong dữ liệu (không phải nhập biến môi trường). Tùy chọn: biến `CRON_SECRET` để chỉ Vercel Cron gọi được. Chỉ chạy trên Vercel (Render không có lịch tự chạy). Mã: lib/push.js, public/sw.js, kiểm thử tests/push-test.mjs (khớp ví dụ chuẩn RFC 8291).
+- **Số điện thoại lạ** (6 chữ số giống nhau liên tiếp như 111111, 222222…) của khách đang ở → hiện mục **Cần cập nhật số điện thoại** ở Tổng quan, có nút **Cập nhật số** và **Số đúng** (bấm Số đúng thì không báo nữa).
+- **Tiền Nợ Cũ** trong thông tin khách thuê (khi Thêm khách và Sửa thông tin): số tiền (mặc định 0), lý do nợ, ngày nợ (mặc định ngày nhập, đổi được). Khách đang ở có nợ cũ > 0 hiện ở Tổng quan (nút **Sửa / đã thu**), trong trang phòng, hồ sơ khách và báo cáo. Ghi riêng, không tự cộng vào hóa đơn.
+- **Khôi phục từ file JSON**: ảnh CCCD còn trên máy chủ **tự được nối lại** đúng người. Thêm nút **Tìm lại ảnh còn trên máy chủ**.
+- **BACKUP CĂN CƯỚC**: tải ảnh CCCD của khách đang ở thành 1 file .zip (mỗi phòng một thư mục, có thể tải riêng từng phòng); **Nạp lại ảnh CCCD từ file .zip** (gắn đúng người theo mã, hoặc theo số CCCD nếu đã nhập lại khách).
+
 # Phiên bản 2026-11-30-d
 - **Nhắc nợ ở trang chủ (chưa đăng nhập)**: bấm vào thẻ nhắc nợ → hộp "Đăng nhập để xem khoản nợ" → bấm **Đăng nhập**, nhập mật khẩu → tự chuyển vào Tổng quan và **mở luôn chi tiết đúng khoản nợ đó**. Trang chủ vẫn chỉ hiện tên + số còn nợ (không lộ ghi chú/SĐT).
 

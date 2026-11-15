@@ -5,6 +5,7 @@ import { idBox, resetImages, getBlob, uploadImage } from '../images.js';
 import { personFields, collectPerson, occFields, collectOccupant, contactRow } from './room.js';
 import { icon } from '../icons.js';
 import { downloadRoomProfile } from '../profile-img.js';
+import { oldDebtFields, collectOldDebt, oldDebtLine } from './checks.js';
 
 function statusOf(t) {
   const rs = D().rentals.filter((r) => r.tenantId === t.id); const act = rs.find((r) => r.status === 'active');
@@ -32,7 +33,7 @@ export function tenantView(id) {
   const img = (side, label) => idCard(t, 'tenant', side, label);
   return html`<a class="back" href="#/tenants">← Khách thuê</a>
     <div class="page-head"><h2>${t.fullName}</h2>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`}${s.act && !t.purgedAt ? html`<button class="btn sm primary" data-act="profile-img" data-room="${s.act.roomId}">${icon('photo', '1.1em')} Tải Ảnh Hồ Sơ Khách Theo Phòng</button>` : ''}${t.purgedAt ? html`<span class="badge">Hồ sơ đã xóa ${dmy(t.purgedAt)}</span>` : html`<button class="btn sm" data-act="edit-tenant" data-id="${id}">Sửa thông tin</button>${!s.act ? html`<button class="btn sm danger" data-act="del-tenant" data-id="${id}">${icon('trash', '1em')} Xóa hồ sơ</button>` : ''}`}</div>
-    <section class="card">${contactRow(t, occ)}<dl class="kv"><dt>Ngày sinh</dt><dd>${dmy(t.dob)}</dd><dt>Giới tính</dt><dd>${GENDER[t.gender]}</dd><dt>Điện thoại</dt><dd>${t.phone}</dd><dt>Số CCCD</dt><dd>${t.cccd}</dd><dt>Ngày cấp / Nơi cấp</dt><dd>${dmy(t.cccdIssueDate)} · ${t.cccdIssuePlace}</dd><dt>Địa chỉ thường trú</dt><dd>${t.address}</dd><dt>Quê quán</dt><dd>${t.hometown || '—'}</dd><dt>Công nợ hiện tại</dt><dd class="${s.debt ? 'owe' : 'okc'}">${vnd(s.debt)}</dd></dl></section>
+    <section class="card">${contactRow(t, occ)}<dl class="kv"><dt>Ngày sinh</dt><dd>${dmy(t.dob)}</dd><dt>Giới tính</dt><dd>${GENDER[t.gender]}</dd><dt>Điện thoại</dt><dd>${t.phone}</dd><dt>Số CCCD</dt><dd>${t.cccd}</dd><dt>Ngày cấp / Nơi cấp</dt><dd>${dmy(t.cccdIssueDate)} · ${t.cccdIssuePlace}</dd><dt>Địa chỉ thường trú</dt><dd>${t.address}</dd><dt>Quê quán</dt><dd>${t.hometown || '—'}</dd><dt>Công nợ hiện tại</dt><dd class="${s.debt ? 'owe' : 'okc'}">${vnd(s.debt)}</dd>${oldDebtLine(t)}</dl></section>
     <h2 class="sec">Ảnh CCCD</h2><div class="idgrid">${img('front', 'mặt trước')}${img('back', 'mặt sau')}</div>
     <div class="row" style="margin:22px 0 10px"><h2 class="sec" style="margin:0" >Người ở cùng (${occ.length})</h2><span class="sp"></span>${s.act && !t.purgedAt ? html`<button class="btn amber sm" data-act="ct01" data-room="${s.act.roomId}">${raw(icon('sheet', '1.1em'))} Bản Khai CT01 - Lưu Trú</button><button class="btn red sm" data-act="add-occupant" data-tid="${id}">${raw(icon('plus', '1.1em'))} Thêm người ở cùng</button>` : ''}</div>
     <div class="list">${occ.length ? occ.map((o) => html`<section class="card"><div class="row"><div class="sp"><b>${o.fullName}</b> · ${dmy(o.dob)} · ${GENDER[o.gender] || ''}<br><span class="muted small">${[o.phone, o.noId ? 'Chưa có CCCD (trẻ em)' : `CCCD ${o.cccd}`, o.address, o.hometown ? `Quê quán: ${o.hometown}` : '', o.cccdIssueDate ? `Cấp ${dmy(o.cccdIssueDate)}${o.cccdIssuePlace ? ` · ${o.cccdIssuePlace}` : ''}` : '', o.stayFrom ? (o.stayMode === 'range' && o.stayTo ? `Ở từ ${dmy(o.stayFrom)} đến ${dmy(o.stayTo)}` : `Ở từ ${dmy(o.stayFrom)}`) : '', o.note].filter(Boolean).join(' · ')}</span></div>
@@ -55,9 +56,9 @@ acts['id-delete'] = async (el) => { if (!confirm('Xóa ảnh CCCD này khỏi kh
 
 acts['edit-tenant'] = (el) => {
   const t = tenant(el.dataset.id); const r = D().rentals.filter((x) => x.tenantId === t.id).slice(-1)[0];
-  openModal('Sửa thông tin khách', html`<form data-form="tenant-edit" data-id="${t.id}" data-rental="${r?.id || ''}"><fieldset><legend>Khách thuê</legend>${personFields(t)}</fieldset><div class="err-inline"></div><button class="btn primary block" type="submit">LƯU</button></form>`, { wide: true });
+  openModal('Sửa thông tin khách', html`<form data-form="tenant-edit" data-id="${t.id}" data-rental="${r?.id || ''}"><fieldset><legend>Khách thuê</legend>${personFields(t)}</fieldset>${oldDebtFields(t.oldDebt)}<div class="err-inline"></div><button class="btn primary block" type="submit">LƯU</button></form>`, { wide: true });
 };
-forms['tenant-edit'] = async (f, fd) => { await save('PUT', `tenants/${f.dataset.id}`, { tenant: collectPerson(fd) }, 'Đã lưu'); closeModal(); rerender(); };
+forms['tenant-edit'] = async (f, fd) => { await save('PUT', `tenants/${f.dataset.id}`, { tenant: collectPerson(fd), oldDebt: collectOldDebt(fd) }, 'Đã lưu'); closeModal(); rerender(); };
 acts['edit-occupant'] = (el) => {
   const o = D().occupants.find((x) => x.id === el.dataset.id);
   openModal('Sửa người ở cùng', html`<form data-form="occupant-edit" data-id="${o.id}">${occFields(o, '')}<div class="err-inline"></div><button class="btn primary block" type="submit">LƯU</button></form>`);

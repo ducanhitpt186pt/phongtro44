@@ -2,6 +2,8 @@ import { html, raw, vnd, dmy, field, toast, download, $, monthLabel, openModal }
 import { api, apiUrl, D, S, save, today } from '../api.js';
 import { icon } from '../icons.js';
 import { GAS } from '../gas-code.js';
+import { cccdCard } from '../cccd-backup.js';
+import { pushCard } from '../extras.js';
 
 import { acts, forms, changes, rerender } from '../ui.js';
 
@@ -15,38 +17,61 @@ export function reportsView() {
     <div id="rep"><p class="boot">Đang tính…</p></div>`;
   v.after = loadReport; return v;
 }
+let repView = 'month';
+const ST = { paid: 'Đã thu đủ', partial: 'Thu một phần', unpaid: 'Chưa thu', refund: 'Hoàn lại khách' };
+const money0 = (v) => (v ? vnd(v) : '—');
+const detailRow = (d, by) => html`<tr class="click" data-act="open-invoice" data-id="${d.invoiceId}">${by === 'month' ? html`<td data-l="Phòng"><b>${d.room}</b></td>` : html`<td data-l="Tháng"><b>${monthLabel(d.ym)}</b></td>`}<td data-l="Khách">${d.tenant}<br><span class="kind-pill ${d.kind}">${d.kindLabel}</span> <span class="muted small">hạn ${dmy(d.dueDate)}</span></td>
+  <td data-l="Thu khi vào ở" class="r">${money0(d.movein)}</td><td data-l="Tiền phòng" class="r">${money0(d.rent)}</td><td data-l="Tiền điện" class="r">${money0(d.elec)}</td><td data-l="Tiền nước" class="r">${money0(d.water)}</td><td data-l="Khác" class="r">${money0(d.other)}</td>
+  <td data-l="Tổng tháng" class="r"><b>${d.refund ? html`<span class="muted">Hoàn ${vnd(d.refund)}</span>` : vnd(d.total)}</b></td><td data-l="Đã thu" class="r okc">${money0(d.paid)}</td><td data-l="Còn thiếu" class="r ${d.outstanding ? 'owe' : ''}">${money0(d.outstanding)}</td><td data-l="Trạng thái"><span class="st-pill ${d.status}">${ST[d.status]}</span></td></tr>`;
+const head = (by) => html`<thead><tr><th>${by === 'month' ? 'Phòng' : 'Tháng'}</th><th>Khách / loại tiền</th><th class="r">Thu khi vào ở</th><th class="r">Tiền phòng</th><th class="r">Điện</th><th class="r">Nước</th><th class="r">Khác</th><th class="r">Tổng</th><th class="r">Đã thu</th><th class="r">Còn thiếu</th><th>Trạng thái</th></tr></thead>`;
+const groupSum = (g) => html`<span class="rg-sum">${g.movein ? html`<span>Thu khi vào: <b>${vnd(g.movein)}</b></span>` : ''}<span>Tiền phòng: <b>${vnd(g.rent)}</b></span><span>Điện: <b>${vnd(g.elec)}</b></span><span>Nước: <b>${vnd(g.water)}</b></span><span>Phải thu: <b>${vnd(g.billed)}</b></span><span>Đã thu: <b class="okc">${vnd(g.paid)}</b></span><span>Còn thiếu: <b class="${g.outstanding ? 'owe' : 'okc'}">${vnd(g.outstanding)}</b></span></span>`;
 async function loadReport() {
   const box = $('#rep'); if (!box) return;
   try {
     const r = await api('GET', `reports?from=${range.from}&to=${range.to}`); last = r;
     const h = hidden(); const vm = r.months.filter((m) => !h.has(`m:${m.ym}`)); const vr = r.rooms.filter((m) => !h.has(`r:${m.room}`)); const nHidden = r.months.length - vm.length + r.rooms.length - vr.length;
-    const t = vm.reduce((a, m) => ({ rent: a.rent + m.rent, elec: a.elec + m.elec, water: a.water + m.water, extras: a.extras + m.extras + m.adjust, billed: a.billed + m.billed, collected: a.collected + m.collected }), { rent: 0, elec: 0, water: 0, extras: 0, billed: 0, collected: 0 });
-    box.innerHTML = html`${nHidden ? html`<div class="warn-box">Đang ẩn <b>${nHidden}</b> dòng khỏi báo cáo này (chỉ ẩn trên màn hình, sổ sách không thay đổi). <button class="btn sm" data-act="show-rows">Hiện lại tất cả</button></div>` : ''}<div class="cards7"><div class="stat"><b>${vnd(t.rent)}</b><span>Tổng tiền thuê</span></div><div class="stat"><b>${vnd(t.elec)}</b><span>Tổng tiền điện</span></div><div class="stat"><b>${vnd(t.water)}</b><span>Tổng tiền nước</span></div><div class="stat"><b>${vnd(t.billed)}</b><span>Tổng tiền phải thu (không gồm nợ cũ chuyển kỳ)</span></div><div class="stat"><b>${vnd(t.collected)}</b><span>Tổng tiền đã thu</span></div><div class="stat debt"><b>${vnd(r.debtNow)}</b><span>Tổng công nợ hiện tại</span></div></div>
-    <h2 class="sec">Theo tháng</h2><table class="tbl stack"><thead><tr><th>Tháng</th><th class="r">Tiền phòng</th><th class="r">Điện</th><th class="r">Nước</th><th class="r">Phải thu</th><th class="r">Đã thu</th><th></th></tr></thead><tbody>${vm.map((m) => html`<tr><td data-l="Tháng">${monthLabel(m.ym)}</td><td data-l="Tiền phòng" class="r">${vnd(m.rent)}</td><td data-l="Điện" class="r">${vnd(m.elec)}</td><td data-l="Nước" class="r">${vnd(m.water)}</td><td data-l="Phải thu" class="r">${vnd(m.billed)}</td><td data-l="Đã thu" class="r">${vnd(m.collected)}</td><td class="noprint"><button class="btn sm danger" data-act="hide-row" data-key="m:${m.ym}" title="Xóa dòng này khỏi báo cáo">${icon('trash', '1em')} Xóa dòng</button></td></tr>`)}</tbody></table>
-    <h2 class="sec">Theo phòng</h2><table class="tbl stack"><thead><tr><th>Phòng</th><th class="r">Phải thu</th><th class="r">Đã thu</th><th></th></tr></thead><tbody>${vr.map((m) => html`<tr><td data-l="Phòng">${m.room}</td><td data-l="Phải thu" class="r">${vnd(m.billed)}</td><td data-l="Đã thu" class="r">${vnd(m.collected)}</td><td class="noprint"><button class="btn sm danger" data-act="hide-row" data-key="r:${m.room}" title="Xóa dòng này khỏi báo cáo">${icon('trash', '1em')} Xóa dòng</button></td></tr>`)}</tbody></table>
-    <p class="muted small">Báo cáo theo ngày đến hạn của hóa đơn; "Đã thu" theo ngày thực tế thanh toán. Không chứa ảnh/thông tin CCCD.</p>
+    const det = r.detail.filter((d) => !h.has(`m:${d.ym}`) && !h.has(`r:${d.room}`));
+    const t = det.reduce((a, d) => { for (const k of ['movein', 'rent', 'elec', 'water', 'other', 'paid', 'outstanding', 'refund']) a[k] += d[k]; a.billed += d.total; return a; }, { movein: 0, rent: 0, elec: 0, water: 0, other: 0, billed: 0, paid: 0, outstanding: 0, refund: 0 });
+    const collected = vm.reduce((s, m) => s + m.collected, 0);
+    const groups = repView === 'month' ? vm.map((m) => ({ key: `m:${m.ym}`, title: monthLabel(m.ym), sum: m, rows: det.filter((d) => d.ym === m.ym) })) : vr.map((m) => ({ key: `r:${m.room}`, title: m.room, sum: m, rows: det.filter((d) => d.room === m.room) }));
+    const latest = groups.length - 1;
+    box.innerHTML = html`${nHidden ? html`<div class="warn-box">Đang ẩn <b>${nHidden}</b> dòng khỏi báo cáo này (chỉ ẩn trên màn hình, sổ sách không thay đổi). <button class="btn sm" data-act="show-rows">Hiện lại tất cả</button></div>` : ''}
+    <div class="cards7"><div class="stat"><b>${vnd(t.movein)}</b><span>Tiền thu khi khách vào ở (tháng đầu)</span></div><div class="stat"><b>${vnd(t.rent)}</b><span>Tiền phòng hằng tháng</span></div><div class="stat"><b>${vnd(t.elec)}</b><span>Tiền điện</span></div><div class="stat"><b>${vnd(t.water)}</b><span>Tiền nước</span></div><div class="stat"><b>${vnd(t.billed)}</b><span>Tổng phải thu (gồm khoản khác ${vnd(t.other)})</span></div><div class="stat"><b>${vnd(t.paid)}</b><span>Đã thu</span></div><div class="stat debt"><b>${vnd(t.outstanding)}</b><span>Còn thiếu (chưa thu)</span></div><div class="stat debt"><b>${vnd(r.debtNow)}</b><span>Tổng công nợ hiện tại</span></div></div>
+    <p class="rep-note">Tiền thực nhận theo ngày thu trong khoảng này: <b>${vnd(collected)}</b>${t.refund ? html` · Hoàn lại khách khi trả phòng: <b>${vnd(t.refund)}</b>` : ''}. Mỗi dòng là một hóa đơn của một phòng trong một tháng; nợ chuyển sang tháng sau không cộng lại để không bị tính hai lần.</p>
+    ${r.oldDebts?.length ? html`<div class="warn-box"><b>Tiền nợ cũ của khách (ghi riêng, không nằm trong hóa đơn):</b> ${r.oldDebts.map((o) => `${o.room} – ${o.tenant}: ${vnd(o.amount)}`).join('; ')}.</div>` : ''}
+    <div class="rep-tabs noprint"><button class="btn sm ${repView === 'month' ? 'on' : ''}" data-act="rep-view" data-v="month">${icon('calendar', '1em')} Theo tháng</button><button class="btn sm ${repView === 'room' ? 'on' : ''}" data-act="rep-view" data-v="room">${icon('home', '1em')} Theo phòng</button><button class="btn sm" data-act="rep-open-all">Mở hết</button><button class="btn sm" data-act="rep-close-all">Thu gọn hết</button></div>
+    ${groups.length ? groups.map((g, k) => html`<details class="rep-group" ${k === latest || groups.length <= 2 ? raw('open') : ''}><summary><span class="rg-title">${g.title}</span>${groupSum(g.sum)}</summary>
+      <table class="tbl stack">${head(repView)}<tbody>${g.rows.map((d) => detailRow(d, repView))}</tbody></table>
+      <div class="row noprint" style="padding:8px 12px"><span class="muted small sp">Bấm vào từng dòng để mở hóa đơn.</span><button class="btn sm danger" data-act="hide-row" data-key="${g.key}" title="Ẩn nhóm này khỏi báo cáo">${icon('trash', '1em')} Ẩn khỏi báo cáo</button></div></details>`) : html`<div class="empty-state">Không có hóa đơn nào trong khoảng ngày này.</div>`}
+    <p class="muted small">Báo cáo theo ngày đến hạn của hóa đơn. "Đã thu" / "Còn thiếu" là của chính tháng đó. Không chứa ảnh/thông tin CCCD.</p>
     <div class="row noprint"><button class="btn" data-act="rep-csv">⬇ Xuất Excel (CSV)</button><button class="btn" data-act="rep-json">⬇ Xuất JSON</button><button class="btn" data-act="print">🖨 In báo cáo</button></div>`.s;
   } catch (e) { box.innerHTML = html`<div class="err-box">${e.message}</div>`.s; }
 }
+acts['rep-view'] = (el) => { repView = el.dataset.v; loadReport(); };
+acts['rep-open-all'] = () => document.querySelectorAll('.rep-group').forEach((d) => (d.open = true));
+acts['rep-close-all'] = () => document.querySelectorAll('.rep-group').forEach((d) => (d.open = false));
 forms.report = async (f, fd) => { range = { from: fd.get('from'), to: fd.get('to') }; await loadReport(); };
 const csvCell = (v) => `"${String(v).replace(/"/g, '""')}"`;
 acts['rep-csv'] = () => {
-  const rows = [['Tháng', 'Tiền phòng', 'Tiền điện', 'Tiền nước', 'Phát sinh', 'Phải thu', 'Đã thu'], ...last.months.map((m) => [m.ym, m.rent, m.elec, m.water, m.extras + m.adjust, m.billed, m.collected]), [], ['Phòng', 'Phải thu', 'Đã thu'], ...last.rooms.map((m) => [m.room, m.billed, m.collected])];
-  download(`bao-cao-${last.from}-${last.to}.csv`, '\ufeff' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
+  const rows = [['Tháng', 'Phòng', 'Khách', 'Loại', 'Ngày đến hạn', 'Thu khi vào ở', 'Tiền phòng', 'Tiền điện', 'Tiền nước', 'Khác', 'Tổng tháng', 'Hoàn lại', 'Đã thu', 'Còn thiếu', 'Trạng thái'], ...last.detail.map((d) => [d.ym, d.room, d.tenant, d.kindLabel, d.dueDate, d.movein, d.rent, d.elec, d.water, d.other, d.total, d.refund, d.paid, d.outstanding, ST[d.status]]),
+    [], ['Tháng', 'Thu khi vào ở', 'Tiền phòng', 'Tiền điện', 'Tiền nước', 'Khác', 'Phải thu', 'Đã thu', 'Còn thiếu', 'Thực nhận theo ngày thu'], ...last.months.map((m) => [m.ym, m.movein, m.rent, m.elec, m.water, m.other, m.billed, m.paid, m.outstanding, m.collected]),
+    [], ['Phòng', 'Thu khi vào ở', 'Tiền phòng', 'Tiền điện', 'Tiền nước', 'Khác', 'Phải thu', 'Đã thu', 'Còn thiếu'], ...last.rooms.map((m) => [m.room, m.movein, m.rent, m.elec, m.water, m.other, m.billed, m.paid, m.outstanding])];
+  download(`bao-cao-${last.from}-${last.to}.csv`, '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
 };
 acts['rep-json'] = () => download(`bao-cao-${last.from}-${last.to}.json`, JSON.stringify(last, null, 1));
 
 export function backupView() {
   const allLogs = D().activityLogs.slice().reverse(); const logs = allLogs.slice(0, logLimit);
   return html`<div class="page-head"><h2>Sao lưu & khôi phục</h2></div>
-    <section class="card"><h3>Sao lưu dữ liệu</h3><p class="muted">Tải toàn bộ dữ liệu (không gồm ảnh CCCD) về máy. Nên làm mỗi tháng và cất ở nơi khác (Google Drive, email…). Hệ thống cũng tự lưu bản sao mỗi tháng ngay trong cơ sở dữ liệu Upstash (cùng nhà cung cấp, nên không thay được bản bạn tự tải).</p>
+    <section class="card"><h3>Sao lưu dữ liệu</h3><p class="muted">Tải toàn bộ dữ liệu (không gồm ảnh CCCD – ảnh thì dùng nút <b>BACKUP CĂN CƯỚC</b> bên dưới) về máy. Nên làm mỗi tháng và cất ở nơi khác (Google Drive, email…). Hệ thống cũng tự lưu bản sao mỗi tháng ngay trong cơ sở dữ liệu Upstash (cùng nhà cung cấp, nên không thay được bản bạn tự tải).</p>
       <div class="row"><a class="btn primary" href="${apiUrl('backup/export')}" download>⬇ Tải database.json (để khôi phục)</a><a class="btn" href="${apiUrl('backup/export-xlsx')}" download>⬇ Tải file Excel (để xem, dạng bảng)</a></div><p class="muted small" style="margin:8px 0 0">File Excel có các sheet: Phòng, Hóa đơn, Thanh toán, Khách thuê, Người ở cùng, Lượt thuê, Đồng hồ tổng, Sự kiện. Chỉ để xem và lưu trữ; muốn khôi phục phải dùng file database.json. Hai file chứa thông tin cá nhân khách, hãy cất ở nơi riêng tư.</p></section>
-    <section class="card" style="margin-top:12px"><h3>Khôi phục từ file JSON</h3><p class="warn-box">⚠ Khôi phục sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Hệ thống tự lưu một bản an toàn của dữ liệu hiện tại trước khi ghi đè.</p>
+    <section class="card" style="margin-top:12px"><h3>Khôi phục từ file JSON</h3><p class="warn-box">⚠ Khôi phục sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Hệ thống tự lưu một bản an toàn của dữ liệu hiện tại trước khi ghi đè.</p><p class="muted small" style="margin:0 0 10px">Ảnh CCCD còn lưu trên máy chủ sẽ <b>tự được nối lại</b> đúng người sau khi khôi phục, không phải nhập lại. Ảnh nào không còn trên máy chủ thì nạp lại từ file <b>Backup Căn Cước (.zip)</b> ở mục bên dưới.</p>
       <form data-form="restore"><input type="file" name="file" accept="application/json,.json" required style="margin-bottom:12px"><div id="rsum" class="calc" hidden></div>${field('Gõ chính xác: GHI DE để xác nhận', html`<input name="confirm" autocomplete="off" placeholder="GHI DE">`)}<div class="err-inline"></div><button class="btn danger" type="submit">KIỂM TRA & KHÔI PHỤC</button></form></section>
+    ${cccdCard()}
+    ${pushCard()}
     ${sheetCard()}
     ${settingsCard()}
     ${cleanupCard()}
-    <section class="card" style="margin-top:12px"><h3>Ảnh CCCD</h3><p class="muted">Ảnh nằm trong kho Vercel Blob riêng tư, không nằm trong file JSON. Tải từng ảnh ở trang hồ sơ khách (nút "Tải về") khi cần bản dự phòng.</p></section>
     <section class="card" style="margin-top:12px"><h3>Kiểm tra tất cả kết nối</h3><p class="muted small" style="margin:6px 0">Thử đọc cơ sở dữ liệu, ghi/xóa một file thử trong kho ảnh và hỏi Google Sheet.</p><button class="btn primary sm" data-act="sys-check">Kiểm tra tất cả kết nối</button><div id="syscheck" style="margin-top:10px"></div></section>
     <h2 class="sec">Nhật ký thao tác gần đây</h2><div class="list" id="loglist">${logs.map((l) => html`<div class="li"><span><b>${l.action}</b> <span class="muted">${l.detail}</span></span><span class="muted small">${l.at.slice(0, 16).replace('T', ' ')}</span></div>`)}</div>
     <div class="row" style="margin-top:10px">${allLogs.length > logLimit ? html`<button class="btn" data-act="logs-more">Xem thêm (còn ${allLogs.length - logLimit} dòng)</button>` : ''}${logLimit > 10 ? html`<button class="btn" data-act="logs-less">Thu gọn (10 dòng mới nhất)</button>` : ''}</div>`;
@@ -58,7 +83,9 @@ forms.restore = async (f, fd) => {
   const s = $('#rsum'); s.hidden = false; s.textContent = `File có ${db.rooms.length} phòng, ${db.tenants.length} khách, ${db.invoices.length} hóa đơn, ${db.payments.length} giao dịch; lưu lúc ${db.updatedAt}.`;
   if (fd.get('confirm') !== 'GHI DE') throw new Error('Kiểm tra file xong. Gõ đúng "GHI DE" vào ô xác nhận rồi bấm lại để khôi phục.');
   if (!confirm('Chắc chắn GHI ĐÈ toàn bộ dữ liệu hiện tại bằng file này?')) return;
-  await save('POST', 'backup/restore', { db, confirm: 'GHI DE' }, 'Đã khôi phục dữ liệu'); rerender();
+  const j = await save('POST', 'backup/restore', { db, confirm: 'GHI DE' }, null);
+  const miss = [...j.db.tenants.filter((t) => !t.purgedAt && j.db.rentals.some((r) => r.tenantId === t.id && r.status === 'active')), ...j.db.occupants.filter((o) => !o.noId)].reduce((n, p) => n + ['front', 'back'].filter((k) => !p.idImages?.[k]).length, 0);
+  toast(`Đã khôi phục dữ liệu${j.imagesRelinked ? ` · nối lại ${j.imagesRelinked} ảnh CCCD còn trên máy chủ` : ''}${miss ? ` · còn ${miss} ảnh CCCD chưa có (nạp từ file Backup Căn Cước nếu có)` : ''}`); rerender();
 };
 
 const mb = (b) => `${(b / 1048576).toFixed(1)} MB`;

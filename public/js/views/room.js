@@ -6,6 +6,7 @@ import { icon, ROOM_ICON, ROOM_TONE } from '../icons.js';
 import { ownerView } from './owner.js';
 import { downloadCt01 } from '../ct01.js';
 import { billArticle } from './bill.js';
+import { oldDebtFields, collectOldDebt, oldDebtLine, suspiciousPhone } from './checks.js';
 
 let year = null;
 // Chỉ xóa được hóa đơn MỚI NHẤT của khách đang thuê (không phải hóa đơn đầu tiên, không phải trả phòng/chuyển phòng)
@@ -52,7 +53,7 @@ export function roomView(id) {
     <div class="page-head"><span class="rbadge ${tone}">${icon(ROOM_ICON[rm.status], '1.5em')}</span><h2>${rm.name}${t ? ` – ${t.fullName}` : ''}</h2><span class="stx ${tone}">${ROOM_STATUS[rm.status]}</span><button class="btn sm" data-act="edit-room" data-id="${id}">${icon('edit', '1.1em')} Sửa Tình Trạng Phòng</button></div>
     ${r ? contactRow(t, occs) : ''}
     ${r ? html`<section class="card"><div class="row"><div class="sp"><b>${t.fullName}</b> · ${t.phone}<br><span class="muted small">Vào ở <b>${dmy(r.startDate)}</b> <button class="btn sm" data-act="edit-start" data-id="${r.id}" style="padding:2px 8px;min-height:28px">${icon('edit', '1em')} Sửa ngày</button> · <b>${1 + occs.length} người</b> · kỳ tiếp theo đến hạn ${dmy(rd.nextDue)}</span></div><a class="btn sm" href="#/tenant/${t.id}">${icon('card', '1.1em')} Hồ sơ khách</a><button class="btn sm primary" data-act="profile-img" data-room="${id}">${icon('photo', '1.1em')} Tải Ảnh Hồ Sơ Khách Theo Phòng</button><button class="btn sm primary" data-act="contract" data-id="${r.id}">${icon('sheet', '1.1em')} Xuất Hợp Đồng</button></div>
-      <dl class="kv"><dt>Giá thuê / điện / nước</dt><dd>${vnd(rd.price.rent)} · ${num(rd.price.elecPrice)}đ/số · ${num(rd.price.waterPrice)}đ/khối</dd><dt>Tiền đặt cọc</dt><dd>${vnd(r.deposit || 0)}${r.deposit ? html` <span class="muted small">· hoàn lại khi trả phòng</span>` : ''}</dd><dt>Hình thức thanh toán</dt><dd>${{ month: 'Theo tháng', quarter: 'Theo quý', year: 'Theo năm' }[r.payCycle || 'month']}</dd><dt>Hóa đơn mới nhất</dt><dd>${inv.code} · ${vnd(inv.total)}</dd>${inv.elec || r.status !== 'active' ? html`<dt>Tổng còn nợ</dt><dd class="${d.remaining ? 'owe' : 'okc'}">${vnd(d.remaining)}</dd>` : d.remaining > 0 ? html`<dt>Tiền phòng đầu kỳ chưa nhận</dt><dd class="okc">${vnd(d.remaining)}</dd>` : html`<dt>Tiền phòng đầu kỳ đã nhận</dt><dd class="okc">${vnd(d.paid)}</dd>`}</dl>
+      <dl class="kv"><dt>Giá thuê / điện / nước</dt><dd>${vnd(rd.price.rent)} · ${num(rd.price.elecPrice)}đ/số · ${num(rd.price.waterPrice)}đ/khối</dd><dt>Tiền đặt cọc</dt><dd>${vnd(r.deposit || 0)}${r.deposit ? html` <span class="muted small">· hoàn lại khi trả phòng</span>` : ''}</dd><dt>Hình thức thanh toán</dt><dd>${{ month: 'Theo tháng', quarter: 'Theo quý', year: 'Theo năm' }[r.payCycle || 'month']}</dd>${oldDebtLine(t)}<dt>Hóa đơn mới nhất</dt><dd>${inv.code} · ${vnd(inv.total)}</dd>${inv.elec || r.status !== 'active' ? html`<dt>Tổng còn nợ</dt><dd class="${d.remaining ? 'owe' : 'okc'}">${vnd(d.remaining)}</dd>` : d.remaining > 0 ? html`<dt>Tiền phòng đầu kỳ chưa nhận</dt><dd class="okc">${vnd(d.remaining)}</dd>` : html`<dt>Tiền phòng đầu kỳ đã nhận</dt><dd class="okc">${vnd(d.paid)}</dd>`}</dl>
       <div class="row" style="margin-top:12px"><button class="btn red" data-act="readings" data-id="${r.id}">${icon('bolt', '1.15em')} Tính tiền (ghi điện nước)</button>${d.remaining > 0 ? html`<button class="btn green" data-act="pay" data-id="${inv.id}">${icon('money', '1.15em')} Thanh toán</button>` : ''}<button class="btn" data-act="price" data-id="${r.id}">${icon('money', '1.1em')} Thay đổi giá phòng</button><button class="btn" data-act="transfer" data-id="${r.id}">${icon('swap', '1.1em')} Chuyển phòng</button><button class="btn danger" data-act="checkout" data-id="${r.id}">Trả phòng</button></div></section>
       ${!counted && d.remaining > 0 ? html`<section class="card" style="margin-top:12px"><h3>${icon('info', '1.2em')} Tiền phòng kỳ đầu chưa ghi nhận đã thu</h3><p class="muted" style="margin:6px 0 10px">Chưa tới kỳ ghi điện nước nên chưa tính là nợ. Nếu bạn đã nhận tiền phòng khi khách vào, hãy ghi nhận để hệ thống không tính là nợ cũ.</p><div class="row"><button class="btn" data-act="open-invoice" data-id="${inv.id}">Xem hóa đơn</button><button class="btn green" data-act="pay-month" data-id="${inv.id}">${icon('check', '1.1em')} Ghi nhận đã thu tiền phòng đầu kỳ (${vnd(d.remaining)})</button></div></section>` : html`<section class="card" style="margin-top:12px"><h3>${unpaid.length ? icon('alert', '1.2em') : icon('check', '1.2em')} ${unpaid.length ? 'Chưa thanh toán' : 'Đã thanh toán đủ các tháng'}</h3>
         ${unpaid.length ? html`<div class="month-pay">${unpaid.map((m) => html`<div class="mp"><b>${t.fullName} – Tháng ${Number(m.ym.slice(5))}/${m.ym.slice(0, 4)}</b><span class="sp muted">đến hạn ${dmy(m.dueDate)} · còn <b class="owe">${vnd(m.outstanding)}</b></span><button class="btn sm" data-act="open-invoice" data-id="${m.invoiceId}">Xem hóa đơn</button><button class="btn red sm" data-act="pay-month" data-id="${m.invoiceId}">Thanh toán tháng ${Number(m.ym.slice(5))}</button></div>`)}</div><p class="muted small" style="margin:8px 0 0">Bấm vào từng tháng để thu tiền đúng tháng đó. Sau khi bấm <b>ĐÃ NHẬN TIỀN</b>, thông báo của tháng đó sẽ ẩn.</p>` : ''}</section>`}`
@@ -107,7 +108,7 @@ acts['add-occ'] = () => { const c = $('#occs'); const d = document.createElement
 acts['del-occ'] = (el) => el.closest('.occ').remove();
 export const personFields = (t = {}) => html`
   ${field('Họ và tên *', html`<input name="fullName" required value="${t.fullName || ''}" autocomplete="off">`)}
-  <div class="two">${field('Ngày sinh (đầy đủ) *', html`<input type="date" name="dob" required max="${todayLocal()}" value="${t.dob || ''}">`)}${field('Số điện thoại *', html`<input name="phone" inputmode="tel" required value="${t.phone || ''}">`)}</div>
+  <div class="two">${field('Ngày sinh (đầy đủ) *', html`<input type="date" name="dob" required max="${todayLocal()}" value="${t.dob || ''}">`)}${field('Số điện thoại *', html`<input name="phone" inputmode="tel" required value="${t.phone || ''}" data-phonechk="1">`, suspiciousPhone(t.phone) ? 'Số này có 6 chữ số giống nhau liên tiếp – nhớ cập nhật số thật.' : '')}</div>
   ${field('Số Zalo (để trống = dùng số điện thoại)', html`<input name="zalo" inputmode="tel" value="${t.zalo && t.zalo !== t.phone ? t.zalo : ''}">`)}
   <div class="radios" role="radiogroup" aria-label="Giới tính"><b>Giới tính *</b>${['male', 'female', 'other'].map((g) => html`<label><input type="radio" name="gender" value="${g}" required ${t.gender === g ? raw('checked') : ''}>${GENDER[g]}</label>`)}</div>
   <div class="two">${field('Số CCCD *', html`<input name="cccd" inputmode="numeric" required value="${t.cccd || ''}">`)}${field('Ngày cấp *', html`<input type="date" name="cccdIssueDate" required max="${todayLocal()}" value="${t.cccdIssueDate || ''}">`)}</div>
@@ -129,6 +130,7 @@ acts.movein = (el) => {
       <div class="radios" role="radiogroup"><b>Hình thức thanh toán tiền thuê</b>${[['month', 'Theo tháng'], ['quarter', 'Theo quý'], ['year', 'Theo năm']].map(([k, l]) => html`<label><input type="radio" name="payCycle" value="${k}" ${k === 'month' ? raw('checked') : ''}>${l}</label>`)}</div>
       <div class="two">${field('Chỉ số điện ban đầu *', html`<input name="initElec" inputmode="decimal" required>`)}${field('Chỉ số nước ban đầu *', html`<input name="initWater" inputmode="decimal" required>`)}</div>
       ${field('Ghi chú', html`<textarea name="note" maxlength="300"></textarea>`)}</fieldset>
+    ${oldDebtFields()}
     <fieldset><legend>Ảnh CCCD khách thuê (không bắt buộc – thêm sau được)</legend>${idBox('front', { required: false })}${idBox('back', { required: false })}</fieldset>
     <fieldset><legend>Người ở cùng (không tính thêm tiền)</legend><div id="occs"></div><button type="button" class="btn red" data-act="add-occ" style="margin-bottom:12px">${icon('plus', '1.1em')} Thêm người ở cùng</button></fieldset>
     <div class="err-inline"></div><button class="btn primary block" type="submit">LƯU KHÁCH THUÊ</button></form>`, { wide: true });
@@ -140,7 +142,7 @@ live.movein = (f) => {
 };
 forms.movein = async (f, fd) => {
   const blocks = [...f.querySelectorAll('.occ')]; const occupants = blocks.map(collectOccupant);
-  const body = { roomId: f.dataset.room, tenant: collectPerson(fd), occupants, startDate: fd.get('startDate'), openingDebt: toInt(fd.get('openingDebt')) || 0, paidAlready: fd.get('paidAlready') === 'on', rent: toInt(fd.get('rent')), deposit: toInt(fd.get('deposit')) || 0, payCycle: fd.get('payCycle') || 'month', elecPrice: toInt(fd.get('elecPrice')), waterPrice: toInt(fd.get('waterPrice')), initElec: toDec(fd.get('initElec')), initWater: toDec(fd.get('initWater')), note: fd.get('note') };
+  const body = { roomId: f.dataset.room, tenant: collectPerson(fd), occupants, startDate: fd.get('startDate'), openingDebt: toInt(fd.get('openingDebt')) || 0, paidAlready: fd.get('paidAlready') === 'on', rent: toInt(fd.get('rent')), deposit: toInt(fd.get('deposit')) || 0, payCycle: fd.get('payCycle') || 'month', elecPrice: toInt(fd.get('elecPrice')), waterPrice: toInt(fd.get('waterPrice')), initElec: toDec(fd.get('initElec')), initWater: toDec(fd.get('initWater')), note: fd.get('note'), oldDebt: collectOldDebt(fd) };
   const j = await save('POST', 'tenants', body, 'Đã lưu khách thuê'); const tid = j.result.tenant.id;
   const jobs = [[tid, 'front'], [tid, 'back'], ...blocks.flatMap((b, i) => (occupants[i].noId ? [] : [[j.result.occupantIds[i], `${b.dataset.slot}-front`, 'front'], [j.result.occupantIds[i], `${b.dataset.slot}-back`, 'back']]))].filter(([, slot]) => getBlob(slot));
   const pending = jobs.map(([owner, slot, side]) => ({ owner, slot, side, blob: getBlob(slot) })); closeModal(); go(`#/room/${body.roomId}`); rerender(); // đóng ngay, không bắt chờ tải ảnh
@@ -215,13 +217,20 @@ forms.pay = async (f, fd) => {
 
 // ---- đổi giá ----
 acts.price = (el) => {
-  const r = D().rentals.find((x) => x.id === el.dataset.id), p = DV().rentals[r.id].price;
+  const r = D().rentals.find((x) => x.id === el.dataset.id), p = DV().rentals[r.id].price; const hasRd = D().readings.some((x) => x.rentalId === r.id);
   openModal(`Thay đổi giá phòng – ${room(r.roomId).name}`, html`<form data-form="price" data-rental="${r.id}"><div class="calc">Giá cũ: thuê <b>${vnd(p.rent)}</b> · điện <b>${num(p.elecPrice)}</b> · nước <b>${num(p.waterPrice)}</b></div>
     <div class="two">${field('Giá thuê mới (đ)', html`<input name="rent" inputmode="numeric" required value="${p.rent}">`)}${field('Ngày bắt đầu áp dụng', html`<input type="date" name="effectiveFrom" required value="${DV().rentals[r.id].nextDue}">`, 'Mặc định: kỳ tới. Hóa đơn đã lập không đổi.')}</div>
     <div class="two">${field('Giá điện mới (đ/số)', html`<input name="elecPrice" inputmode="numeric" required value="${p.elecPrice}">`)}${field('Giá nước mới (đ/khối)', html`<input name="waterPrice" inputmode="numeric" required value="${p.waterPrice}">`)}</div>
-    ${field('Lý do thay đổi', html`<input name="reason" maxlength="200">`)}<div class="err-inline"></div><button class="btn primary block" type="submit">LƯU GIÁ MỚI</button></form>`);
+    <fieldset><legend>Chỉ số ban đầu khi khách vào ở</legend>${hasRd ? html`<p class="warn-box" style="margin-top:0">Phòng đã ghi điện nước nên <b>không sửa chỉ số ban đầu ở đây được</b> (hóa đơn đã tính theo số này). Muốn sửa số điện nước, mở <b>hóa đơn mới nhất</b> và bấm <b>Sửa</b>.</p>` : html`<p class="muted small" style="margin:0 0 8px">Số đang lưu lúc khách vào ở. Nhập sai thì sửa ở đây; lần ghi điện nước đầu tiên sẽ tính từ số này.</p>`}
+      <div class="two">${field('Chỉ số điện ban đầu *', html`<input name="initElec" inputmode="decimal" required value="${r.initElec}" ${hasRd ? raw('readonly') : ''}>`)}${field('Chỉ số nước ban đầu *', html`<input name="initWater" inputmode="decimal" required value="${r.initWater}" ${hasRd ? raw('readonly') : ''}>`)}</div></fieldset>
+    ${field('Lý do thay đổi', html`<input name="reason" maxlength="200">`)}<div class="err-inline"></div><button class="btn primary block" type="submit">LƯU THAY ĐỔI</button></form>`);
 };
-forms.price = async (f, fd) => { await save('POST', `rentals/${f.dataset.rental}/price`, { rent: toInt(fd.get('rent')), elecPrice: toInt(fd.get('elecPrice')), waterPrice: toInt(fd.get('waterPrice')), effectiveFrom: fd.get('effectiveFrom'), reason: fd.get('reason') }, 'Đã lưu giá mới'); closeModal(); rerender(); };
+forms.price = async (f, fd) => {
+  const body = { rent: toInt(fd.get('rent')), elecPrice: toInt(fd.get('elecPrice')), waterPrice: toInt(fd.get('waterPrice')), effectiveFrom: fd.get('effectiveFrom'), reason: fd.get('reason') };
+  if (!f.initElec.readOnly) { body.initElec = toDec(fd.get('initElec')); body.initWater = toDec(fd.get('initWater')); if (Number.isNaN(body.initElec) || Number.isNaN(body.initWater)) throw new Error('Chỉ số điện/nước ban đầu không hợp lệ'); }
+  const j = await save('POST', `rentals/${f.dataset.rental}/price`, body, null); const x = j.result || {};
+  toast(x.initChanged && x.priceChanged ? 'Đã lưu giá mới và chỉ số ban đầu' : x.initChanged ? 'Đã sửa chỉ số điện/nước ban đầu' : 'Đã lưu giá mới'); closeModal(); rerender();
+};
 
 // ---- trả phòng (xem tính toán → xác nhận) ----
 acts.checkout = (el) => {
