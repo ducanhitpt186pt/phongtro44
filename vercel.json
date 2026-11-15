@@ -37,5 +37,11 @@
       "source": "/api/:path*",
       "destination": "/api/index?path=:path*"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/push",
+      "schedule": "0 0 * * *"
+    }
   ]
 }
