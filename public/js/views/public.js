@@ -44,10 +44,17 @@ export function noticeCard(it, { link = false, tenantName = '', actions = false,
     ${it.also?.length ? html`<div class="also">Đồng thời: ${it.also.join('; ')}</div>` : ''}${btns}</article>`;
 }
 
+// Thẻ phòng trang ngoài: GIỐNG HỆT thẻ phòng trang admin (màu nền khóa / mở khóa, chữ, cỡ chữ, cách trình bày)
 function rosterCard(r) {
-  const tone = ROOM_TONE[r.status];
-  return html`<article class="card click room-card st-${tone}" data-act="pub-room" data-id="${r.roomId}" data-name="${r.roomName}">${r.status === 'notready' ? html`<span class="lockmark">${icon('lock', '100%')}</span>` : ''}<div class="rhead"><span class="rbadge ${tone}">${raw(icon(ROOM_ICON[r.status], '1.6em'))}</span><div class="sp"><h3>${r.roomName}</h3><span class="stx ${tone}">${ROOM_STATUS[r.status]}</span></div></div>
-    ${r.startDate ? html`<dl class="kv"><dt>Ngày vào</dt><dd>${dmy(r.startDate)}</dd>${r.tenantName !== undefined ? html`<dt>Khách</dt><dd class="big">${r.tenantName}</dd>` : ''}<dt>Số người</dt><dd>${r.people}</dd><dt>Nợ</dt><dd class="${r.debt ? 'owe' : 'okc'}">${vnd(r.debt)}</dd>${r.note ? html`<dt>Ghi chú</dt><dd>${r.note}</dd>` : ''}</dl>` : ''}</article>`;
+  const tone = ROOM_TONE[r.status]; const open = r.status === 'empty' || r.status === 'occupied';
+  return html`<article class="card click room-card st-${tone} ${open ? 'is-open' : ''}" data-act="pub-room" data-id="${r.roomId}" data-name="${r.roomName}">${r.status === 'notready' ? html`<span class="lockmark">${icon('lock', '100%')}</span>` : open ? html`<span class="lockmark unlock">${icon('lock-open', '100%')}</span>` : ''}
+    <div class="rhead"><span class="rbadge ${tone}">${raw(icon(ROOM_ICON[r.status], '1.6em'))}</span><div class="sp"><h3>${r.roomName}</h3><span class="stx ${tone}">${ROOM_STATUS[r.status]}${r.startDate ? html` <span class="room-sub">· Vào ${dmy(r.startDate)}</span>` : ''}</span></div></div>
+    ${r.startDate ? html`<dl class="kv">${r.tenantName !== undefined ? html`<dt>Khách thuê</dt><dd class="big">${r.tenantName}</dd>` : ''}<dt>Số người</dt><dd>${r.people}</dd><dt>Còn nợ</dt><dd class="${r.debt ? 'owe' : 'okc'}">${vnd(r.debt)}</dd></dl>` : (r.note ? html`<div class="rnote ${tone}">${r.note}</div>` : '')}</article>`;
+}
+// Thẻ Chủ Nhà trang ngoài (giống trang admin, không có nút ghi đồng hồ tổng)
+function ownerRosterCard(o) {
+  return html`<article class="card room-card st-orange owner-card"><span class="lockmark owner">${icon('incognito', '100%')}</span><div class="rhead"><span class="rbadge orange">${raw(icon('incognito', '1.6em'))}</span><div class="sp"><h3>Chủ Nhà</h3><span class="stx orange">Đồng hồ tổng</span></div></div>
+    ${o ? html`<dl class="kv"><dt>Điện Chủ Nhà dùng</dt><dd class="big ${o.elec.alert ? 'owe' : ''}">${o.elec.cur} số</dd><dt>Nước Chủ Nhà dùng</dt><dd class="big ${o.water.alert ? 'owe' : ''}">${o.water.cur} khối</dd></dl>` : ''}</article>`;
 }
 // Nhắc ghi điện nước: phòng đã tới/qua ngày ghi và phòng sắp tới ngày ghi (tính theo ngày nhận phòng của từng khách)
 export function readingsBanner(rd) {
@@ -76,7 +83,7 @@ function paint(res, note = '') {
   const td = res.todo || { count: items.length, rooms: items.length, debts: 0, other: 0 }; const pubDebts = res.debts?.items || []; const hidden = Math.max(0, td.count - td.rooms - pubDebts.length);
   const work = items;
   const bn = $('#pubbell'); if (bn) { bn.querySelector('.bn').textContent = String(td.count); bn.classList.toggle('zero', !td.count); } updateBadge(td.count); // cùng 1 số với trong app
-  body.innerHTML = html`<div class="sum-title sumrow" id="pubnotices"><span>TỔNG QUAN CẦN XỬ LÝ</span></div>${todoBar(td, { pub: true, hidden, pubDebts: pubDebts.length })}
+  body.innerHTML = html`<div class="section-head" id="pubnotices"><h2 class="sec">Tổng quan cần xử lý</h2></div>${todoBar(td, { pub: true, hidden, pubDebts: pubDebts.length })}
     <div class="stats">
       <div class="stat wide rooms3"><div><b>${s.rooms}</b><span>Tổng số phòng</span></div><div><b>${s.rented}</b><span>Đang cho thuê</span></div><div><b>${s.closed}</b><span>Đang đóng</span></div></div>
       <div class="stat ${td.readings ? 'orange' : ''}"><b>${td.readings ?? s.needReadings}</b><span>phòng cần ghi điện nước</span></div>
@@ -87,8 +94,8 @@ function paint(res, note = '') {
     ${debtNotices(res.debts?.items.map((d) => ({ ...d })) || [], { actions: false })}
     ${eventsAheadList(res.events, res.today)}
     ${readingsBanner(res.readings)}
-    <div class="sum-title" style="margin-top:18px">DANH SÁCH PHÒNG</div>
-    <div class="notices" style="margin-top:0">${(res.roster || []).map(rosterCard)}</div>`.s;
+    <div class="section-head"><h2 class="sec">Các phòng</h2></div>
+    <div class="grid">${(res.roster || []).map(rosterCard)}${ownerRosterCard(res.usage?.owner)}</div>`.s;
   const u = $('#upd'); if (u) u.textContent = note || `Cập nhật lúc ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
 }
 export async function loadPublic() {

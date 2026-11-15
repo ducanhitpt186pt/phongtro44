@@ -1,3 +1,6 @@
+# Phiên bản 2026-11-30-k
+- **Trang ngoài (chưa đăng nhập) giống trang admin**: thẻ phòng cùng màu nền (xanh mở khóa / xám khóa), cùng chữ, cỡ chữ, cách trình bày ("Đang cho thuê · Vào dd/mm/yyyy", Khách thuê, Số người, Còn nợ); có thẻ **Chủ Nhà** vàng nhạt; tiêu đề mục "Các phòng", "Tổng quan cần xử lý" cùng kiểu với trang admin. Trang ngoài không có các nút chỉ dành cho admin (Tính tiền, Ghi đồng hồ tổng).
+
 # Phiên bản 2026-11-30-j
 - Tên app 2 dòng sửa lại: **NHÀ TRỌ** / **44 LÊ VĂN PHẤN** (trang trong, trang ngoài, trang đăng nhập).
 
