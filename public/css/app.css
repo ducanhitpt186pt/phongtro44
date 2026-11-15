@@ -456,3 +456,71 @@ fieldset legend{font-weight:800}fieldset:nth-of-type(1){border-color:rgb(9 128 2
 .refresh-fab .fab-t{max-width:46px}@media(max-width:760px){.refresh-fab .fab-t{max-width:none}}
 .todo-bar{display:flex;align-items:flex-start;gap:8px;background:var(--red-bg);color:var(--ink);border-radius:12px;padding:10px 14px;margin:6px 0 10px;font-size:.95rem;line-height:1.45}.todo-bar .ic{color:var(--red-t)!important;flex:none;margin-top:2px}.todo-bar.ok{background:var(--green-bg)}.todo-bar.ok .ic{color:var(--green-t)!important}
 .note .tasks{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 8px;font-size:.85rem;font-weight:700;color:var(--mute)}.note .task{border-radius:999px;padding:2px 10px;font-size:.8rem;font-weight:800}.note .task.readings{background:var(--orange-bg);color:var(--orange-t)}.note .task.pay{background:var(--red-bg);color:var(--red-t)}.note .task.refund{background:var(--blue-bg);color:var(--blue-t)}
+/* ===== 2026-11-30-i: thẻ Các phòng ===== */
+.room-card{position:relative;overflow:hidden}.room-card>*:not(.lockmark){position:relative;z-index:1}
+.room-card.st-gray{background:#dfe4ea}.lockmark .ic{color:rgb(51 65 85 / 42%)!important}/* phòng khóa: nền + hình khóa tối hơn */
+.room-card.is-open{background:linear-gradient(135deg,#ecfdf3 0%,#ddfbd959 100%)}/* phòng đang mở / đang cho thuê */
+.lockmark.unlock .ic{color:rgb(22 163 74 / 20%)!important}
+.room-card.owner-card{background:linear-gradient(135deg,#fffbea 0%,#fef6d8 100%)}/* Chủ Nhà: vàng nhạt */
+.lockmark.owner .ic{color:rgb(217 119 6 / 16%)!important}
+@media(prefers-color-scheme:dark){.room-card.is-open{background:linear-gradient(135deg,rgb(34 197 94 / 14%),rgb(34 197 94 / 5%))}.room-card.owner-card{background:linear-gradient(135deg,rgb(245 158 11 / 16%),rgb(245 158 11 / 6%))}.room-card.st-gray{background:rgb(148 163 184 / 20%)}}
+/* ===== 2026-11-30-i: dễ đọc cho người lớn tuổi (chữ tối thiểu 1rem, trừ ngày âm trong lịch) ===== */
+.small,small,.muted.small,.fld small,.fld>span,legend,.badge,.kv,.kv dt,.note dl,.note .also,.stat span,.tbl,.tbl th,.calc,.warn-box,.btn.sm,.top .btn,.sum-title,.room-sub,.mchip,.bf,.bnote,.uline .ua,.rempty,.evn span,.a2hs small,.page-foot .upd,.upd,.stepn,.rep-note,.rg-sum,.st-pill,.kind-pill,.chipbtn,.a2hs-chip,#toast,.login .msg,.ofm,.bm span,.bbank b,.invoice td,.invoice th,.invoice .meta,.cal-wd,.todo-bar,.sumtotal,.room-card .badge,.room-card .kv,.room-card .kv dt,.cd[data-tip]:hover::after,.dlg-head .x,.idprev,.tbl input.note-in,.hero .login-top .btn,.cal-sub,.evside .muted{font-size:1rem!important}
+h2.sec,.section-head h2.sec{font-size:1.08rem!important}
+.cd .ld{font-size:.8rem}/* ngày âm trong ô lịch được nhỏ hơn */
+/* Tên app 2 dòng */
+.top h1 .t1,.top h1 .t2,.login h1 .t1,.login h1 .t2,.hero h1 .t1,.hero h1 .t2{display:block}
+.top h1 .t2,.login h1 .t2,.hero h1 .t2{font-size:.62em;font-weight:700;opacity:.92;letter-spacing:.02em;margin-top:2px}
+.credit{display:inline-block;font-size:.7rem}
+/* Nút Đăng xuất đỏ */
+.top .btn.logout{background:#ef4444;color:#fff;border:0;font-weight:800;box-shadow:0 2px 8px rgb(239 68 68 / 35%)}.top .btn.logout .ic{color:#fff!important}.top .btn.logout:hover{background:#dc2626}
+/* Nút quay lại có viền */
+a.back{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;margin:0 0 12px;border:2px solid var(--brand);border-radius:999px;background:var(--surface);color:var(--brand);font-weight:800;font-size:1.05rem!important;text-decoration:none;box-shadow:0 2px 6px rgb(0 0 0 / 6%)}a.back:hover{background:var(--blue-bg);text-decoration:none}a.back .ic{color:var(--brand)!important}
+/* Tab điều hướng to hơn */
+.nav a{font-size:1.05rem!important}.nav a .sh{display:none}
+@media(max-width:760px){.nav a{font-size:.9rem!important;padding:8px 2px!important;line-height:1.15}.nav a .lg{display:none}.nav a .sh{display:block}.nav a .ic{width:1.45em!important;height:1.45em!important}}
+/* Thẻ "Việc cần xử lý" gọn */
+.note.task{padding:12px 14px}.note.task .t-line{font-size:.9rem;font-weight:800;margin-bottom:4px;color:var(--ink)}
+.note.task .t-todo{font-size:.9rem;line-height:1.45;margin:2px 0}.note.task .t-todo b{font-weight:800}.note.task .t-when{color:var(--red-t);font-weight:800;white-space:nowrap}
+.note.task .nact{margin-top:10px}.note.task::before{display:none}
+/* Zalo / Gọi nhỏ gọn hơn */
+.zbtn,.cbtn{padding:3px 12px 3px 4px!important;gap:6px!important;font-size:.95rem!important;border-radius:10px!important}.zbtn .zi{width:22px!important;height:22px!important}.cbtn .ci{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center}
+/* Khách thuê: Phòng – Tên – Số người – SĐT */
+.trow{display:grid!important;grid-template-columns:110px minmax(0,1fr) auto auto auto;align-items:center;gap:6px 16px}.trow .tr-name{font-size:1.05rem}.trow .tr-ph a{font-weight:700}
+@media(max-width:640px){.trow{grid-template-columns:auto minmax(0,1fr);grid-template-areas:'room name' 'ppl ph' 'x x'}.trow .tr-room{grid-area:room}.trow .tr-name{grid-area:name}.trow .tr-ppl{grid-area:ppl}.trow .tr-ph{grid-area:ph;text-align:right}.trow .tr-x{grid-area:x}.trow .tr-x:empty{display:none}}
+/* Chi tiết phòng */
+.room-tools{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.room-info{margin-top:4px}
+.btn.edit-date{border:2px solid var(--brand)!important;color:var(--brand)!important;background:var(--blue-bg)!important;font-weight:800;margin-left:6px;padding:3px 10px!important;min-height:32px}
+/* Lịch: danh sách sự kiện ở trên, lịch ở dưới */
+.calwrap{display:block!important}.evside{border-left:0!important;padding-left:0!important;position:static!important;margin:0 0 20px}
+.evlist .evrow{display:flex;flex-direction:row!important;align-items:center!important;width:100%;text-align:left;border:0;font:inherit;color:inherit;cursor:pointer;gap:10px}
+.evlist .evrow .ev-meta{color:var(--mute);font-weight:500}.evlist .evrow:hover{background:var(--fill-soft)}
+.cal-lunar{font-weight:700;color:var(--mute);font-size:1rem;margin-top:2px;white-space:nowrap}
+.ev-kv{grid-template-columns:auto minmax(0,1fr)}
+/* Báo cáo: Từ ngày – Đến ngày (iPhone, iPad dọc/ngang, máy tính) */
+.rep-range{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:0 12px;align-items:end;margin-bottom:6px}
+.rep-range .rr-btn{margin-bottom:12px;min-height:48px;white-space:nowrap}
+@media(max-width:600px){.rep-range{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.rep-range .rr-btn{grid-column:1/-1;width:100%}}
+@media(max-width:360px){.rep-range{grid-template-columns:1fr}}
+/* Ô ngày tháng trên iPhone/iPad (Safari) không tràn ra ngoài */
+.two>*,.fld,.rep-range>*{min-width:0}
+input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;display:block;width:100%;max-width:100%;min-width:0;min-height:48px;line-height:1.2;text-align:left}
+input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
+input[type=date]::-webkit-calendar-picker-indicator{margin-left:auto}
+/* Hộp chọn trường hợp nhập trễ */
+.mode-box .mode-opt{display:flex;gap:10px;align-items:flex-start;margin:10px 0 0;padding:10px 12px;border-radius:10px;background:var(--surface);cursor:pointer;font-weight:400}.mode-box .mode-opt input{margin-top:4px;flex:none;width:20px;height:20px}
+.ev-yearbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ev-year{font-size:1.05rem;min-width:80px;text-align:center}
+.cal-head{display:flex!important;flex-direction:column;align-items:stretch!important;gap:8px}.cal-head .ch-row{display:flex;align-items:center;gap:8px}
+.cal-head .ch-mid{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}.cal-head .cal-title{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.cal-head .ch-acts{justify-content:center;flex-wrap:wrap}
+.lockmark.unlock .ic{color:rgb(22 163 74 / 14%)!important}
+.cal .list .li .badge{flex:none}.cal .list .li .sp{min-width:0}
+.room-info dd{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px}.btn.edit-date{white-space:nowrap;margin-left:0}
+/* iPad (dọc/ngang): tab dùng tên ngắn để vừa 1 hàng, không tràn ngang */
+@media(min-width:761px) and (max-width:1180px){.nav a .lg{display:none}.nav a .sh{display:inline}.nav a{padding:8px 12px;font-size:1.02rem!important}}
+.nav .in{flex-wrap:wrap}
+/* Thẻ phòng rộng hơn để chữ 1rem không bị chật */
+.grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))!important}
+.room-card .kv{grid-template-columns:auto minmax(0,1fr)}.room-card .kv dd{overflow-wrap:anywhere}
+.tbl th{white-space:normal!important;line-height:1.25}
+@media(min-width:761px){.tbl.stack{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}}

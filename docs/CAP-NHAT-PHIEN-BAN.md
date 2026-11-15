@@ -1,3 +1,22 @@
+# Phiên bản 2026-11-30-j
+- Tên app 2 dòng sửa lại: **NHÀ TRỌ** / **44 LÊ VĂN PHẤN** (trang trong, trang ngoài, trang đăng nhập).
+
+# Phiên bản 2026-11-30-i
+- **Nhập trễ** (ngày vào ở đã quá 1 tháng): form Thêm khách hỏi rõ 2 trường hợp:
+  - **Khách mới vào từ ngày đó – tôi nhập trễ** (mặc định, chưa thu tiền các tháng sau): tính từ ngày vào; tháng đã tới hạn nhắc **Ghi điện nước** (trễ n ngày) → bấm Tính tiền, chọn Ngày chốt số → hóa đơn gồm tiền phòng + điện nước tháng trước, hiện **Quá hạn**. Chỉ số ban đầu = số lúc khách vào.
+  - **Khách ở từ trước khi dùng phần mềm – đã lấy tiền tháng trước rồi**: chỉ tính từ kỳ đang chạy (như bản cũ), có ô nợ cũ còn lại. Chỉ số ban đầu = số hiện tại.
+  - Bản cũ tự coi mọi trường hợp là "khách ở từ trước".
+- **Việc cần xử lý**: thẻ gọn 3 phần: "Phòng 3 – VÕ TUẤN KIỆT" / "Cần làm: Ghi điện nước tháng 11/2026 (20/11/2026 - còn 5 ngày)" (phần ngoặc đỏ đậm) hoặc "Cần làm: Thu tiền tháng 11/2026 – 3.540.000 đ (05/11/2026 - trễ 10 ngày)" / nút Tính tiền hoặc Đã nhận tiền. Tiêu đề cùng kiểu "Các phòng".
+- **Thẻ Các phòng**: phòng khóa nền + hình khóa tối hơn; phòng đang trống/đang cho thuê nền xanh nhạt + hình mở khóa; Chủ Nhà nền vàng nhạt + biểu tượng người bí ẩn.
+- **Chữ to dễ đọc**: chữ tối thiểu 1rem (trừ ngày âm trong lịch); tab to hơn (điện thoại & iPad dùng tên ngắn: Báo cáo, Nhắc Nợ, Thu Chi); tên app 2 dòng "NHÀ TRỌ 44 / 44 LÊ VĂN PHẤN"; nút Quay lại có viền; nút Đăng xuất màu đỏ.
+- **Zalo / Gọi**: không có số điện thoại thì ẩn cả 2 nút; nút Gọi chỉ ghi "Gọi"; 2 nút nhỏ gọn hơn.
+- **Sự kiện cần nhớ**: nằm **trên** lịch; mỗi dòng gọn "Giỗ Bà Nội – 13/11/2026 – Dương lịch – Đã qua"; bấm vào xem chi tiết (âm/dương lịch, lặp lại, ghi chú, lần tới, Nhắc điện thoại, Sửa, Xóa). Lịch tháng ghi "ÂM: (Tháng 9 - 10) Bính Ngọ".
+- **Tab Khách thuê**: mỗi dòng Phòng – Tên – Số người ở – SĐT, sắp theo số phòng.
+- **Thêm / sửa khách**: thêm ô **Ghi chú về khách**; sửa ô ngày sinh, ngày cấp CCCD tràn trên iPhone/iPad.
+- **Chi tiết phòng**: các nút Hồ sơ khách, Tải ảnh hồ sơ, **Backup căn cước phòng này**, Xuất hợp đồng lên đầu; thông tin khách liệt kê từng dòng; nút Sửa ngày có viền dễ thấy.
+- **Báo cáo**: ô Từ ngày – Đến ngày chuẩn trên iPhone, iPad dọc/ngang, máy tính.
+- Không trang nào bị tràn ngang trên iPhone, iPad dọc/ngang và máy tính (đã kiểm tra từng trang).
+
 # Phiên bản 2026-11-30-h
 - Thông báo theo đúng quy trình làm việc, nhắc trước **7 ngày** (trước là 5):
   1. Trước 7 ngày đến ngày ghi: **1 thông báo "Ghi điện nước"** (gồm luôn "Sắp đến ngày thu tiền", không tính thêm).

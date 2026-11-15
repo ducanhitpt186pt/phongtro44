@@ -26,12 +26,12 @@ let timer = null;
 function shell(active, inner) {
   const n = DV().todo.count; updateBadge(n); // MỘT số duy nhất (máy chủ tính) – giống trang ngoài, biểu tượng app và thông báo mỗi sáng
   const t = today();
-  const nav = [['dashboard', 'Tổng quan', 'home'], ['tenants', 'Khách thuê', 'users'], ['reports', 'Báo Cáo Tiền Trọ', 'chart'], ['debts', 'Nhắc Nợ (Riêng)', 'money'], ['ledger', 'Thu Chi (Riêng)', 'card'], ['backup', 'Sao lưu', 'shield']];
+  const nav = [['dashboard', 'Tổng quan', 'home', 'Tổng quan'], ['tenants', 'Khách thuê', 'users', 'Khách thuê'], ['reports', 'Báo Cáo Tiền Trọ', 'chart', 'Báo cáo'], ['debts', 'Nhắc Nợ (Riêng)', 'money', 'Nhắc Nợ'], ['ledger', 'Thu Chi (Riêng)', 'card', 'Thu Chi'], ['backup', 'Sao lưu', 'shield', 'Sao lưu']];
   const ahead = eventsAhead(S.snap.db.events, t).slice(0, 4);
-  return html`<div class="top"><div class="in"><div class="tl"><h1>NHÀ TRỌ 44 LÊ VĂN PHẤN<span class="credit">ducanhitpt186</span></h1><div id="ubar">${usageBar(S.snap.system)}</div><div id="alerts">${alertsHtml(S.snap.system)}</div>
+  return html`<div class="top"><div class="in"><div class="tl"><h1><span class="t1">NHÀ TRỌ</span><span class="t2">44 LÊ VĂN PHẤN</span><span class="credit">ducanhitpt186</span></h1><div id="ubar">${usageBar(S.snap.system)}</div><div id="alerts">${alertsHtml(S.snap.system)}</div>
     <div class="dt">${weekday(t)}, ${dmy(t)}<br>Âm lịch: ${lunarText(t)}</div>${ahead.length ? html`<div class="hdr-events">${ahead.map((u) => html`<span>${icon('star', '1em')} ${u.ev.name} – ${dmy(u.date).slice(0, 5)} (${u.left === 0 ? 'hôm nay' : `còn ${u.left} ngày`})</span>`)}</div>` : ''}</div>
-    <div class="tr">${a2hsChip()}${badgeChip()}<a class="bell ${n ? '' : 'zero'}" href="#/dashboard" title="Thông báo">${icon('bell', '1.25em')}<span class="bn">${n}</span></a><button class="btn sm" data-act="logout">Đăng xuất</button></div></div></div>
-    <nav class="nav"><div class="in">${nav.map(([k, l, ic]) => html`<a href="#/${k}" data-tab="${k}" class="${active === k ? 'on' : ''}">${icon(ic, '1.35em')}<span>${l}</span></a>`)}</div></nav>
+    <div class="tr">${a2hsChip()}${badgeChip()}<a class="bell ${n ? '' : 'zero'}" href="#/dashboard" title="Thông báo">${icon('bell', '1.25em')}<span class="bn">${n}</span></a><button class="btn sm logout" data-act="logout">${icon('logout', '1.1em')} Đăng xuất</button></div></div></div>
+    <nav class="nav"><div class="in">${nav.map(([k, l, ic, sh]) => html`<a href="#/${k}" data-tab="${k}" class="${active === k ? 'on' : ''}" title="${l}">${icon(ic, '1.35em')}<span class="lg">${l}</span><span class="sh">${sh}</span></a>`)}</div></nav>
     <main class="wrap">${raw(eventBanner(S.snap.db.events, t))}${inner}
       <div id="a2hs">${a2hsButton()}</div>
       ${refreshFab()}<footer class="page-foot"><div id="footstrip">${footStrip(S.snap.system, { link: true })}</div><div class="upd">Phiên bản giao diện: ${APP_VERSION}</div></footer></main>`.s;

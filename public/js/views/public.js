@@ -14,6 +14,19 @@ import { icon, ROOM_ICON, ROOM_TONE } from '../icons.js';
 import { ROOM_STATUS } from '../util.js';
 
 const LEVEL = { red: 'red', orange: 'orange', blue: 'blue', green: 'green' };
+// ---- Thẻ GỌN cho "Việc cần xử lý": Phòng – Tên khách / Cần làm: … / nút ----
+const ymText = (ym) => `tháng ${Number(ym.slice(5, 7))}/${ym.slice(0, 4)}`;
+const dayLeft = (due, t) => { const n = Math.round((Date.parse(due) - Date.parse(t)) / 86400000); return n > 0 ? `còn ${n} ngày` : n === 0 ? 'hôm nay' : `trễ ${-n} ngày`; };
+export function taskCard(it, { tenantName = '', actions = false, pub = false, today = '' } = {}) {
+  const lines = [];
+  if (it.read) lines.push(html`<div class="t-todo"><b>Cần làm:</b> Ghi điện nước ${ymText(it.read.ym)} <span class="t-when">(${dmy(it.read.due)} - ${dayLeft(it.read.due, today)})</span></div>`);
+  if (it.pay) lines.push(html`<div class="t-todo"><b>Cần làm:</b> Thu tiền ${ymText(it.pay.ym)} – <span class="money">${vnd(it.pay.remaining)}</span> <span class="t-when">(${dmy(it.pay.due)} - ${dayLeft(it.pay.due, today)})</span></div>`);
+  if (it.refund) lines.push(html`<div class="t-todo"><b>Cần làm:</b> Hoàn tiền <span class="money">${vnd(it.refund.amount)}</span> cho khách đã trả phòng <span class="t-when">(${dmy(it.refund.date)})</span></div>`);
+  const btns = !actions ? '' : html`<div class="nact">${it.read && it.rentalId ? html`<button class="btn red sm" data-act="readings" data-id="${it.rentalId}">${icon('bolt', '1.1em')} Tính tiền</button>` : ''}${it.pay?.invoiceId ? html`<button class="btn green sm" data-act="pay" data-id="${it.pay.invoiceId}">${icon('check', '1.1em')} Đã nhận tiền</button>` : ''}${it.refund && it.recordId ? html`<button class="btn green sm" data-act="refunded" data-id="${it.recordId}">${icon('check', '1.1em')} Đã hoàn tiền</button>` : ''}</div>`;
+  const payType = !!it.pay;
+  return html`<article class="note task ${LEVEL[it.level] || ''} link" ${actions ? raw(`data-act="open-room" data-id="${esc(it.roomId)}"`) : pub && it.roomId ? raw(`data-act="pub-room" data-id="${esc(it.roomId)}" data-name="${esc(it.roomName)}" data-pay="${payType ? 1 : 0}"`) : ''}>
+    <div class="t-line">${it.roomName}${tenantName ? html` – ${String(tenantName).toUpperCase()}` : ''}</div>${lines}${btns}</article>`;
+}
 export function noticeCard(it, { link = false, tenantName = '', actions = false, pub = false } = {}) {
   const per = it.period || it.periodLabel; const m$ = (n) => html`<span class="money">${vnd(n)}</span>`;
   const rows = [];
@@ -44,7 +57,7 @@ export function readingsBanner(rd) {
 export function dateBlock(today) { return html`<div class="pub-date">${weekday(today)}, ngày ${dmy(today)}</div><div class="pub-lunar">Âm lịch: ${lunarText(today)}</div>`; }
 
 export async function publicView(app) {
-  app.innerHTML = html`<header class="hero"><div class="hero-bar"><div id="a2hschip">${a2hsChip()}${badgeChip()}</div><div class="hero-right"><a class="bell zero" id="pubbell" href="#pubnotices" data-act="pub-bell" title="Thông báo cần xử lý">${icon('bell', '1.25em')}<span class="bn">0</span></a><a class="login-top" href="#/login"><span class="btn sm">${icon('login', '1.1em')} Đăng nhập</span></a></div></div><div class="hero-in"><h1>NHÀ TRỌ 44 LÊ VĂN PHẤN<span class="credit">ducanhitpt186</span></h1><div id="ubar">${usageBar(null)}</div><div id="alerts"></div><div id="pubdate"></div></div></header>
+  app.innerHTML = html`<header class="hero"><div class="hero-bar"><div id="a2hschip">${a2hsChip()}${badgeChip()}</div><div class="hero-right"><a class="bell zero" id="pubbell" href="#pubnotices" data-act="pub-bell" title="Thông báo cần xử lý">${icon('bell', '1.25em')}<span class="bn">0</span></a><a class="login-top" href="#/login"><span class="btn sm">${icon('login', '1.1em')} Đăng nhập</span></a></div></div><div class="hero-in"><h1><span class="t1">NHÀ TRỌ</span><span class="t2">44 LÊ VĂN PHẤN</span><span class="credit">ducanhitpt186</span></h1><div id="ubar">${usageBar(null)}</div><div id="alerts"></div><div id="pubdate"></div></div></header>
     <main class="wrap narrow"><div id="pubbanner"></div><div id="pubbody"><p class="boot">Đang tải thông báo…</p></div>
     <div id="pubcal" style="margin-top:20px"></div>
     <div id="pubusage"></div>
@@ -66,11 +79,11 @@ function paint(res, note = '') {
   body.innerHTML = html`<div class="sum-title sumrow" id="pubnotices"><span>TỔNG QUAN CẦN XỬ LÝ</span></div>${todoBar(td, { pub: true, hidden, pubDebts: pubDebts.length })}
     <div class="stats">
       <div class="stat wide rooms3"><div><b>${s.rooms}</b><span>Tổng số phòng</span></div><div><b>${s.rented}</b><span>Đang cho thuê</span></div><div><b>${s.closed}</b><span>Đang đóng</span></div></div>
-      <div class="stat ${s.needReadings ? 'orange' : ''}"><b>${s.needReadings}</b><span>phòng cần ghi điện nước</span></div>
-      <div class="stat redtxt"><b>${s.unpaidRooms}</b><span>phòng chưa thanh toán đủ</span></div>
+      <div class="stat ${td.readings ? 'orange' : ''}"><b>${td.readings ?? s.needReadings}</b><span>phòng cần ghi điện nước</span></div>
+      <div class="stat redtxt"><b>${td.unpaid ?? s.unpaidRooms}</b><span>phòng cần thu tiền</span></div>
       <div class="stat wide redtxt"><b>${vnd(s.totalRemaining)}</b><span>tổng tiền còn cần thu</span></div>
     </div>
-    ${work.length ? html`<div class="notices">${work.map((i) => noticeCard(i, { pub: true }))}</div>` : ''}
+    ${work.length ? html`<div class="notices">${work.map((i) => taskCard(i, { pub: true, today: res.today }))}</div>` : ''}
     ${debtNotices(res.debts?.items.map((d) => ({ ...d })) || [], { actions: false })}
     ${eventsAheadList(res.events, res.today)}
     ${readingsBanner(res.readings)}
@@ -96,7 +109,7 @@ export async function loadPublic() {
 acts['reload-public'] = () => loadPublic();
 
 export function loginView(app) {
-  app.innerHTML = html`<main class="login"><h1>NHÀ TRỌ 44 LÊ VĂN PHẤN<span class="credit">ducanhitpt186</span></h1>
+  app.innerHTML = html`<main class="login"><h1><span class="t1">NHÀ TRỌ</span><span class="t2">44 LÊ VĂN PHẤN</span><span class="credit">ducanhitpt186</span></h1>
     <form data-form="login" autocomplete="on"><input type="password" name="password" placeholder="Nhập mật khẩu" autocomplete="current-password" required autofocus aria-label="Mật khẩu">
     <div class="msg err-inline" role="alert"></div><button class="btn primary block" type="submit">ĐĂNG NHẬP</button>
     <a href="#/" class="muted small">← Xem thông báo</a></form></main>`.s;

@@ -14,7 +14,7 @@ export function invoiceView(id) {
   const co = D().checkoutRecords.find((c) => c.invoiceId === i.id);
   const m = billModel(i, x, S.snap.settings?.bank, S.snap.settings?.bankQr);
   const canShare = typeof navigator !== 'undefined' && !!navigator.canShare;
-  return html`<div class="row noprint" style="margin-bottom:12px"><a class="back sp" href="#/room/${i.roomId}">← ${i.roomName}</a></div>
+  return html`<div class="row noprint" style="margin-bottom:12px"><a class="back" href="#/room/${i.roomId}">${icon('arrow-left', '1.15em')} ${i.roomName}</a><span class="sp"></span></div>
   ${billArticle(i, x, 'bill')}
   ${isLatest && x.remaining > 0 ? html`<div class="row noprint" style="justify-content:center;margin:14px 0 0"><button class="btn green big" data-act="pay" data-id="${i.id}">${icon('check', '1.2em')} Đã nhận tiền (còn ${vnd(x.remaining)})</button></div>` : ''}<div class="row noprint" style="justify-content:center;margin:14px 0"><button class="btn primary" data-act="bill-jpg">${raw(icon('photo', '1.15em'))} Tải hóa đơn (ảnh JPG)</button>${canShare ? html`<button class="btn" data-act="bill-share">Gửi Zalo / Chia sẻ</button>` : ''}<button class="btn" data-act="print">In</button>${isLatest && i.kind === 'periodic' ? html`<button class="btn" data-act="adjust" data-id="${i.id}">Điều chỉnh</button>` : ''}</div>
   <p class="muted small noprint" style="text-align:center;margin:0 0 16px">Bấm "Tải hóa đơn" để lưu ảnh JPG vào điện thoại rồi gửi Zalo cho khách. Trên điện thoại, "Gửi Zalo / Chia sẻ" mở sẵn danh sách ứng dụng để chọn Zalo.</p>

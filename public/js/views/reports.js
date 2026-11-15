@@ -13,7 +13,7 @@ let range = null; let last = null;
 export function reportsView() {
   range = range || { from: `${today().slice(0, 4)}-01-01`, to: today() };
   const v = html`<div class="page-head"><h2>Báo Cáo Tiền Trọ</h2></div>
-    <form data-form="report" class="row noprint" style="align-items:end"><div style="flex:1;min-width:140px">${field('Từ ngày', html`<input type="date" name="from" value="${range.from}" required>`)}</div><div style="flex:1;min-width:140px">${field('Đến ngày', html`<input type="date" name="to" value="${range.to}" required>`)}</div><button class="btn primary" type="submit" style="margin-bottom:12px">Xem báo cáo</button></form>
+    <form data-form="report" class="rep-range noprint"><div class="rr-f">${field('Từ ngày', html`<input type="date" name="from" value="${range.from}" required>`)}</div><div class="rr-f">${field('Đến ngày', html`<input type="date" name="to" value="${range.to}" required>`)}</div><button class="btn primary rr-btn" type="submit">${icon('chart', '1.1em')} Xem báo cáo</button></form>
     <div id="rep"><p class="boot">Đang tính…</p></div>`;
   v.after = loadReport; return v;
 }

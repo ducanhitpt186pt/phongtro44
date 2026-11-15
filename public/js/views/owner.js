@@ -10,7 +10,7 @@ export function ownerView() {
   const ms = D().masterReadings.slice().sort((a, b) => a.date.localeCompare(b.date)); const last = ms[ms.length - 1];
   const series = (DV().ownerSeries || []).slice().reverse(); const alerts = DV().usage.alerts.filter((a) => a.roomName === 'Chủ Nhà'); const bank = S.snap.settings?.bank;
   const base = ms[0]; const qr = S.snap.settings?.bankQr;
-  return html`<a class="back" href="#/dashboard">← Tổng quan</a>
+  return html`<a class="back" href="#/dashboard">${icon('arrow-left', '1.15em')} Tổng quan</a>
     <div class="page-head"><span class="rbadge orange">${icon('home', '1.5em')}</span><h2>Chủ Nhà – đồng hồ tổng</h2></div>
     <p class="muted" style="margin-top:0;line-height:1.5">Cách tính: <b>Số đồng hồ tổng MỚI − Số đồng hồ tổng CŨ</b> = điện/nước cả dãy trọ và nhà. Lấy số này <b>trừ tổng các phòng đã dùng</b> ra số <b>Chủ Nhà dùng</b>. Số mới của tháng này chính là số cũ của tháng sau.</p>
     ${alerts.map((a) => html`<div class="warn-box" style="background:var(--red-bg);color:var(--red-t)">${icon('alert')} ${a.text}</div>`)}

@@ -14,14 +14,22 @@ function statusOf(t) {
 }
 forms.noop = () => {};
 export function tenantsView() {
-  const list = D().tenants.filter((t) => !t.purgedAt).sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
+  // Khách đang ở: xếp theo số phòng (Phòng 1, 2, 3…); khách đã trả phòng xếp sau, theo tên
+  const roomNo = (t) => { const a = statusOf(t).act; return a ? room(a.roomId).name : null; };
+  const list = D().tenants.filter((t) => !t.purgedAt).sort((a, b) => { const ra = roomNo(a), rb = roomNo(b); if (ra && rb) return ra.localeCompare(rb, 'vi', { numeric: true }); if (ra || rb) return ra ? -1 : 1; return a.fullName.localeCompare(b.fullName, 'vi'); });
   const v = html`<div class="page-head"><h2>Khách thuê</h2></div>
     <form data-form="noop" data-live="tsearch"><input name="q" type="search" placeholder="Tìm theo tên, số điện thoại, CCCD…" aria-label="Tìm khách" autocomplete="off"></form>
     <div class="list" id="tlist" style="margin-top:12px">${list.map(tenantRow)}${list.length ? '' : html`<div class="empty-state">Chưa có khách. Vào một phòng trống để thêm khách thuê.</div>`}</div>`;
   return v;
 }
-const tenantRow = (t) => { const s = statusOf(t); return html`<div class="li" data-search="${(t.fullName + ' ' + t.phone + ' ' + t.cccd).toLowerCase()}"><a href="#/tenant/${t.id}"><b>${t.fullName}</b></a><span class="muted small">${t.phone}</span>
-  <span>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`} ${s.debt ? html`<span class="badge red">Nợ ${vnd(s.debt)}</span>` : ''} ${!s.act ? html`<button class="btn sm danger" data-act="del-tenant" data-id="${t.id}">${icon('trash', '1em')} Xóa</button>` : ''}</span></div>`; };
+// Mỗi dòng: Phòng – Tên khách – Số người ở – Số điện thoại (bấm dòng để mở hồ sơ)
+const tenantRow = (t) => { const s = statusOf(t); const people = 1 + D().occupants.filter((o) => o.tenantId === t.id).length;
+  return html`<div class="li trow" data-search="${(t.fullName + ' ' + t.phone + ' ' + t.cccd + ' ' + (s.act ? room(s.act.roomId).name : '')).toLowerCase()}">
+  <span class="tr-room">${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`}</span>
+  <a class="tr-name" href="#/tenant/${t.id}"><b>${t.fullName}</b></a>
+  <span class="tr-ppl">Số người ở: <b>${people}</b></span>
+  <span class="tr-ph">${t.phone ? html`<a href="tel:${t.phone}">${t.phone}</a>` : html`<span class="muted">Chưa có SĐT</span>`}</span>
+  <span class="tr-x">${s.debt ? html`<span class="badge red">Nợ ${vnd(s.debt)}</span>` : ''}${!s.act ? html` <button class="btn sm danger" data-act="del-tenant" data-id="${t.id}">${icon('trash', '1em')} Xóa</button>` : ''}</span></div>`; };
 live.tsearch = (f) => { const q = f.q.value.trim().toLowerCase(); document.querySelectorAll('#tlist [data-search]').forEach((el) => (el.hidden = q && !el.dataset.search.includes(q))); };
 
 export function tenantView(id) {
@@ -31,7 +39,7 @@ export function tenantView(id) {
   const chainIds = new Set(rentals.map((r) => r.chainId));
   const pays = D().payments.filter((p) => chainIds.has(p.chainId)).slice().reverse();
   const img = (side, label) => idCard(t, 'tenant', side, label);
-  return html`<a class="back" href="#/tenants">← Khách thuê</a>
+  return html`<a class="back" href="#/tenants">${icon('arrow-left', '1.15em')} Khách thuê</a>
     <div class="page-head"><h2>${t.fullName}</h2>${s.act ? html`<span class="badge blue">${room(s.act.roomId).name}</span>` : html`<span class="badge">Đã trả phòng</span>`}${s.act && !t.purgedAt ? html`<button class="btn sm primary" data-act="profile-img" data-room="${s.act.roomId}">${icon('photo', '1.1em')} Tải Ảnh Hồ Sơ Khách Theo Phòng</button>` : ''}${t.purgedAt ? html`<span class="badge">Hồ sơ đã xóa ${dmy(t.purgedAt)}</span>` : html`<button class="btn sm" data-act="edit-tenant" data-id="${id}">Sửa thông tin</button>${!s.act ? html`<button class="btn sm danger" data-act="del-tenant" data-id="${id}">${icon('trash', '1em')} Xóa hồ sơ</button>` : ''}`}</div>
     <section class="card">${contactRow(t, occ)}<dl class="kv"><dt>Ngày sinh</dt><dd>${dmy(t.dob)}</dd><dt>Giới tính</dt><dd>${GENDER[t.gender]}</dd><dt>Điện thoại</dt><dd>${t.phone}</dd><dt>Số CCCD</dt><dd>${t.cccd}</dd><dt>Ngày cấp / Nơi cấp</dt><dd>${dmy(t.cccdIssueDate)} · ${t.cccdIssuePlace}</dd><dt>Địa chỉ thường trú</dt><dd>${t.address}</dd><dt>Quê quán</dt><dd>${t.hometown || '—'}</dd><dt>Công nợ hiện tại</dt><dd class="${s.debt ? 'owe' : 'okc'}">${vnd(s.debt)}</dd>${oldDebtLine(t)}</dl></section>
     <h2 class="sec">Ảnh CCCD</h2><div class="idgrid">${img('front', 'mặt trước')}${img('back', 'mặt sau')}</div>
