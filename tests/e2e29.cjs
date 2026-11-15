@@ -7,7 +7,7 @@ const { chromium } = require(require('child_process').execSync('npm root -g').to
   const ok = (c, m) => { console.log(c ? '  ✓' : '  ✗ FAIL', m); if (!c) process.exitCode = 1; }; const H = 'http://localhost:4173/';
   const data = () => pg.evaluate(() => fetch('/api/data').then((x) => x.json()));
   await pg.goto(H + '#/login'); await pg.fill('input[name=password]', '20101963'); await pg.click('button:has-text("ĐĂNG NHẬP")'); await pg.waitForSelector('.room-card');
-  const nav = (await pg.locator('nav.nav a').allInnerTexts()).map((s) => s.trim()); ok(JSON.stringify(nav) === JSON.stringify(['Tổng quan', 'Khách thuê', 'Báo Cáo Tiền Trọ', 'Nhắc Nợ (Riêng)', 'Thu Chi (Riêng)', 'Sao lưu']), 'thứ tự tab: ' + nav.join(' | '));
+  const nav = await pg.$$eval('nav.nav a', (els) => els.map((e) => e.title)); ok(JSON.stringify(nav) === JSON.stringify(['Tổng quan', 'Khách thuê', 'Báo Cáo Tiền Trọ', 'Nhắc Nợ (Riêng)', 'Thu Chi (Riêng)', 'Sao lưu']), 'thứ tự tab: ' + nav.join(' | '));
   const dash = await pg.innerHTML('main'); ok(dash.indexOf('dash-cal') < dash.search(/SO VỚI THÁNG TRƯỚC|so với tháng trước/i) || !/so với tháng trước/i.test(dash), 'điện nước so với tháng trước nằm dưới lịch');
   // thêm khách + người ở cùng
   await pg.goto(H + '#/room/room-3'); await pg.waitForSelector('button[data-act=movein]'); await pg.click('button[data-act=movein]'); await pg.waitForSelector('form[data-form=movein]'); const F = 'form[data-form=movein] ';
