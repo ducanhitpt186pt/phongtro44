@@ -23,13 +23,13 @@ const { execSync } = require('child_process'); const { chromium } = require(exec
   // khách mới, SĐT lạ, có nợ cũ; còn 5 ngày tới hạn thu (chỉ nhắc trước, không đếm)
   const mv = await api('POST', 'tenants', { roomId: 'room-1', startDate: day(-27), rent: 3000000, elecPrice: 3500, waterPrice: 15000, initElec: 100, initWater: 50, paidAlready: true, tenant: { fullName: 'Trần Thị Mai', dob: '1990-05-06', gender: 'female', phone: '0911111111', cccd: '001090000111', cccdIssueDate: '2021-01-01', cccdIssuePlace: 'CA', address: 'Đà Nẵng' }, oldDebt: { amount: 200000, reason: 'nợ cũ', date: day(-3) } });
   const tid = mv.result.tenant.id, rid = mv.result.rental.id;
-  let s = await check(2, 'Thêm khách (1 nợ cũ + 1 SĐT lạ; "sắp đến ngày thu" không đếm)'); ok(s.upcoming === 1, 'có 1 thẻ "Sắp đến ngày thu tiền" nhưng không tính vào số');
-  const dashTxt = (await pg.innerText('main')).toLowerCase(); ok(dashTxt.includes('sắp đến ngày thu tiền (1)') && dashTxt.includes('không tính vào số thông báo'), 'Tổng quan ghi rõ thẻ nhắc trước không tính vào số');
+  let s = await check(3, 'Thêm khách, còn 4 ngày tới hạn (ghi điện nước + nợ cũ + SĐT lạ)'); ok(s.readings === 1 && s.unpaid === 0, 'trước 7 ngày: phòng có 1 việc "Ghi điện nước" (gồm luôn sắp thu tiền)');
+  const dashTxt = await pg.innerText('main'); ok(dashTxt.includes('Cần làm (1)') && dashTxt.includes('Ghi điện nước') && dashTxt.includes('Sắp đến ngày thu tiền') && dashTxt.includes('1 phòng cần ghi điện nước'), 'thẻ phòng: "Cần làm (1): Ghi điện nước" + sắp đến ngày thu tiền');
   ok((await pub.innerText('.todo-bar')).includes('2 việc riêng'), 'trang ngoài giải thích có 2 việc riêng (cần đăng nhập để xem)');
   const dj = await api('POST', 'debts', { kind: 'receivable', name: 'Anh Tư', amount: 1000000, date: day(-2), note: '' }); const debtId = (dj.result || dj.db?.debts?.slice(-1)[0])?.id || (await pg.evaluate(() => fetch('/api/data').then((r) => r.json()))).db.debts[0].id;
-  await check(3, 'Thêm 1 khoản Nhắc Nợ');
+  await check(4, 'Thêm 1 khoản Nhắc Nợ');
   const inv = (await api('POST', 'readings', { rentalId: rid, periodIndex: 1, elecNew: 150, waterNew: 60, readDate: day(0) })).result;
-  s = await check(4, 'Ghi điện nước → phòng 1 chưa thanh toán'); ok(s.unpaid === 1 && s.upcoming === 0, 'đúng 1 phòng chưa thanh toán, không còn thẻ nhắc trước');
+  s = await check(4, 'Ghi điện nước xong → chuyển thành 1 việc "Thu tiền"'); ok(s.unpaid === 1 && s.readings === 0, 'ghi xong: hết việc ghi điện nước, có 1 phòng cần thu tiền'); ok((await pg.innerText('main')).includes('1 phòng cần thu tiền'), 'dòng tổng ghi "1 phòng cần thu tiền"');
   // làm xong từng việc → số giảm dần về 0
   await api('POST', 'payments', { invoiceId: inv.id, amount: inv.total, date: day(0), allMonths: true }); await check(3, 'Thu đủ tiền phòng 1');
   await api('POST', `debts/${debtId}/pay`, { amount: 1000000, date: day(0) }); await check(2, 'Thu xong khoản Nhắc Nợ');
