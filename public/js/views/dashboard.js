@@ -15,7 +15,7 @@ export function roomMoney(roomId) {
 }
 export function dashboardView() {
   const rooms = D().rooms.filter((r) => !r.kind), rem = DV().reminders; const td = DV().todo;
-  const work = rem.filter((i) => i.type !== 'upcoming'), soon = rem.filter((i) => i.type === 'upcoming');
+  const work = rem;
   const card = (i) => noticeCard({ ...i, period: i.periodLabel }, { link: true, actions: true, tenantName: i.tenantId ? tenant(i.tenantId)?.fullName : '' }); const ownerRoom = D().rooms.find((r) => r.kind === 'owner');
   let debt = 0, toCollect = 0;
   for (const c of new Set(D().rentals.map((r) => r.chainId))) {
@@ -27,13 +27,12 @@ export function dashboardView() {
   const stat = (n, l, cls = '') => html`<div class="stat ${cls}"><b>${n}</b><span>${l}</span></div>`;
   return html`
     ${todoBar(td)}
-    <h2 class="sec sumrow" style="margin-top:4px"><span>Thông báo cần xử lý (${work.length})</span></h2>
+    <h2 class="sec sumrow" style="margin-top:4px"><span>Việc của các phòng (${td.rooms})</span></h2>
     ${work.length ? html`<div class="notices" style="margin-top:0">${work.map(card)}</div>` : html`<div class="empty-state" style="padding:12px">Các phòng không có việc cần xử lý.</div>`}
     ${alertNotices(DV().usage.alerts, { actions: true })}
     ${debtNotices(openDebtItems(today()), { actions: true })}
     ${oldDebtNotices()}
     ${phoneNotices()}
-    ${soon.length ? html`<h2 class="sec">Sắp đến ngày thu tiền (${soon.length}) <span class="muted small" style="text-transform:none;letter-spacing:0;font-weight:500">· chỉ nhắc trước, không tính vào số thông báo</span></h2><div class="notices" style="margin-top:0">${soon.map(card)}</div>` : ''}
     ${eventsAheadList(S.snap.db.events, today())}
     <h2 class="sec">Tổng quan</h2>
     <div class="cards7"><div class="stat roomstat"><b>${rooms.length}</b><span>Tổng số phòng</span><span class="sub blk">Phòng đang khóa: <b class="inl">${rooms.filter((r) => r.status === 'notready').length}</b></span></div>${stat(toCollect, 'Phòng cần thu tiền', 'redtxt')}${stat(vnd(debt), 'Tổng công nợ', 'debt')}</div>
@@ -63,8 +62,8 @@ function ownerCard(r) {
 }
 
 // Dòng tổng: đúng bằng số trên chuông / biểu tượng app, kèm từng loại việc
-export function todoBar(td, { pub = false, hidden = 0 } = {}) {
+export function todoBar(td, { pub = false, hidden = 0, pubDebts = 0 } = {}) {
   if (!td.count) return html`<div class="todo-bar ok">${icon('check', '1.2em')} <b>Đã xong hết việc</b> – không còn thông báo nào.</div>`;
-  const parts = pub ? [] : [[td.rooms, 'việc của các phòng'], [td.alerts, 'cảnh báo điện nước'], [td.debts, 'khoản Nhắc Nợ'], [td.oldDebts, 'khách còn nợ cũ'], [td.phones, 'số điện thoại cần cập nhật']].filter(([n]) => n);
-  return html`<div class="todo-bar">${icon('bell', '1.2em')} <span><b>${td.count} việc cần làm</b>${parts.length ? html` = ${parts.map(([n, l], k) => html`${k ? ' + ' : ''}<b>${n}</b> ${l}`)}` : ''}${hidden ? html` · <span class="muted">trong đó ${hidden} việc riêng (nợ cũ, số điện thoại…) – đăng nhập để xem</span>` : ''}</span></div>`;
+  const parts = [[td.readings, 'phòng cần ghi điện nước'], [td.unpaid, 'phòng cần thu tiền'], [td.refunds, 'khoản cần hoàn tiền'], ...(pub ? [[pubDebts, 'khoản Nhắc Nợ']] : [[td.alerts, 'cảnh báo điện nước'], [td.debts, 'khoản Nhắc Nợ'], [td.oldDebts, 'khách còn nợ cũ'], [td.phones, 'số điện thoại cần cập nhật']])].filter(([n]) => n);
+  return html`<div class="todo-bar">${icon('bell', '1.2em')} <span><b>${td.count} việc cần làm</b>${parts.length ? html` = ${parts.map(([n, l], k) => html`${k ? ' + ' : ''}<b>${n}</b> ${l}`)}` : ''}${hidden ? html` + <b>${hidden}</b> việc riêng <span class="muted">(nợ cũ, số điện thoại… – đăng nhập để xem)</span>` : ''}</span></div>`;
 }

@@ -1,3 +1,19 @@
+# Phiên bản 2026-11-30-h
+- Thông báo theo đúng quy trình làm việc, nhắc trước **7 ngày** (trước là 5):
+  1. Trước 7 ngày đến ngày ghi: **1 thông báo "Ghi điện nước"** (gồm luôn "Sắp đến ngày thu tiền", không tính thêm).
+  2. Ghi điện nước xong → hóa đơn mới → thông báo đổi thành **"Thu tiền"** (vẫn 1).
+  3. Thu đủ → hết thông báo của phòng.
+  - Còn nợ kỳ trước chưa thu mà đã tới kỳ ghi mới: 2 việc riêng (thu tiền + ghi điện nước).
+- Ngoài ra vẫn tính: Nhắc nợ, Tiền nợ cũ, số điện thoại cần cập nhật, cảnh báo điện nước. Mọi nơi cùng 1 số, xong hết việc → 0.
+
+# Phiên bản 2026-11-30-g
+- **Ghi điện nước và Thanh toán là 2 việc riêng**, mỗi việc tính 1 thông báo:
+  - **Ghi điện nước**: tính từ 5 ngày trước ngày ghi, và khi đã quá ngày mà chưa ghi. Ghi xong → bớt 1.
+  - **Thanh toán**: tính từ 5 ngày trước **ngày đến hạn** (nhắc thanh toán), và khi còn nợ / quá hạn. Thu đủ → bớt 1.
+  - Ví dụ phòng sắp đến hạn = 2 việc → ghi điện nước xong còn 1 → thu tiền xong về 0.
+- Mỗi thẻ phòng ghi rõ **"Cần làm (2): Ghi điện nước · Thanh toán"**; dòng tổng ghi "… phòng cần ghi điện nước + … phòng cần thanh toán + …". Bỏ mục "Sắp đến ngày thu tiền – không tính" của bản f.
+- Chuông trong app, trang ngoài, số trên biểu tượng app và thông báo mỗi sáng vẫn dùng chung một số.
+
 # Phiên bản 2026-11-30-f
 - **Số thông báo thống nhất ở mọi nơi**: chuông trong app, chuông trang ngoài (chưa đăng nhập), số trên biểu tượng app và thông báo mỗi sáng dùng **một cách đếm duy nhất** do máy chủ tính (lib/todo.js). Số = việc của các phòng (chưa thu tiền, cần ghi điện nước, cần hoàn tiền) + cảnh báo điện nước + khoản Nhắc Nợ còn nợ + khách còn nợ cũ + số điện thoại cần cập nhật. **Làm xong hết việc → tất cả về 0**, biểu tượng app không còn số.
 - Thẻ **"Sắp đến ngày thu tiền"** chỉ là nhắc trước: vẫn hiện (mục riêng) nhưng **không tính vào số thông báo**.

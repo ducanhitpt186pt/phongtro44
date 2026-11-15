@@ -26,6 +26,7 @@ export function noticeCard(it, { link = false, tenantName = '', actions = false,
   const payType = ['overdue', 'debt', 'unpaid', 'partial', 'ended_debt'].includes(it.type);
   return html`<article class="note ${LEVEL[it.level] || ''} ${link || pub ? 'link' : ''}" ${link ? raw(`data-act="open-room" data-id="${esc(it.roomId)}"`) : pub && it.roomId ? raw(`data-act="pub-room" data-id="${esc(it.roomId)}" data-name="${esc(it.roomName)}" data-pay="${payType ? 1 : 0}"`) : ''}>
     <h3>${String(it.roomName).toUpperCase()}${tenantName ? html` <span class="muted small">· ${tenantName}</span>` : ''}</h3>
+    ${it.tasks?.length ? html`<div class="tasks">Cần làm (${it.tasks.length}): ${it.tasks.map((t) => html`<span class="task ${t}">${{ readings: 'Ghi điện nước', pay: 'Thu tiền', refund: 'Hoàn tiền' }[t]}</span>`)}</div>` : ''}
     <dl>${rows.map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`)}</dl>
     ${it.also?.length ? html`<div class="also">Đồng thời: ${it.also.join('; ')}</div>` : ''}${btns}</article>`;
 }
@@ -60,9 +61,9 @@ function paint(res, note = '') {
   $('#pubbanner').innerHTML = eventBanner(res.events, res.today).s; $('#pubcal').innerHTML = calendarPanel().s; $('#pubusage').innerHTML = usagePanel(res.usage).s || '';
   $('#pubdate').innerHTML = dateBlock(res.today).s; refreshStatus(res.system);
   const td = res.todo || { count: items.length, rooms: items.length, debts: 0, other: 0 }; const pubDebts = res.debts?.items || []; const hidden = Math.max(0, td.count - td.rooms - pubDebts.length);
-  const work = items.filter((i) => i.type !== 'upcoming'), soon = items.filter((i) => i.type === 'upcoming');
+  const work = items;
   const bn = $('#pubbell'); if (bn) { bn.querySelector('.bn').textContent = String(td.count); bn.classList.toggle('zero', !td.count); } updateBadge(td.count); // cùng 1 số với trong app
-  body.innerHTML = html`<div class="sum-title sumrow" id="pubnotices"><span>TỔNG QUAN CẦN XỬ LÝ</span></div>${todoBar(td, { pub: true, hidden })}
+  body.innerHTML = html`<div class="sum-title sumrow" id="pubnotices"><span>TỔNG QUAN CẦN XỬ LÝ</span></div>${todoBar(td, { pub: true, hidden, pubDebts: pubDebts.length })}
     <div class="stats">
       <div class="stat wide rooms3"><div><b>${s.rooms}</b><span>Tổng số phòng</span></div><div><b>${s.rented}</b><span>Đang cho thuê</span></div><div><b>${s.closed}</b><span>Đang đóng</span></div></div>
       <div class="stat ${s.needReadings ? 'orange' : ''}"><b>${s.needReadings}</b><span>phòng cần ghi điện nước</span></div>
@@ -70,7 +71,6 @@ function paint(res, note = '') {
       <div class="stat wide redtxt"><b>${vnd(s.totalRemaining)}</b><span>tổng tiền còn cần thu</span></div>
     </div>
     ${work.length ? html`<div class="notices">${work.map((i) => noticeCard(i, { pub: true }))}</div>` : ''}
-    ${soon.length ? html`<h2 class="sec">Sắp đến ngày thu tiền (${soon.length}) <span class="muted small" style="text-transform:none;letter-spacing:0;font-weight:500">· chỉ nhắc trước, không tính vào số thông báo</span></h2><div class="notices" style="margin-top:0">${soon.map((i) => noticeCard(i, { pub: true }))}</div>` : ''}
     ${debtNotices(res.debts?.items.map((d) => ({ ...d })) || [], { actions: false })}
     ${eventsAheadList(res.events, res.today)}
     ${readingsBanner(res.readings)}
