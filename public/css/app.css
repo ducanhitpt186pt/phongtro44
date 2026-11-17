@@ -538,3 +538,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:auto}
 .bbank .bbrow dd.acc{letter-spacing:.04em;font-size:1.1rem}
 .bbank .bqr{display:block;width:200px;height:200px;max-width:70%;margin:4px auto 0;object-fit:contain}
 @media (max-width:360px){.bbank .bbrow dl .bk{flex-direction:column;align-items:flex-start;gap:0}.bbank .bbrow dd{text-align:left}}
+
+/* 2026-11-30-n: lịch sử sửa hóa đơn */
+.adj-hist{display:grid;gap:8px;margin:8px 0 12px}.adj-hist .ah{background:#f5f7fa;border-radius:12px;padding:8px 12px}.adj-hist .ah1{font-size:1rem}.adj-hist .ah2{font-size:.95rem;color:#3a3a3c;margin-top:2px;overflow-wrap:anywhere}
+.adj-ex{border-bottom:1px dashed #e3e7ee;margin-bottom:6px}
