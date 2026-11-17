@@ -1,3 +1,6 @@
+# Phiên bản 2026-11-30-m
+- Hóa đơn: dòng đỏ dưới "Nợ cũ" chỉ hiện **đúng nội dung ghi chú** (VD "Ghi chú: Nợ tiền T9, T10, T11"), không lặp lại "Nợ nhập thêm 2.900.000 đ". Không nhập ghi chú thì không hiện dòng đỏ. Nếu hóa đơn có cả nợ tháng trước (tự chuyển) lẫn nợ nhập thêm thì mới tách: "Còn nợ tháng 10/2026: …" và "Nợ nhập thêm 500.000 đ: ghi chú".
+
 # Phiên bản 2026-11-30-l
 - **Tổng quan cần xử lý** (trang trong + trang ngoài): dưới dòng "Cần làm: Thu tiền …" hiện thêm ghi chú **chữ đỏ**: "Nợ cũ: 2.900.000 đ – lý do" (hoặc tháng còn nợ), "Thu thêm: 200.000 đ – Sửa khóa", "Tiền nợ cũ (ghi riêng): … – lý do".
 - **Hóa đơn của khách**: dòng Nợ cũ và Tiền thu thêm có ghi chú **chữ đỏ** (cả trên màn hình và ảnh JPG gửi Zalo).
