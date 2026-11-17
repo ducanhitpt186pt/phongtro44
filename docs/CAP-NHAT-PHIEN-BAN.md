@@ -1,3 +1,6 @@
+# Phiên bản 2026-11-30-o
+- Thẻ "Cần làm": ghi chú đặt trong ngoặc sau số tiền, ví dụ "Nợ cũ: 2.600.000 đ ( Tiền Phòng + Điện Nước T9 , T10 )", "Thu thêm: 300.000 đ ( Tiền Điện Tháng 11 )".
+
 # Phiên bản 2026-11-30-n
 - **Sửa hóa đơn** (nút "Sửa hóa đơn (nợ cũ, thu thêm…)" ở trang hóa đơn; nút "Sửa" ở bảng tháng trong trang phòng; nút "Sửa nợ cũ / tiền thu thêm" trong hộp thoại Thanh toán): sửa được **số tiền Nợ cũ + ghi chú**, **mọi khoản Tiền thu thêm + ghi chú** (thêm khoản mới, xóa trắng số tiền để bỏ khoản), chỉ số điện nước, ghi chú hóa đơn. Bắt buộc nhập lý do. Không thay đổi gì thì báo "Chưa có gì thay đổi để lưu".
 - **Lịch sử sửa hóa đơn** ghi rõ từng lần: giờ ngày, lý do, từng mục cũ → mới (Nợ cũ, Ghi chú nợ cũ, Tiền thu thêm, chỉ số, ghi chú, Tổng tiền). Mới nhất ở trên.
