@@ -1,3 +1,9 @@
+# Phiên bản 2026-11-30-n
+- **Sửa hóa đơn** (nút "Sửa hóa đơn (nợ cũ, thu thêm…)" ở trang hóa đơn; nút "Sửa" ở bảng tháng trong trang phòng; nút "Sửa nợ cũ / tiền thu thêm" trong hộp thoại Thanh toán): sửa được **số tiền Nợ cũ + ghi chú**, **mọi khoản Tiền thu thêm + ghi chú** (thêm khoản mới, xóa trắng số tiền để bỏ khoản), chỉ số điện nước, ghi chú hóa đơn. Bắt buộc nhập lý do. Không thay đổi gì thì báo "Chưa có gì thay đổi để lưu".
+- **Lịch sử sửa hóa đơn** ghi rõ từng lần: giờ ngày, lý do, từng mục cũ → mới (Nợ cũ, Ghi chú nợ cũ, Tiền thu thêm, chỉ số, ghi chú, Tổng tiền). Mới nhất ở trên.
+- Ghi chú nợ cũ dùng được cả khi nợ là nợ tự chuyển từ tháng trước (không chỉ nợ nhập tay).
+- Chỉ sửa được hóa đơn mới nhất của khách (hóa đơn cũ đã chốt); bấm Sửa ở hóa đơn cũ sẽ được giải thích.
+
 # Phiên bản 2026-11-30-m
 - Hóa đơn: dòng đỏ dưới "Nợ cũ" chỉ hiện **đúng nội dung ghi chú** (VD "Ghi chú: Nợ tiền T9, T10, T11"), không lặp lại "Nợ nhập thêm 2.900.000 đ". Không nhập ghi chú thì không hiện dòng đỏ. Nếu hóa đơn có cả nợ tháng trước (tự chuyển) lẫn nợ nhập thêm thì mới tách: "Còn nợ tháng 10/2026: …" và "Nợ nhập thêm 500.000 đ: ghi chú".
 
