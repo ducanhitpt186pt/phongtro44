@@ -44,13 +44,26 @@ const { execSync } = require('child_process'); const { chromium } = require(exec
   await call('POST', 'payments', { invoiceId: inv.id, amount: 1000000, date: day(0) }); // thay đổi từ "máy khác"
   await pg.evaluate(() => document.dispatchEvent(new Event('visibilitychange'))); await pg.waitForTimeout(1500); rep = await pg.innerText('#rep');
   ok(/Thu một phần/.test(rep), 'báo cáo tự cập nhật khi dữ liệu thay đổi (không cần bấm lại)');
-  // Điều chỉnh: sửa ghi chú nợ cũ
-  await pg.goto(H + '#/invoice/' + inv.id); await pg.waitForSelector('#bill'); await pg.click('button[data-act=adjust]'); await pg.waitForSelector('form[data-form=adjust]');
-  await pg.fill('form[data-form=adjust] input[name=manualDebtNote]', 'Nợ tháng 9 và 10'); await pg.fill('form[data-form=adjust] input[name=reason]', 'Thêm ghi chú'); await pg.click('form[data-form=adjust] button[type=submit]'); await pg.waitForTimeout(1000);
-  ok((await pg.innerText('#bill')).includes('Ghi chú: Nợ tháng 9 và 10') && (await pg.innerText('#bill')).includes('Ghi chú: Sửa khóa'), 'Điều chỉnh: sửa ghi chú nợ cũ, giữ tiền thu thêm');
+  // SỬA HÓA ĐƠN: đổi số nợ cũ + ghi chú, sửa khoản thu thêm, thêm khoản thứ 2, lưu lịch sử
+  await pg.goto(H + '#/invoice/' + inv.id); await pg.waitForSelector('#bill'); ok((await pg.innerText('button[data-act=adjust]')).includes('Sửa hóa đơn'), 'nút "Sửa hóa đơn (nợ cũ, thu thêm…)" trên trang hóa đơn');
+  await pg.click('button[data-act=adjust]'); const A = 'form[data-form=adjust] '; await pg.waitForSelector(A);
+  ok((await pg.inputValue(A + 'input[name=manualDebt]')) === '2.900.000' && (await pg.inputValue(A + 'input[name=manualDebtNote]')) === 'Nợ tiền phòng tháng 10' && (await pg.inputValue(A + 'input[name=exl]')) === 'Sửa khóa', 'form Sửa điền sẵn số nợ cũ, ghi chú nợ cũ, khoản thu thêm hiện tại');
+  await pg.fill(A + 'input[name=manualDebt]', '3000000'); await pg.fill(A + 'input[name=manualDebtNote]', 'Nợ tiền T9, T10, T11'); await pg.fill(A + 'input[name=exa]', '250000'); await pg.fill(A + 'input[name=exl]', 'Thay ổ khóa');
+  await pg.click('button[data-act=adj-add-ex]'); const ex = await pg.$$(A + 'input[name=exa]'); await ex[1].fill('50000'); await (await pg.$$(A + 'input[name=exl]'))[1].fill('Internet');
+  await pg.fill(A + 'input[name=reason]', 'Sửa nợ và thu thêm'); await pg.click(A + 'button[type=submit]'); await pg.waitForTimeout(1200);
+  let bt = await pg.innerText('#bill'); ok(bt.includes('3.000.000 đ') && bt.includes('Ghi chú: Nợ tiền T9, T10, T11') && bt.includes('Ghi chú: Thay ổ khóa') && bt.includes('Ghi chú: Internet') && bt.includes('4.300.000 đ'), 'hóa đơn cập nhật: nợ cũ 3.000.000 + ghi chú mới, 2 khoản thu thêm, tổng 4.300.000 đ');
+  const hist = await pg.innerText('.adj-hist'); ok(hist.includes('Sửa nợ và thu thêm') && hist.includes('Nợ cũ: 2.900.000 đ → 3.000.000 đ') && hist.includes('Ghi chú nợ cũ: "Nợ tiền phòng tháng 10" → "Nợ tiền T9, T10, T11"') && hist.includes('Tiền thu thêm: 200.000 đ (Sửa khóa) → 250.000 đ (Thay ổ khóa) + 50.000 đ (Internet)') && hist.includes('Tổng tiền: 4.100.000 đ → 4.300.000 đ'), 'lịch sử sửa ghi rõ: thời gian, lý do, cũ → mới');
+  // bỏ khoản Internet, chỉ đổi ghi chú
+  await pg.click('button[data-act=adjust]'); await pg.waitForSelector(A); await (await pg.$$(A + 'input[name=exa]'))[1].fill(''); await pg.fill(A + 'input[name=manualDebtNote]', 'Nợ tháng 9 và 10'); await pg.fill(A + 'input[name=reason]', 'Bỏ internet'); await pg.click(A + 'button[type=submit]'); await pg.waitForTimeout(1200);
+  bt = await pg.innerText('#bill'); ok(!bt.includes('Internet') && bt.includes('Ghi chú: Nợ tháng 9 và 10') && (await pg.$$('.adj-hist .ah')).length >= 2, 'xóa trắng số tiền = bỏ khoản thu thêm; lịch sử có 2 lần sửa (mới nhất ở trên)');
+  // không đổi gì → báo
+  await pg.click('button[data-act=adjust]'); await pg.waitForSelector(A); await pg.fill(A + 'input[name=reason]', 'x'); await pg.click(A + 'button[type=submit]'); await pg.waitForTimeout(800); ok((await pg.innerText('#toast')).includes('Chưa có gì thay đổi'), 'không thay đổi gì → báo "Chưa có gì thay đổi để lưu"'); await pg.keyboard.press('Escape');
+  // nút Sửa ở trang phòng + trong hộp thoại Thanh toán
+  await pg.goto(H + '#/room/room-4'); await pg.waitForSelector('tr.click'); ok(!!(await pg.$('tr.click button[data-act=adjust]')), 'trang phòng: hóa đơn mới nhất có nút Sửa');
+  await pg.goto(H + '#/dashboard'); await pg.waitForSelector('.note.task'); const c4b = (await pg.$$eval('.note.task', (e) => e.map((x) => x.innerText))).find((x) => x.startsWith('Phòng 4')) || ''; ok(c4b.includes('Nợ cũ: 3.000.000 đ – Nợ tháng 9 và 10') && c4b.includes('Thu thêm: 250.000 đ – Thay ổ khóa'), 'thẻ Cần làm cập nhật theo số và ghi chú vừa sửa');
   // trang ngoài
   const pub = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); await pub.goto(H); await pub.waitForSelector('.note.task'); const pc = (await pub.$$eval('.note.task', (e) => e.map((x) => x.innerText))).find((x) => x.startsWith('Phòng 4')) || '';
-  ok(pc.includes('Nợ cũ: 2.900.000 đ – Nợ tháng 9 và 10') && pc.includes('Thu thêm: 200.000 đ – Sửa khóa'), 'Tổng quan (trang ngoài): có ghi chú nợ cũ + thu thêm');
+  ok(pc.includes('Nợ cũ: 3.000.000 đ – Nợ tháng 9 và 10') && pc.includes('Thu thêm: 250.000 đ – Thay ổ khóa'), 'Tổng quan (trang ngoài): có ghi chú nợ cũ + thu thêm');
   ok(!errs.length, 'không lỗi JS ' + errs.join(' | '));
   await b.close();
 })();
