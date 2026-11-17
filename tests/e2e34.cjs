@@ -21,7 +21,7 @@ const { execSync } = require('child_process'); const { chromium } = require(exec
   ok(await pg.isVisible(R + 'input[name=manualDebtNote]') && await pg.isVisible(R + 'input[name=otherLabel]'), 'form Tính tiền có ô Ghi chú nợ cũ + Ghi chú tiền thu thêm');
   await pg.fill(R + 'input[name=elecNew]', '11701'); await pg.fill(R + 'input[name=waterNew]', '587'); await pg.fill(R + 'input[name=manualDebt]', '2900000'); await pg.fill(R + 'input[name=manualDebtNote]', 'Nợ tiền phòng tháng 10'); await pg.fill(R + 'input[name=otherAmount]', '200000'); await pg.fill(R + 'input[name=otherLabel]', 'Sửa khóa');
   await pg.click(R + 'button[type=submit]'); await pg.waitForSelector('#bill');
-  const bill = await pg.innerText('#bill'); ok(bill.includes('Nợ nhập thêm: 2.900.000 đ – Nợ tiền phòng tháng 10') && bill.includes('Tiền thu thêm') && bill.includes('Ghi chú: Sửa khóa'), 'hóa đơn có ghi chú nợ cũ + tiền thu thêm');
+  const bill = await pg.innerText('#bill'); ok(bill.includes('Ghi chú: Nợ tiền phòng tháng 10') && !bill.includes('Nợ nhập thêm') && bill.includes('Tiền thu thêm') && bill.includes('Ghi chú: Sửa khóa'), 'hóa đơn có ghi chú nợ cũ + tiền thu thêm');
   ok(await pg.$$eval('#bill .bnr', (els) => els.length === 2 && els.every((e) => getComputedStyle(e).color === 'rgb(196, 42, 29)')), 'ghi chú hóa đơn chữ ĐỎ');
   // khối chuyển khoản
   for (const [w, h, name] of [[390, 844, 'điện thoại'], [320, 640, 'điện thoại nhỏ'], [820, 1180, 'iPad dọc'], [1180, 820, 'iPad ngang'], [1366, 900, 'máy tính']]) {
@@ -47,7 +47,7 @@ const { execSync } = require('child_process'); const { chromium } = require(exec
   // Điều chỉnh: sửa ghi chú nợ cũ
   await pg.goto(H + '#/invoice/' + inv.id); await pg.waitForSelector('#bill'); await pg.click('button[data-act=adjust]'); await pg.waitForSelector('form[data-form=adjust]');
   await pg.fill('form[data-form=adjust] input[name=manualDebtNote]', 'Nợ tháng 9 và 10'); await pg.fill('form[data-form=adjust] input[name=reason]', 'Thêm ghi chú'); await pg.click('form[data-form=adjust] button[type=submit]'); await pg.waitForTimeout(1000);
-  ok((await pg.innerText('#bill')).includes('Nợ nhập thêm: 2.900.000 đ – Nợ tháng 9 và 10') && (await pg.innerText('#bill')).includes('Ghi chú: Sửa khóa'), 'Điều chỉnh: sửa ghi chú nợ cũ, giữ tiền thu thêm');
+  ok((await pg.innerText('#bill')).includes('Ghi chú: Nợ tháng 9 và 10') && (await pg.innerText('#bill')).includes('Ghi chú: Sửa khóa'), 'Điều chỉnh: sửa ghi chú nợ cũ, giữ tiền thu thêm');
   // trang ngoài
   const pub = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); await pub.goto(H); await pub.waitForSelector('.note.task'); const pc = (await pub.$$eval('.note.task', (e) => e.map((x) => x.innerText))).find((x) => x.startsWith('Phòng 4')) || '';
   ok(pc.includes('Nợ cũ: 2.900.000 đ – Nợ tháng 9 và 10') && pc.includes('Thu thêm: 200.000 đ – Sửa khóa'), 'Tổng quan (trang ngoài): có ghi chú nợ cũ + thu thêm');
