@@ -9,13 +9,15 @@ import { acts, forms, changes, rerender } from '../ui.js';
 
 let logLimit = 10; // nhật ký: chỉ hiện 10 dòng mới nhất, bấm "Xem thêm" để hiện tiếp
 const HK = 'nt44_hidden_rows'; const hidden = () => { try { return new Set(JSON.parse(localStorage.getItem(HK) || '[]')); } catch { return new Set(); } }; const setHidden = (h) => { try { localStorage.setItem(HK, JSON.stringify([...h])); } catch { /* bỏ qua */ } };
-let range = null; let last = null;
+let range = null; let last = null; let userRange = false; let lastSig = ''; let repTimer = null;
+// Mặc định xem CẢ NĂM (đến 31/12) để hóa đơn lập sớm (đến hạn vài ngày tới) và mọi thay đổi mới đều hiện ngay trong báo cáo
+const yearRange = () => ({ from: `${today().slice(0, 4)}-01-01`, to: `${today().slice(0, 4)}-12-31` });
 export function reportsView() {
-  range = range || { from: `${today().slice(0, 4)}-01-01`, to: today() };
+  if (!userRange || !range) range = yearRange();
   const v = html`<div class="page-head"><h2>Báo Cáo Tiền Trọ</h2></div>
     <form data-form="report" class="rep-range noprint"><div class="rr-f">${field('Từ ngày', html`<input type="date" name="from" value="${range.from}" required>`)}</div><div class="rr-f">${field('Đến ngày', html`<input type="date" name="to" value="${range.to}" required>`)}</div><button class="btn primary rr-btn" type="submit">${icon('chart', '1.1em')} Xem báo cáo</button></form>
     <div id="rep"><p class="boot">Đang tính…</p></div>`;
-  v.after = loadReport; return v;
+  v.after = () => { lastSig = ''; loadReport(); startAuto(); }; return v;
 }
 let repView = 'month';
 const ST = { paid: 'Đã thu đủ', partial: 'Thu một phần', unpaid: 'Chưa thu', refund: 'Hoàn lại khách' };
@@ -25,10 +27,18 @@ const detailRow = (d, by) => html`<tr class="click" data-act="open-invoice" data
   <td data-l="Tổng tháng" class="r"><b>${d.refund ? html`<span class="muted">Hoàn ${vnd(d.refund)}</span>` : vnd(d.total)}</b></td><td data-l="Đã thu" class="r okc">${money0(d.paid)}</td><td data-l="Còn thiếu" class="r ${d.outstanding ? 'owe' : ''}">${money0(d.outstanding)}</td><td data-l="Trạng thái"><span class="st-pill ${d.status}">${ST[d.status]}</span></td></tr>`;
 const head = (by) => html`<thead><tr><th>${by === 'month' ? 'Phòng' : 'Tháng'}</th><th>Khách / loại tiền</th><th class="r">Thu khi vào ở</th><th class="r">Tiền phòng</th><th class="r">Điện</th><th class="r">Nước</th><th class="r">Khác</th><th class="r">Tổng</th><th class="r">Đã thu</th><th class="r">Còn thiếu</th><th>Trạng thái</th></tr></thead>`;
 const groupSum = (g) => html`<span class="rg-sum">${g.movein ? html`<span>Thu khi vào: <b>${vnd(g.movein)}</b></span>` : ''}<span>Tiền phòng: <b>${vnd(g.rent)}</b></span><span>Điện: <b>${vnd(g.elec)}</b></span><span>Nước: <b>${vnd(g.water)}</b></span><span>Phải thu: <b>${vnd(g.billed)}</b></span><span>Đã thu: <b class="okc">${vnd(g.paid)}</b></span><span>Còn thiếu: <b class="${g.outstanding ? 'owe' : 'okc'}">${vnd(g.outstanding)}</b></span></span>`;
-async function loadReport() {
+// Tự cập nhật: mỗi 30 giây khi đang mở trang Báo cáo, và ngay khi quay lại tab/ứng dụng (dữ liệu sửa ở máy khác cũng hiện)
+function startAuto() {
+  clearInterval(repTimer);
+  repTimer = setInterval(() => { if (!$('#rep')) { clearInterval(repTimer); return; } if (!document.hidden) loadReport({ quiet: true }); }, 30000);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && $('#rep')) loadReport({ quiet: true }); });
+async function loadReport({ quiet = false } = {}) {
   const box = $('#rep'); if (!box) return;
   try {
-    const r = await api('GET', `reports?from=${range.from}&to=${range.to}`); last = r;
+    const r = await api('GET', `reports?from=${range.from}&to=${range.to}`); if (!$('#rep')) return;
+    const sig = JSON.stringify([r.detail, r.months, r.rooms, r.oldDebts, r.debtNow, repView, [...hidden()]]); if (quiet && sig === lastSig) return; lastSig = sig; last = r;
+    const openKeys = quiet ? new Set([...document.querySelectorAll('.rep-group[open]')].map((d) => d.dataset.key)) : null;
     const h = hidden(); const vm = r.months.filter((m) => !h.has(`m:${m.ym}`)); const vr = r.rooms.filter((m) => !h.has(`r:${m.room}`)); const nHidden = r.months.length - vm.length + r.rooms.length - vr.length;
     const det = r.detail.filter((d) => !h.has(`m:${d.ym}`) && !h.has(`r:${d.room}`));
     const t = det.reduce((a, d) => { for (const k of ['movein', 'rent', 'elec', 'water', 'other', 'paid', 'outstanding', 'refund']) a[k] += d[k]; a.billed += d.total; return a; }, { movein: 0, rent: 0, elec: 0, water: 0, other: 0, billed: 0, paid: 0, outstanding: 0, refund: 0 });
@@ -40,17 +50,17 @@ async function loadReport() {
     <p class="rep-note">Tiền thực nhận theo ngày thu trong khoảng này: <b>${vnd(collected)}</b>${t.refund ? html` · Hoàn lại khách khi trả phòng: <b>${vnd(t.refund)}</b>` : ''}. Mỗi dòng là một hóa đơn của một phòng trong một tháng; nợ chuyển sang tháng sau không cộng lại để không bị tính hai lần.</p>
     ${r.oldDebts?.length ? html`<div class="warn-box"><b>Tiền nợ cũ của khách (ghi riêng, không nằm trong hóa đơn):</b> ${r.oldDebts.map((o) => `${o.room} – ${o.tenant}: ${vnd(o.amount)}`).join('; ')}.</div>` : ''}
     <div class="rep-tabs noprint"><button class="btn sm ${repView === 'month' ? 'on' : ''}" data-act="rep-view" data-v="month">${icon('calendar', '1em')} Theo tháng</button><button class="btn sm ${repView === 'room' ? 'on' : ''}" data-act="rep-view" data-v="room">${icon('home', '1em')} Theo phòng</button><button class="btn sm" data-act="rep-open-all">Mở hết</button><button class="btn sm" data-act="rep-close-all">Thu gọn hết</button></div>
-    ${groups.length ? groups.map((g, k) => html`<details class="rep-group" ${k === latest || groups.length <= 2 ? raw('open') : ''}><summary><span class="rg-title">${g.title}</span>${groupSum(g.sum)}</summary>
+    ${groups.length ? groups.map((g, k) => html`<details class="rep-group" data-key="${g.key}" ${(openKeys ? openKeys.has(g.key) : k === latest || groups.length <= 2) ? raw('open') : ''}><summary><span class="rg-title">${g.title}</span>${groupSum(g.sum)}</summary>
       <table class="tbl stack">${head(repView)}<tbody>${g.rows.map((d) => detailRow(d, repView))}</tbody></table>
       <div class="row noprint" style="padding:8px 12px"><span class="muted small sp">Bấm vào từng dòng để mở hóa đơn.</span><button class="btn sm danger" data-act="hide-row" data-key="${g.key}" title="Ẩn nhóm này khỏi báo cáo">${icon('trash', '1em')} Ẩn khỏi báo cáo</button></div></details>`) : html`<div class="empty-state">Không có hóa đơn nào trong khoảng ngày này.</div>`}
-    <p class="muted small">Báo cáo theo ngày đến hạn của hóa đơn. "Đã thu" / "Còn thiếu" là của chính tháng đó. Không chứa ảnh/thông tin CCCD.</p>
+    <p class="muted small">Tự cập nhật khi dữ liệu thay đổi · lần cập nhật gần nhất: ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}. Báo cáo theo ngày đến hạn của hóa đơn. "Đã thu" / "Còn thiếu" là của chính tháng đó. Không chứa ảnh/thông tin CCCD.</p>
     <div class="row noprint"><button class="btn" data-act="rep-csv">⬇ Xuất Excel (CSV)</button><button class="btn" data-act="rep-json">⬇ Xuất JSON</button><button class="btn" data-act="print">🖨 In báo cáo</button></div>`.s;
-  } catch (e) { box.innerHTML = html`<div class="err-box">${e.message}</div>`.s; }
+  } catch (e) { if (!quiet) box.innerHTML = html`<div class="err-box">${e.message}</div>`.s; }
 }
 acts['rep-view'] = (el) => { repView = el.dataset.v; loadReport(); };
 acts['rep-open-all'] = () => document.querySelectorAll('.rep-group').forEach((d) => (d.open = true));
 acts['rep-close-all'] = () => document.querySelectorAll('.rep-group').forEach((d) => (d.open = false));
-forms.report = async (f, fd) => { range = { from: fd.get('from'), to: fd.get('to') }; await loadReport(); };
+forms.report = async (f, fd) => { range = { from: fd.get('from'), to: fd.get('to') }; const y = yearRange(); userRange = range.from !== y.from || range.to !== y.to; lastSig = ''; await loadReport(); };
 const csvCell = (v) => `"${String(v).replace(/"/g, '""')}"`;
 acts['rep-csv'] = () => {
   const rows = [['Tháng', 'Phòng', 'Khách', 'Loại', 'Ngày đến hạn', 'Thu khi vào ở', 'Tiền phòng', 'Tiền điện', 'Tiền nước', 'Khác', 'Tổng tháng', 'Hoàn lại', 'Đã thu', 'Còn thiếu', 'Trạng thái'], ...last.detail.map((d) => [d.ym, d.room, d.tenant, d.kindLabel, d.dueDate, d.movein, d.rent, d.elec, d.water, d.other, d.total, d.refund, d.paid, d.outstanding, ST[d.status]]),

@@ -1,3 +1,10 @@
+# Phiên bản 2026-11-30-l
+- **Tổng quan cần xử lý** (trang trong + trang ngoài): dưới dòng "Cần làm: Thu tiền …" hiện thêm ghi chú **chữ đỏ**: "Nợ cũ: 2.900.000 đ – lý do" (hoặc tháng còn nợ), "Thu thêm: 200.000 đ – Sửa khóa", "Tiền nợ cũ (ghi riêng): … – lý do".
+- **Hóa đơn của khách**: dòng Nợ cũ và Tiền thu thêm có ghi chú **chữ đỏ** (cả trên màn hình và ảnh JPG gửi Zalo).
+- Ô mới **Ghi chú nợ cũ** khi Tính tiền, khi thêm khách đang ở sẵn có nợ, và trong **Điều chỉnh** hóa đơn (sửa được cả số nợ cũ nhập thêm và ghi chú cho hóa đơn đã lập). Ô "Chi phí khác" đổi tên thành **Tiền thu thêm** + **Ghi chú tiền thu thêm**. Điều chỉnh không còn làm mất các khoản thu thêm khác.
+- **Thông tin chuyển khoản**: Ngân hàng / Số tài khoản / Chủ tài khoản ở **trên**, mỗi thông tin 1 dòng (không gãy chữ), **mã QR ở dưới**, giữa – điện thoại, iPad, máy tính và ảnh JPG.
+- **Báo cáo** tự cập nhật: mặc định xem cả năm (đến 31/12) nên hóa đơn lập sớm cũng hiện ngay; tự tải lại mỗi 30 giây khi đang mở và khi quay lại ứng dụng; giữ nguyên nhóm đang mở.
+
 # Phiên bản 2026-11-30-k
 - **Trang ngoài (chưa đăng nhập) giống trang admin**: thẻ phòng cùng màu nền (xanh mở khóa / xám khóa), cùng chữ, cỡ chữ, cách trình bày ("Đang cho thuê · Vào dd/mm/yyyy", Khách thuê, Số người, Còn nợ); có thẻ **Chủ Nhà** vàng nhạt; tiêu đề mục "Các phòng", "Tổng quan cần xử lý" cùng kiểu với trang admin. Trang ngoài không có các nút chỉ dành cho admin (Tính tiền, Ghi đồng hồ tổng).
 

@@ -35,11 +35,14 @@ acts.adjust = (el) => {
   const i = D().invoices.find((x) => x.id === el.dataset.id); const e0 = i.extras[0];
   openModal(`Điều chỉnh ${i.code}`, html`<form data-form="adjust" data-id="${i.id}"><p class="warn-box">Chỉ điều chỉnh được hóa đơn mới nhất của khách. Mọi thay đổi được lưu lịch sử kèm lý do.</p>
     ${i.elec ? html`<div class="two">${field(`Chỉ số điện mới (cũ ${i.elec.old})`, html`<input name="elecNew" inputmode="decimal" value="${i.elec.new}">`)}${field(`Chỉ số nước mới (cũ ${i.water.old})`, html`<input name="waterNew" inputmode="decimal" value="${i.water.new}">`)}</div>` : ''}
-    <div class="two">${field('Khoản phát sinh – nội dung', html`<input name="x1l" value="${e0?.label || ''}">`)}${field('Số tiền (đ)', html`<input name="x1a" inputmode="numeric" value="${e0?.amount || ''}">`)}</div>
+    <div class="two">${field('Tiền thu thêm (đ)', html`<input name="x1a" inputmode="numeric" value="${e0?.amount || ''}">`)}${field('Ghi chú tiền thu thêm (chữ đỏ)', html`<input name="x1l" maxlength="100" value="${e0?.label && e0.label !== 'Chi phí khác' ? e0.label : ''}">`)}</div>
+    <div class="two">${field('Nợ cũ nhập thêm (đ)', html`<input name="manualDebt" inputmode="numeric" value="${i.manualDebt || ''}">`)}${field('Ghi chú nợ cũ (chữ đỏ)', html`<input name="manualDebtNote" maxlength="200" value="${i.manualDebtNote || ''}" placeholder="VD: nợ tiền phòng tháng 10">`)}</div>
     ${field('Lý do điều chỉnh *', html`<input name="reason" required maxlength="200">`)}<div class="err-inline"></div><button class="btn primary block" type="submit">LƯU ĐIỀU CHỈNH</button></form>`);
 };
 forms.adjust = async (f, fd) => {
-  const x = fd.get('x1l').trim(); const body = { reason: fd.get('reason'), extras: x || fd.get('x1a') ? [{ label: x, amount: toInt(fd.get('x1a')) }] : [] };
+  const inv = D().invoices.find((y) => y.id === f.dataset.id); const x = fd.get('x1l').trim(); const xa = toInt(fd.get('x1a')) || 0;
+  const body = { reason: fd.get('reason'), extras: [...(xa ? [{ label: x || 'Chi phí khác', amount: xa }] : []), ...((inv?.extras || []).slice(1))] }; // giữ nguyên các khoản thu thêm khác (thêm khi thu tiền)
+  body.manualDebt = toInt(fd.get('manualDebt')) || 0; body.manualDebtNote = (fd.get('manualDebtNote') || '').trim();
   if (f.elecNew) { body.elecNew = toDec(fd.get('elecNew')); body.waterNew = toDec(fd.get('waterNew')); }
   await save('PUT', `invoices/${f.dataset.id}`, body, 'Đã điều chỉnh'); closeModal(); rerender();
 };

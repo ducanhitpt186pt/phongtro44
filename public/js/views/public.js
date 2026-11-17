@@ -21,6 +21,8 @@ export function taskCard(it, { tenantName = '', actions = false, pub = false, to
   const lines = [];
   if (it.read) lines.push(html`<div class="t-todo"><b>Cần làm:</b> Ghi điện nước ${ymText(it.read.ym)} <span class="t-when">(${dmy(it.read.due)} - ${dayLeft(it.read.due, today)})</span></div>`);
   if (it.pay) lines.push(html`<div class="t-todo"><b>Cần làm:</b> Thu tiền ${ymText(it.pay.ym)} – <span class="money">${vnd(it.pay.remaining)}</span> <span class="t-when">(${dmy(it.pay.due)} - ${dayLeft(it.pay.due, today)})</span></div>`);
+  // Ghi chú các khoản thêm (chữ đỏ): Nợ cũ – lý do / tháng còn nợ; Thu thêm – nội dung; Tiền nợ cũ ghi riêng – lý do
+  for (const n of it.notes || []) lines.push(html`<div class="t-note">${n.label}: <b>${vnd(n.amount)}</b>${n.note ? html` – ${n.note}` : ''}</div>`);
   if (it.refund) lines.push(html`<div class="t-todo"><b>Cần làm:</b> Hoàn tiền <span class="money">${vnd(it.refund.amount)}</span> cho khách đã trả phòng <span class="t-when">(${dmy(it.refund.date)})</span></div>`);
   const btns = !actions ? '' : html`<div class="nact">${it.read && it.rentalId ? html`<button class="btn red sm" data-act="readings" data-id="${it.rentalId}">${icon('bolt', '1.1em')} Tính tiền</button>` : ''}${it.pay?.invoiceId ? html`<button class="btn green sm" data-act="pay" data-id="${it.pay.invoiceId}">${icon('check', '1.1em')} Đã nhận tiền</button>` : ''}${it.refund && it.recordId ? html`<button class="btn green sm" data-act="refunded" data-id="${it.recordId}">${icon('check', '1.1em')} Đã hoàn tiền</button>` : ''}</div>`;
   const payType = !!it.pay;

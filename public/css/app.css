@@ -524,3 +524,17 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:auto}
 .room-card .kv{grid-template-columns:auto minmax(0,1fr)}.room-card .kv dd{overflow-wrap:anywhere}
 .tbl th{white-space:normal!important;line-height:1.25}
 @media(min-width:761px){.tbl.stack{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}}
+
+/* 2026-11-30-l: ghi chú nợ cũ / thu thêm (chữ đỏ) dưới dòng "Cần làm" và trên hóa đơn */
+.note.task .t-note{font-size:.9rem;line-height:1.45;margin:2px 0 2px 12px;color:var(--red-t,#c42a1d);font-weight:600;overflow-wrap:anywhere}.note.task .t-note b{font-weight:800;white-space:nowrap}
+.bill .bnr{color:#c42a1d;font-weight:700;font-size:.95rem;margin-top:3px;white-space:pre-line;overflow-wrap:anywhere}
+/* 2026-11-30-l: Thông tin chuyển khoản – 3 dòng chữ ở TRÊN (không gãy chữ), mã QR ở DƯỚI, giữa */
+.bbank .bbrow{display:flex;flex-direction:column;align-items:stretch;gap:10px;flex-wrap:nowrap}
+.bbank .bbrow dl{display:block;flex:none;width:100%;min-width:0;margin:8px 0 0}
+.bbank .bbrow dl .bk{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px dashed #e3e7ee}
+.bbank .bbrow dl .bk:last-child{border-bottom:0}
+.bbank .bbrow dt{flex:0 0 auto;white-space:nowrap;color:#6c6c70}
+.bbank .bbrow dd{flex:1 1 auto;margin:0;text-align:right;font-weight:800;white-space:normal!important;word-break:normal!important;overflow-wrap:break-word;min-width:0}
+.bbank .bbrow dd.acc{letter-spacing:.04em;font-size:1.1rem}
+.bbank .bqr{display:block;width:200px;height:200px;max-width:70%;margin:4px auto 0;object-fit:contain}
+@media (max-width:360px){.bbank .bbrow dl .bk{flex-direction:column;align-items:flex-start;gap:0}.bbank .bbrow dd{text-align:left}}

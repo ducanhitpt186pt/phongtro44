@@ -131,7 +131,7 @@ acts.movein = (el) => {
         <label class="mode-opt"><input type="radio" name="mode" value="late" checked> <span><b>Khách mới vào từ ngày đó – tôi nhập trễ</b><br><span class="small">Chưa thu tiền các tháng sau. App tính từ ngày vào ở; tháng nào đã tới hạn sẽ nhắc <b>Ghi điện nước</b> rồi <b>Thu tiền</b> (quá hạn). Chỉ số điện nước ban đầu = <b>số lúc khách vào</b>.</span></span></label>
         <label class="mode-opt"><input type="radio" name="mode" value="existing"> <span><b>Khách ở từ trước khi dùng phần mềm – đã lấy tiền tháng trước rồi</b><br><span class="small">App chỉ tính từ kỳ đang chạy. Chỉ số điện nước ban đầu = <b>số hiện tại trên đồng hồ</b>. Còn nợ cũ thì nhập bên dưới.</span></span></label></div>
       <label class="radios paidbox"><input type="checkbox" name="paidAlready" checked> <b>Đã thu đủ tiền phòng kỳ đầu</b> (nhận khi khách vào). Bỏ tích nếu chưa nhận.</label>
-      <div id="existbox" hidden>${field('Nợ cũ còn lại (đ)', html`<input name="openingDebt" inputmode="numeric" value="0">`)}</div>
+      <div id="existbox" hidden><div class="two keep">${field('Nợ cũ còn lại (đ)', html`<input name="openingDebt" inputmode="numeric" value="0">`)}${field('Ghi chú nợ cũ', html`<input name="openingDebtNote" maxlength="200" placeholder="VD: nợ tiền phòng tháng 10">`)}</div></div>
       <div class="two">${field('Giá thuê phòng / tháng (đ) *', html`<input name="rent" inputmode="numeric" required>`)}${field('Giá điện (đ/số) *', html`<input name="elecPrice" inputmode="numeric" required>`)}</div>
       <div class="two">${field('Giá nước (đ/khối) *', html`<input name="waterPrice" inputmode="numeric" required>`)}${field('Số Tiền Đặt Cọc (đ)', html`<input name="deposit" inputmode="numeric" value="0">`, 'Mặc định 0. Có nhập thì hoàn lại khi khách trả phòng, sau khi thanh toán hết tiền phòng, điện nước.')}</div>
       <div class="radios" role="radiogroup"><b>Hình thức thanh toán tiền thuê</b>${[['month', 'Theo tháng'], ['quarter', 'Theo quý'], ['year', 'Theo năm']].map(([k, l]) => html`<label><input type="radio" name="payCycle" value="${k}" ${k === 'month' ? raw('checked') : ''}>${l}</label>`)}</div>
@@ -150,7 +150,7 @@ live.movein = (f) => {
 };
 forms.movein = async (f, fd) => {
   const blocks = [...f.querySelectorAll('.occ')]; const occupants = blocks.map(collectOccupant);
-  const body = { roomId: f.dataset.room, tenant: collectPerson(fd), occupants, startDate: fd.get('startDate'), mode: $('#oldstart').hidden ? 'new' : (fd.get('mode') || 'late'), openingDebt: toInt(fd.get('openingDebt')) || 0, paidAlready: fd.get('paidAlready') === 'on', rent: toInt(fd.get('rent')), deposit: toInt(fd.get('deposit')) || 0, payCycle: fd.get('payCycle') || 'month', elecPrice: toInt(fd.get('elecPrice')), waterPrice: toInt(fd.get('waterPrice')), initElec: toDec(fd.get('initElec')), initWater: toDec(fd.get('initWater')), note: fd.get('note'), oldDebt: collectOldDebt(fd) };
+  const body = { roomId: f.dataset.room, tenant: collectPerson(fd), occupants, startDate: fd.get('startDate'), mode: $('#oldstart').hidden ? 'new' : (fd.get('mode') || 'late'), openingDebt: toInt(fd.get('openingDebt')) || 0, openingDebtNote: (fd.get('openingDebtNote') || '').trim(), paidAlready: fd.get('paidAlready') === 'on', rent: toInt(fd.get('rent')), deposit: toInt(fd.get('deposit')) || 0, payCycle: fd.get('payCycle') || 'month', elecPrice: toInt(fd.get('elecPrice')), waterPrice: toInt(fd.get('waterPrice')), initElec: toDec(fd.get('initElec')), initWater: toDec(fd.get('initWater')), note: fd.get('note'), oldDebt: collectOldDebt(fd) };
   const j = await save('POST', 'tenants', body, 'Đã lưu khách thuê'); const tid = j.result.tenant.id;
   const jobs = [[tid, 'front'], [tid, 'back'], ...blocks.flatMap((b, i) => (occupants[i].noId ? [] : [[j.result.occupantIds[i], `${b.dataset.slot}-front`, 'front'], [j.result.occupantIds[i], `${b.dataset.slot}-back`, 'back']]))].filter(([, slot]) => getBlob(slot));
   const pending = jobs.map(([owner, slot, side]) => ({ owner, slot, side, blob: getBlob(slot) })); closeModal(); go(`#/room/${body.roomId}`); rerender(); // đóng ngay, không bắt chờ tải ảnh
@@ -177,9 +177,9 @@ acts.readings = (el) => {
     ${field('Ngày chốt số (ngày đọc đồng hồ)', html`<input type="date" name="readDate" value="${todayLocal()}" max="${todayLocal()}" required>`, 'Mặc định hôm nay; chọn đúng ngày đọc nếu ghi muộn.')}
     <div class="calc" id="rcalc">Nhập chỉ số mới để xem số tiền.</div>
     ${unpaidInfo}
-    <fieldset><legend>Nợ cũ & chi phí khác (nếu có – không có thì để trống)</legend>
-      <div class="two keep">${field('Nợ cũ (đ)', html`<input name="manualDebt" inputmode="numeric" placeholder="0">`)}<div></div></div>
-      <div class="two keep">${field('Chi phí khác (đ)', html`<input name="otherAmount" inputmode="numeric" placeholder="0">`)}${field('Nội dung (tùy chọn)', html`<input name="otherLabel" maxlength="100" placeholder="Sửa khóa, internet…">`)}</div>
+    <fieldset><legend>Nợ cũ & tiền thu thêm (nếu có – không có thì để trống)</legend>
+      <div class="two keep">${field('Nợ cũ (đ)', html`<input name="manualDebt" inputmode="numeric" placeholder="0">`)}${field('Ghi chú nợ cũ (hiện chữ đỏ)', html`<input name="manualDebtNote" maxlength="200" placeholder="VD: nợ tiền phòng tháng 10">`)}</div>
+      <div class="two keep">${field('Tiền thu thêm (đ)', html`<input name="otherAmount" inputmode="numeric" placeholder="0">`)}${field('Ghi chú tiền thu thêm (hiện chữ đỏ)', html`<input name="otherLabel" maxlength="100" placeholder="Sửa khóa, internet…">`)}</div>
       <p class="muted small" style="margin:0 0 10px">Khoản nào có nhập mới hiện trong hóa đơn của khách; để trống thì hóa đơn không hiện dòng đó.</p></fieldset>
     ${field('Ghi chú hóa đơn', html`<input name="note" maxlength="300">`)}<div class="err-inline"></div><button class="btn red block" type="submit">LƯU CHỈ SỐ & LẬP HÓA ĐƠN</button></form>`);
 };
@@ -193,7 +193,7 @@ live.readings = (f) => {
 };
 forms.readings = async (f, fd) => {
   const oa = toInt(fd.get('otherAmount')); const extras = oa ? [{ label: (fd.get('otherLabel') || '').trim() || 'Chi phí khác', amount: oa }] : [];
-  const j = await save('POST', 'readings', { rentalId: f.dataset.rental, periodIndex: Number(fd.get('periodIndex')), elecNew: toDec(fd.get('elecNew')), waterNew: toDec(fd.get('waterNew')), readDate: fd.get('readDate'), manualDebt: toInt(fd.get('manualDebt')) || 0, extras, note: fd.get('note') }, 'Đã lập hóa đơn');
+  const j = await save('POST', 'readings', { rentalId: f.dataset.rental, periodIndex: Number(fd.get('periodIndex')), elecNew: toDec(fd.get('elecNew')), waterNew: toDec(fd.get('waterNew')), readDate: fd.get('readDate'), manualDebt: toInt(fd.get('manualDebt')) || 0, manualDebtNote: (fd.get('manualDebtNote') || '').trim(), extras, note: fd.get('note') }, 'Đã lập hóa đơn');
   closeModal(); go(`#/invoice/${j.result.id}`);
 };
 
